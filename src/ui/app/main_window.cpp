@@ -135,21 +135,35 @@ void ShekinahWindow::import_song_text() {
     if (path.isEmpty()) {
         return;
     }
-    std::ifstream input(path.toStdString(), std::ios::binary);
+    const auto imported = import_song_file(path.toStdString());
+    if (imported) {
+        library_dock_->add_song(*imported);
+    }
+}
+
+domain::Result<domain::Song> ShekinahWindow::import_song_file(
+    const std::filesystem::path& source) {
+    if (!repository_) {
+        return domain::Result<domain::Song>::fail(
+            {domain::ErrorCode::storage_failure, "Open a project before importing songs"});
+    }
+    std::ifstream input(source, std::ios::binary);
     if (!input) {
-        return;
+        return domain::Result<domain::Song>::fail(
+            {domain::ErrorCode::io_failure, "Unable to open song text"});
     }
     const std::string text{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
     const auto parsed = application::SongTextImporter::parse(text);
     if (!parsed) {
-        return;
+        return domain::Result<domain::Song>::fail(parsed.error());
     }
     auto song = parsed.value();
     song.id = domain::SongId{"song-" + std::to_string(next_content_id_++)};
     const auto saved = repository_->save_song(song);
-    if (saved) {
-        library_dock_->add_song(*saved);
+    if (!saved) {
+        return domain::Result<domain::Song>::fail(saved.error());
     }
+    return saved;
 }
 
 void ShekinahWindow::import_sermon_deck() {

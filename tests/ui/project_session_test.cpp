@@ -42,3 +42,19 @@ TEST_CASE("main window imports assets through the project session") {
     REQUIRE(imported);
     REQUIRE(std::filesystem::path{imported->relative_path}.parent_path() == "assets");
 }
+
+TEST_CASE("main window imports reusable song text through the project session") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "goodness.txt";
+    std::ofstream{source} << "# Goodness\n[Verse 1]\nYou are good\n\n[Chorus]\nAll the time\n";
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+
+    const auto imported = window.import_song_file(source);
+
+    REQUIRE(imported);
+    REQUIRE(imported->title == "Goodness");
+    REQUIRE(imported->slides.size() == 2);
+    REQUIRE(!imported->id.empty());
+}
