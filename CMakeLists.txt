@@ -40,3 +40,10 @@ add_subdirectory(src/media)
 add_subdirectory(src/core/application)
 add_subdirectory(src/ui)
 add_subdirectory(tests)
+
+add_executable(shekinah_n4000_bench
+    tools/n4000_bench/main.cpp
+)
+target_link_libraries(shekinah_n4000_bench PRIVATE shekinah_application shekinah_media nlohmann_json::nlohmann_json)
+target_compile_features(shekinah_n4000_bench PRIVATE cxx_std_20)
+shekinah_enable_warnings(shekinah_n4000_bench)
