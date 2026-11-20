@@ -34,4 +34,5 @@ add_executable(shekinah_app
 target_link_libraries(shekinah_app PRIVATE Qt6::Widgets Qt6::Multimedia)
 
 add_subdirectory(src/core/domain)
+add_subdirectory(src/storage/sqlite)
 add_subdirectory(tests)

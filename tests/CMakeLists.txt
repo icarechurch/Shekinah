@@ -21,3 +21,10 @@ shekinah_register_test(shekinah_domain_tests domain)
 
 target_sources(shekinah_domain_tests PRIVATE domain/content_model_test.cpp)
 target_sources(shekinah_domain_tests PRIVATE domain/result_test.cpp)
+
+add_executable(shekinah_storage_tests
+    storage/project_store_test.cpp
+)
+target_include_directories(shekinah_storage_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/support)
+target_link_libraries(shekinah_storage_tests PRIVATE shekinah_storage Catch2::Catch2WithMain)
+shekinah_register_test(shekinah_storage_tests storage)
