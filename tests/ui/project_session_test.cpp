@@ -326,3 +326,34 @@ TEST_CASE("an imported image can become a live Song cue background") {
 
     REQUIRE(output->slide_image_loaded());
 }
+
+TEST_CASE("an imported MP4 can become a looping live Song cue background") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto video_source = project.root() / "motion.mp4";
+    std::ofstream{video_source, std::ios::binary} << "mp4 fixture";
+    const auto song_source = project.root() / "goodness.txt";
+    std::ofstream{song_source} << "# Goodness\n[Verse]\nYou are good\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto asset = window.import_asset_file(video_source);
+    const auto song = window.import_song_file(song_source);
+    REQUIRE(asset);
+    REQUIRE(song);
+    window.library_dock()->add_song(*song);
+    window.library_dock()->show_songs();
+    window.library_dock()->activate_song_row(0);
+    REQUIRE(window.set_slide_background(song->slides[0].id, asset->id));
+    auto* output = window.audience_output();
+    window.show();
+    QTest::qWait(20);
+
+    auto* cue = window.operator_page()->cue_grid()->findChild<QWidget*>(
+        QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[0].id.value)));
+    REQUIRE(cue != nullptr);
+    QTest::mouseClick(cue, Qt::LeftButton, Qt::NoModifier, cue->rect().center());
+
+    REQUIRE(output->loop_video_loaded());
+    REQUIRE_FALSE(output->slide_image_loaded());
+}
