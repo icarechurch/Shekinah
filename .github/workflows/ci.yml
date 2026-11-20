@@ -1,0 +1,37 @@
+name: Shekinah CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  windows-ucrt64:
+    name: Windows UCRT64 build and tests
+    runs-on: windows-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install MSYS2 dependencies
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-qt6-base
+            mingw-w64-ucrt-x86_64-qt6-multimedia
+            mingw-w64-ucrt-x86_64-sqlite3
+            mingw-w64-ucrt-x86_64-catch
+            mingw-w64-ucrt-x86_64-nlohmann-json
+      - name: Configure
+        run: cmake --preset windows-ucrt64-debug
+      - name: Build
+        run: cmake --build --preset windows-ucrt64-debug --parallel 2
+      - name: Test
+        run: ctest --test-dir build/windows-ucrt64-debug --output-on-failure
