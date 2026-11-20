@@ -26,6 +26,7 @@ target_link_libraries(shekinah_ui
     PUBLIC
         shekinah_application
         shekinah_domain
+        shekinah_storage
         Qt6::Widgets
 )
 
