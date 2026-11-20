@@ -12,3 +12,9 @@ add_executable(shekinah_test_support_tests
 target_include_directories(shekinah_test_support_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/support)
 target_link_libraries(shekinah_test_support_tests PRIVATE Catch2::Catch2WithMain)
 shekinah_register_test(shekinah_test_support_tests support)
+
+add_executable(shekinah_domain_tests
+    domain/presentation_engine_test.cpp
+)
+target_link_libraries(shekinah_domain_tests PRIVATE shekinah_domain Catch2::Catch2WithMain)
+shekinah_register_test(shekinah_domain_tests domain)

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.28)
 
 project(Shekinah VERSION 0.1.0 LANGUAGES CXX)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CompilerWarnings.cmake)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -31,4 +33,5 @@ add_executable(shekinah_app
 )
 target_link_libraries(shekinah_app PRIVATE Qt6::Widgets Qt6::Multimedia)
 
+add_subdirectory(src/core/domain)
 add_subdirectory(tests)
