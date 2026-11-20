@@ -25,3 +25,19 @@ TEST_CASE("service order removal leaves the reusable content reference intact") 
     REQUIRE(service.remove(appended->id));
     REQUIRE(service.items().empty());
 }
+
+TEST_CASE("service order move keeps repeated content references and repairs ordinals") {
+    ServiceOrderService service{ServiceOrderId{"sunday"}};
+    REQUIRE(service.append(ContentRef::song("song-a")));
+    REQUIRE(service.append(ContentRef::sermon("sermon-a")));
+    REQUIRE(service.append(ContentRef::song("song-a")));
+    const auto moved_id = service.items().back().id;
+
+    REQUIRE(service.move(moved_id, 0));
+    REQUIRE(service.items().at(0).content == ContentRef::song("song-a"));
+    REQUIRE(service.items().at(1).content == ContentRef::song("song-a"));
+    REQUIRE(service.items().at(2).content == ContentRef::sermon("sermon-a"));
+    REQUIRE(service.items().at(0).ordinal == 0);
+    REQUIRE(service.items().at(1).ordinal == 1);
+    REQUIRE(service.items().at(2).ordinal == 2);
+}

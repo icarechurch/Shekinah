@@ -16,6 +16,7 @@ public:
 
     domain::Result<domain::ServiceOrderItem> append(domain::ContentRef content);
     domain::Status remove(const domain::ServiceOrderItemId& item_id);
+    domain::Status move(const domain::ServiceOrderItemId& item_id, std::int64_t target_ordinal);
 
 private:
     domain::ServiceOrderId id_;
