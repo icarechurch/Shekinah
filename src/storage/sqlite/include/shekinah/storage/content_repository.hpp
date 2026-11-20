@@ -20,6 +20,7 @@ public:
     domain::Result<domain::SermonDeck> load_deck(const domain::SermonId& id) const;
     domain::Result<std::vector<domain::SermonDeck>> list_decks() const;
     domain::Result<std::vector<domain::AssetRecord>> list_assets() const;
+    domain::Result<domain::AssetRecord> load_asset(const domain::AssetId& id) const;
     domain::Status archive_song(const domain::SongId& id);
     domain::Status archive_deck(const domain::SermonId& id);
     domain::Status ensure_service_order(const domain::ServiceOrderId& id, std::string title);

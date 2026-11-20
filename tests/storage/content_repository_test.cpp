@@ -1,6 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <fstream>
+
 #include "test_project.hpp"
+#include "shekinah/storage/asset_importer.hpp"
 #include "shekinah/storage/content_repository.hpp"
 #include "shekinah/storage/project_store.hpp"
 
@@ -93,6 +96,24 @@ TEST_CASE("SQLite content repository lists active reusable content and assets") 
     REQUIRE(active_songs);
     REQUIRE(active_songs->size() == 1);
     REQUIRE(active_songs->front().id == SongId{"song-z"});
+}
+
+TEST_CASE("SQLite content repository loads stored asset metadata by id") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    const auto source = project.root() / "background.png";
+    std::ofstream{source, std::ios::binary} << "png fixture";
+    const auto imported = AssetImporter{*store}.import_file(source);
+    REQUIRE(imported);
+    SqliteContentRepository repository{*store};
+
+    const auto loaded = repository.load_asset(imported->id);
+
+    REQUIRE(loaded);
+    REQUIRE(loaded->id == imported->id);
+    REQUIRE(loaded->kind == AssetKind::image);
+    REQUIRE(loaded->relative_path == imported->relative_path);
 }
 
 TEST_CASE("reusable content cannot be archived while a service order references it") {

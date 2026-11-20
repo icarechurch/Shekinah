@@ -597,6 +597,44 @@ domain::Result<std::vector<domain::AssetRecord>> SqliteContentRepository::list_a
     return domain::Result<std::vector<domain::AssetRecord>>::ok(std::move(assets));
 }
 
+domain::Result<domain::AssetRecord> SqliteContentRepository::load_asset(
+    const domain::AssetId& id) const {
+    if (id.empty()) {
+        return domain::Result<domain::AssetRecord>::fail(
+            {domain::ErrorCode::invalid_input, "An asset id is required"});
+    }
+    Statement statement{store_.native_handle(),
+                        "SELECT kind,sha256,relative_path FROM assets "
+                        "WHERE id=?1 AND archived=0 LIMIT 1;"};
+    if (!statement.ready()) {
+        return domain::Result<domain::AssetRecord>::fail(
+            {domain::ErrorCode::storage_failure, "Could not prepare Asset load"});
+    }
+    if (const auto bound = bind_text(statement, 1, id.value); !bound) {
+        return domain::Result<domain::AssetRecord>::fail(bound.error());
+    }
+    if (sqlite3_step(statement.get()) != SQLITE_ROW) {
+        return domain::Result<domain::AssetRecord>::fail(
+            {domain::ErrorCode::not_found, "Asset was not found"});
+    }
+    const auto* raw_kind = sqlite3_column_text(statement.get(), 0);
+    const auto* raw_hash = sqlite3_column_text(statement.get(), 1);
+    const auto* raw_path = sqlite3_column_text(statement.get(), 2);
+    if (raw_kind == nullptr || raw_hash == nullptr || raw_path == nullptr) {
+        return domain::Result<domain::AssetRecord>::fail(
+            {domain::ErrorCode::storage_failure, "Asset contains NULL metadata"});
+    }
+    return domain::Result<domain::AssetRecord>::ok(domain::AssetRecord{
+        id,
+        std::string_view{reinterpret_cast<const char*>(raw_kind)} == "video"
+            ? domain::AssetKind::video
+            : domain::AssetKind::image,
+        reinterpret_cast<const char*>(raw_hash),
+        reinterpret_cast<const char*>(raw_path),
+        0,
+    });
+}
+
 domain::Status SqliteContentRepository::archive_song(const domain::SongId& id) {
     return archive_content(store_, "songs", "song", id.value);
 }
