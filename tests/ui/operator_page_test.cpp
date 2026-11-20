@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QSplitter>
 #include <QTest>
 
 #include "shekinah/ui/cue_grid_widget.hpp"
@@ -46,6 +47,22 @@ TEST_CASE("operator page exposes Service Order, Cue Grid, and Program Status") {
         "Song A",
     }});
     REQUIRE(page.service_order_widget()->count() == 1);
+}
+
+TEST_CASE("operator workspace keeps the Presentation cue surface visible on the right") {
+    ensure_qapplication();
+    OperatorPage page;
+    page.resize(1280, 720);
+    page.show();
+    QTest::qWait(20);
+
+    auto* workspace = page.findChild<QSplitter*>(QStringLiteral("operator-workspace"));
+    REQUIRE(workspace != nullptr);
+    REQUIRE(workspace->count() == 2);
+    REQUIRE(page.service_order_widget()->isVisible());
+    REQUIRE(page.cue_grid()->isVisible());
+    REQUIRE(page.cue_grid()->width() > 0);
+    REQUIRE(page.cue_grid()->findChild<QWidget*>(QStringLiteral("presentation-empty-state")) != nullptr);
 }
 
 TEST_CASE("operator page forwards service-order selection and cue actions") {

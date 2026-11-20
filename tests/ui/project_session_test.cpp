@@ -381,6 +381,32 @@ TEST_CASE("New Song saves a Reflow draft into the reusable Songs library") {
     REQUIRE(window.library_dock()->visible_content_count() == 1);
 }
 
+TEST_CASE("New Song remains in SQLite after reopening the project") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    window.show();
+
+    auto* new_song = window.findChild<QPushButton*>(QStringLiteral("new-song"));
+    REQUIRE(new_song != nullptr);
+    QTest::mouseClick(new_song, Qt::LeftButton);
+    auto* editor_widget = window.findChild<QWidget*>(QStringLiteral("reflow-editor-dialog"));
+    REQUIRE(editor_widget != nullptr);
+    auto* editor = static_cast<shekinah::ui::ReflowEditorDialog*>(editor_widget);
+    editor->set_title(QStringLiteral("Persisted Song"));
+    editor->set_text("Saved line");
+    auto* buttons = editor->findChild<QDialogButtonBox*>(QStringLiteral("song-editor-buttons"));
+    REQUIRE(buttons != nullptr);
+    QTest::mouseClick(buttons->button(QDialogButtonBox::Save), Qt::LeftButton);
+    QTest::qWait(20);
+
+    shekinah::ui::ShekinahWindow reopened;
+    REQUIRE(reopened.open_project(project.root() / "Sunday"));
+    reopened.library_dock()->show_songs();
+    REQUIRE(reopened.library_dock()->visible_content_count() == 1);
+}
+
 TEST_CASE("editing a reusable Song loads and persists its stored Reflow document") {
     ensure_qapplication();
     auto project = TestProject::create();
