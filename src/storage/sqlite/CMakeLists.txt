@@ -1,5 +1,6 @@
 add_library(shekinah_storage STATIC
     asset_importer.cpp
+    content_repository.cpp
     project_store.cpp
 )
 
@@ -11,8 +12,10 @@ target_include_directories(shekinah_storage
 target_link_libraries(shekinah_storage
     PUBLIC
         shekinah_domain
+        shekinah_application
         SQLite3::SQLite3
         OpenSSL::Crypto
+        nlohmann_json::nlohmann_json
 )
 
 target_compile_features(shekinah_storage PUBLIC cxx_std_20)

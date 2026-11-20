@@ -25,6 +25,7 @@ public:
 
     [[nodiscard]] int schema_version() const;
     [[nodiscard]] bool table_exists(std::string_view name) const;
+    [[nodiscard]] sqlite3* native_handle() const noexcept { return database_; }
     [[nodiscard]] const std::filesystem::path& root() const noexcept { return root_; }
 
 private:

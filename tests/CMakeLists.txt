@@ -23,6 +23,7 @@ target_sources(shekinah_domain_tests PRIVATE domain/content_model_test.cpp)
 target_sources(shekinah_domain_tests PRIVATE domain/result_test.cpp)
 
 add_executable(shekinah_storage_tests
+    storage/content_repository_test.cpp
     storage/project_store_test.cpp
     storage/asset_importer_test.cpp
 )
