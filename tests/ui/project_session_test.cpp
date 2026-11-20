@@ -7,6 +7,8 @@
 #include "test_project.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/main_window.hpp"
+#include "shekinah/ui/operator_page.hpp"
+#include "shekinah/ui/service_order_widget.hpp"
 
 namespace {
 
@@ -93,4 +95,29 @@ TEST_CASE("opening a project restores reusable content in the Library") {
     reopened_window.library_dock()->show_songs();
 
     REQUIRE(reopened_window.library_dock()->visible_content_count() == 1);
+}
+
+TEST_CASE("repeated service-order references survive a project reopen") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "goodness.txt";
+    std::ofstream{source} << "# Goodness\n[Verse]\nYou are good\n";
+
+    shekinah::ui::ShekinahWindow first_window;
+    REQUIRE(first_window.open_project(project.root() / "Sunday"));
+    const auto song = first_window.import_song_file(source);
+    REQUIRE(song);
+    first_window.library_dock()->add_song(*song);
+    first_window.library_dock()->show_songs();
+    first_window.library_dock()->activate_song_row(0);
+    first_window.library_dock()->activate_song_row(0);
+    REQUIRE(first_window.operator_page()->service_order_widget()->count() == 2);
+
+    shekinah::ui::ShekinahWindow reopened_window;
+    REQUIRE(reopened_window.open_project(project.root() / "Sunday"));
+
+    const auto& items = reopened_window.operator_page()->service_order_widget()->items();
+    REQUIRE(items.size() == 2);
+    REQUIRE(items[0].label == "Goodness");
+    REQUIRE(items[1].label == "Goodness");
 }
