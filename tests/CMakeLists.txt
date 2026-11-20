@@ -29,3 +29,9 @@ add_executable(shekinah_storage_tests
 target_include_directories(shekinah_storage_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/support)
 target_link_libraries(shekinah_storage_tests PRIVATE shekinah_storage Catch2::Catch2WithMain)
 shekinah_register_test(shekinah_storage_tests storage)
+
+add_executable(shekinah_media_tests
+    media/image_cache_test.cpp
+)
+target_link_libraries(shekinah_media_tests PRIVATE shekinah_media Catch2::Catch2WithMain)
+shekinah_register_test(shekinah_media_tests media)
