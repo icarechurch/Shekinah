@@ -51,6 +51,12 @@ add_executable(shekinah_ui_tests
 target_link_libraries(shekinah_ui_tests PRIVATE shekinah_ui Qt6::Test Catch2::Catch2WithMain)
 shekinah_register_test(shekinah_ui_tests ui)
 
+add_executable(shekinah_performance_tests
+    performance/memory_budget_test.cpp
+)
+target_link_libraries(shekinah_performance_tests PRIVATE shekinah_media Catch2::Catch2WithMain)
+shekinah_register_test(shekinah_performance_tests performance)
+
 add_executable(shekinah_application_tests
     application/presentation_service_test.cpp
     application/resource_governor_test.cpp
