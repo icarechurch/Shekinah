@@ -46,6 +46,7 @@ add_executable(shekinah_ui_tests
     ui/library_dock_test.cpp
     ui/main_window_test.cpp
     ui/operator_page_test.cpp
+    ui/program_status_widget_test.cpp
     ui/reflow_editor_dialog_test.cpp
     ui/service_order_widget_test.cpp
 )
