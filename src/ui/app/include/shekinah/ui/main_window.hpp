@@ -72,6 +72,7 @@ private:
     void refresh_cues();
     void update_program_status();
     void present_live_media();
+    void choose_background(const domain::CueId& cue);
     void import_asset();
     void import_song_text();
     void import_sermon_deck();

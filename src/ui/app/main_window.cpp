@@ -16,8 +16,10 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QMenu>
 #include <QMenuBar>
+#include <QStringList>
 #include <QTimer>
 
 #include <algorithm>
@@ -125,6 +127,7 @@ void ShekinahWindow::configure_operator() {
             update_program_status();
         }
     });
+    operator_page_->set_background_handler([this](domain::CueId cue) { choose_background(cue); });
     operator_page_->set_previous_handler([this] {
         if (presentation_.previous()) {
             update_program_status();
@@ -355,6 +358,32 @@ void ShekinahWindow::present_live_media() {
         }
         audience_output_->clear_slide_image();
         audience_output_->load_loop_video(path);
+    }
+}
+
+void ShekinahWindow::choose_background(const domain::CueId& cue) {
+    if (!repository_) {
+        return;
+    }
+    const auto assets = repository_->list_assets();
+    if (!assets || assets->empty()) {
+        return;
+    }
+    QStringList labels;
+    labels.reserve(static_cast<qsizetype>(assets->size()));
+    for (const auto& asset : *assets) {
+        labels.push_back(QString::fromStdString(asset.relative_path));
+    }
+    bool accepted = false;
+    const auto selected = QInputDialog::getItem(
+        this, QStringLiteral("Set Cue Background"), QStringLiteral("Asset"), labels, 0, false,
+        &accepted);
+    if (!accepted) {
+        return;
+    }
+    const auto index = labels.indexOf(selected);
+    if (index >= 0) {
+        set_slide_background(cue, assets->at(static_cast<std::size_t>(index)).id);
     }
 }
 
