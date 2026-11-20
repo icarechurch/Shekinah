@@ -25,6 +25,7 @@ public:
     void set_service_order(std::vector<ServiceOrderView> items);
     void set_service_order_selection_handler(std::function<void(domain::ServiceOrderItemId)> handler);
     void set_take_live_handler(std::function<void(domain::CueId)> handler);
+    void set_background_handler(std::function<void(domain::CueId)> handler);
     void set_previous_handler(std::function<void()> handler);
     void set_next_handler(std::function<void()> handler);
     void set_clear_handler(std::function<void()> handler);
@@ -40,6 +41,7 @@ private:
     CueGridWidget* cue_grid_{nullptr};
     ProgramStatusWidget* program_status_{nullptr};
     InspectorDialog* inspector_{nullptr};
+    std::function<void(domain::CueId)> background_handler_;
 };
 
 }  // namespace shekinah::ui

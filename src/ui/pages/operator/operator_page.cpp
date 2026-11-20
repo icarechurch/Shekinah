@@ -52,6 +52,10 @@ void OperatorPage::set_take_live_handler(std::function<void(domain::CueId)> hand
     cue_grid_->set_take_live_handler(std::move(handler));
 }
 
+void OperatorPage::set_background_handler(std::function<void(domain::CueId)> handler) {
+    background_handler_ = std::move(handler);
+}
+
 void OperatorPage::set_previous_handler(std::function<void()> handler) {
     program_status_->set_previous_handler(std::move(handler));
 }
@@ -72,11 +76,16 @@ QMenu* OperatorPage::create_context_menu(const domain::CueId& cue) {
     auto* menu = new QMenu{this};
     auto* inspector = menu->addAction(QStringLiteral("Open Inspector"));
     menu->addAction(QStringLiteral("Edit slide"));
-    menu->addAction(QStringLiteral("Set background"));
+    auto* background = menu->addAction(QStringLiteral("Set background"));
     menu->addAction(QStringLiteral("Duplicate"));
     menu->addAction(QStringLiteral("Delete"));
     QObject::connect(inspector, &QAction::triggered, this, [this, cue] {
         inspector_->show_inspector(domain::ContentRef::song("selected"), cue);
+    });
+    QObject::connect(background, &QAction::triggered, this, [this, cue] {
+        if (background_handler_) {
+            background_handler_(cue);
+        }
     });
     return menu;
 }

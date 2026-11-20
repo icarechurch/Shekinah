@@ -36,6 +36,19 @@ TEST_CASE("right-click context menu includes Inspector and per-slide actions") {
     menu->deleteLater();
 }
 
+TEST_CASE("Set background dispatches the selected cue to the operator boundary") {
+    ensure_qapplication();
+    OperatorPage page;
+    CueId requested;
+    page.set_background_handler([&requested](CueId cue) { requested = std::move(cue); });
+    auto* menu = page.create_context_menu(CueId{"bridge-1"});
+
+    menu->actions()[2]->trigger();
+
+    REQUIRE(requested == CueId{"bridge-1"});
+    menu->deleteLater();
+}
+
 TEST_CASE("Inspector is a non-live floating popup") {
     ensure_qapplication();
     InspectorDialog dialog;
