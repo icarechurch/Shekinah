@@ -1,9 +1,11 @@
 #pragma once
 
 #include <optional>
+#include <cstdint>
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace shekinah::domain {
 
@@ -48,6 +50,47 @@ struct ContentRef {
     }
 
     friend bool operator==(const ContentRef&, const ContentRef&) = default;
+};
+
+enum class FitMode { contain, cover, stretch };
+
+struct BackgroundRef {
+    AssetId asset;
+    FitMode fit{FitMode::cover};
+    friend bool operator==(const BackgroundRef&, const BackgroundRef&) = default;
+};
+
+struct Slide {
+    CueId id;
+    std::string section;
+    std::vector<std::string> lines;
+    std::optional<BackgroundRef> background;
+    friend bool operator==(const Slide&, const Slide&) = default;
+};
+
+struct Song {
+    SongId id;
+    std::string title;
+    std::optional<BackgroundRef> default_background;
+    std::vector<Slide> slides;
+};
+
+struct SermonSlide {
+    CueId id;
+    AssetId image;
+    friend bool operator==(const SermonSlide&, const SermonSlide&) = default;
+};
+
+struct SermonDeck {
+    SermonId id;
+    std::string title;
+    std::vector<SermonSlide> slides;
+};
+
+struct ServiceOrderItem {
+    ServiceOrderItemId id;
+    ContentRef content;
+    std::int64_t ordinal{0};
 };
 
 struct CueRef {

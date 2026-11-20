@@ -18,3 +18,5 @@ add_executable(shekinah_domain_tests
 )
 target_link_libraries(shekinah_domain_tests PRIVATE shekinah_domain Catch2::Catch2WithMain)
 shekinah_register_test(shekinah_domain_tests domain)
+
+target_sources(shekinah_domain_tests PRIVATE domain/content_model_test.cpp)
