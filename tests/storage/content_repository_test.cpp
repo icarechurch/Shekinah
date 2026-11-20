@@ -64,3 +64,19 @@ TEST_CASE("SQLite content repository refuses order references to missing content
     REQUIRE_FALSE(result);
     REQUIRE(result.error().code == ErrorCode::not_found);
 }
+
+TEST_CASE("reusable content cannot be archived while a service order references it") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    SqliteContentRepository repository{*store};
+    REQUIRE(repository.ensure_service_order(ServiceOrderId{"order-a"}, "Sunday"));
+    REQUIRE(repository.save_song(Song{SongId{"song-a"}, "Goodness", std::nullopt, {}}));
+    const auto item = repository.append_to_order(ServiceOrderId{"order-a"}, ContentRef::song("song-a"));
+    REQUIRE(item);
+
+    REQUIRE_FALSE(repository.archive_song(SongId{"song-a"}));
+    REQUIRE(repository.remove_from_order(item->id));
+    REQUIRE(repository.archive_song(SongId{"song-a"}));
+    REQUIRE_FALSE(repository.load_song(SongId{"song-a"}));
+}
