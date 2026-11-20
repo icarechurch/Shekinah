@@ -1,4 +1,5 @@
 add_library(shekinah_ui STATIC
+    app/main_window.cpp
     features/edit_song/reflow_editor_dialog.cpp
     features/edit_song/reflow_text_edit.cpp
     features/inspect_slide/inspector_dialog.cpp
@@ -16,6 +17,7 @@ target_include_directories(shekinah_ui
         ${CMAKE_CURRENT_SOURCE_DIR}/features/inspect_slide/include
         ${CMAKE_CURRENT_SOURCE_DIR}/widgets/library_dock/include
         ${CMAKE_CURRENT_SOURCE_DIR}/features/edit_song/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/app/include
 )
 
 target_link_libraries(shekinah_ui

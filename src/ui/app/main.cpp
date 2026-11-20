@@ -1,11 +1,10 @@
 #include <QApplication>
-#include <QMainWindow>
+
+#include "shekinah/ui/main_window.hpp"
 
 int main(int argc, char* argv[]) {
     QApplication application(argc, argv);
-    QMainWindow window;
-    window.setWindowTitle(QStringLiteral("Shekinah"));
-    window.resize(1280, 720);
+    shekinah::ui::ShekinahWindow window;
     window.show();
     return application.exec();
 }

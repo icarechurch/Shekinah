@@ -43,6 +43,7 @@ add_executable(shekinah_ui_tests
     ui/cue_grid_test.cpp
     ui/inspector_dialog_test.cpp
     ui/library_dock_test.cpp
+    ui/main_window_test.cpp
     ui/operator_page_test.cpp
     ui/reflow_editor_dialog_test.cpp
 )
