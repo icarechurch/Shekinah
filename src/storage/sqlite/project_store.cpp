@@ -144,9 +144,24 @@ domain::Status ProjectStore::migrate() {
         execute("ROLLBACK;");
         return status;
     }
-    if (const auto status = execute("INSERT OR IGNORE INTO schema_migrations(version) VALUES(1);"); !status) {
-        execute("ROLLBACK;");
-        return status;
+    if (schema_version() < 1) {
+        if (const auto status = execute("INSERT OR IGNORE INTO schema_migrations(version) VALUES(1);"); !status) {
+            execute("ROLLBACK;");
+            return status;
+        }
+    }
+    if (schema_version() < 2) {
+        if (const auto status = execute(
+                "ALTER TABLE assets ADD COLUMN size_bytes INTEGER NOT NULL DEFAULT 0;");
+            !status) {
+            execute("ROLLBACK;");
+            return status;
+        }
+        if (const auto status = execute("INSERT OR IGNORE INTO schema_migrations(version) VALUES(2);");
+            !status) {
+            execute("ROLLBACK;");
+            return status;
+        }
     }
     if (const auto status = execute("COMMIT;"); !status) {
         execute("ROLLBACK;");

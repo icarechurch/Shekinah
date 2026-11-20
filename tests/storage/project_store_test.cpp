@@ -13,7 +13,7 @@ TEST_CASE("opening a project creates a migrated SQLite database and assets direc
     REQUIRE(store);
     REQUIRE(std::filesystem::exists(project.root() / "Sunday" / "shekinah.sqlite"));
     REQUIRE(std::filesystem::is_directory(project.root() / "Sunday" / "assets"));
-    REQUIRE(store->schema_version() == 1);
+    REQUIRE(store->schema_version() == 2);
     REQUIRE(store->table_exists("service_order_items"));
 }
 
