@@ -180,12 +180,21 @@ void ShekinahWindow::import_sermon_deck() {
     for (const auto& path : paths) {
         files.emplace_back(path.toStdString());
     }
-    const auto imported = storage::SermonDeckImporter{*store_}.import_pngs(
-        domain::SermonId{"sermon-" + std::to_string(next_content_id_++)}, "Imported Sermon",
-        std::move(files));
+    const auto imported = import_sermon_files(std::move(files), "Imported Sermon");
     if (imported) {
         library_dock_->add_sermon(*imported);
     }
+}
+
+domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
+    std::vector<std::filesystem::path> sources, std::string title) {
+    if (!store_) {
+        return domain::Result<domain::SermonDeck>::fail(
+            {domain::ErrorCode::storage_failure, "Open a project before importing sermons"});
+    }
+    return storage::SermonDeckImporter{*store_}.import_pngs(
+        domain::SermonId{"sermon-" + std::to_string(next_content_id_++)}, std::move(title),
+        std::move(sources));
 }
 
 void ShekinahWindow::create_song() {

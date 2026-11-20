@@ -58,3 +58,21 @@ TEST_CASE("main window imports reusable song text through the project session") 
     REQUIRE(imported->slides.size() == 2);
     REQUIRE(!imported->id.empty());
 }
+
+TEST_CASE("main window imports a reusable PNG sermon deck through the project session") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto slide_two = project.root() / "Slide 2.png";
+    const auto slide_one = project.root() / "Slide 1.png";
+    std::ofstream{slide_two, std::ios::binary} << "slide two";
+    std::ofstream{slide_one, std::ios::binary} << "slide one";
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+
+    const auto imported = window.import_sermon_files({slide_two, slide_one}, "Sunday Message");
+
+    REQUIRE(imported);
+    REQUIRE(imported->title == "Sunday Message");
+    REQUIRE(imported->slides.size() == 2);
+    REQUIRE(!imported->id.empty());
+}

@@ -27,6 +27,8 @@ public:
     domain::Status open_project(const std::filesystem::path& root);
     domain::Result<domain::AssetRecord> import_asset_file(const std::filesystem::path& source);
     domain::Result<domain::Song> import_song_file(const std::filesystem::path& source);
+    domain::Result<domain::SermonDeck> import_sermon_files(
+        std::vector<std::filesystem::path> sources, std::string title);
     [[nodiscard]] bool project_open() const noexcept { return store_ != nullptr; }
     [[nodiscard]] const std::filesystem::path& project_root() const noexcept { return project_root_; }
 
