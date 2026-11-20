@@ -407,8 +407,23 @@ domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
 }
 
 void ShekinahWindow::create_song() {
+    if (!repository_) {
+        return;
+    }
     auto* editor = new ReflowEditorDialog{this};
     editor->setAttribute(Qt::WA_DeleteOnClose);
+    editor->load_song(domain::SongId{"song-" + std::to_string(next_content_id_++)});
+    editor->set_title(QStringLiteral("Untitled Song"));
+    QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
+        const auto draft = editor->draft_song();
+        if (!draft || !repository_) {
+            return;
+        }
+        const auto saved = repository_->save_song(*draft);
+        if (saved) {
+            library_dock_->add_song(*saved);
+        }
+    });
     editor->show();
 }
 

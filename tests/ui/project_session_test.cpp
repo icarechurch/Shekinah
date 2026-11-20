@@ -1,8 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QDialogButtonBox>
 #include <QImage>
 #include <QLabel>
+#include <QPushButton>
 #include <QTest>
 
 #include <fstream>
@@ -13,6 +15,7 @@
 #include "shekinah/ui/main_window.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
+#include "shekinah/ui/reflow_editor_dialog.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
 
@@ -204,4 +207,28 @@ TEST_CASE("a live sermon cue loads its imported PNG into Audience Output") {
     QTest::mouseClick(cue, Qt::LeftButton, Qt::NoModifier, cue->rect().center());
 
     REQUIRE(output->slide_image_loaded());
+}
+
+TEST_CASE("New Song saves a Reflow draft into the reusable Songs library") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    window.show();
+
+    auto* new_song = window.findChild<QPushButton*>(QStringLiteral("new-song"));
+    REQUIRE(new_song != nullptr);
+    QTest::mouseClick(new_song, Qt::LeftButton);
+    auto* editor_widget = window.findChild<QWidget*>(QStringLiteral("reflow-editor-dialog"));
+    REQUIRE(editor_widget != nullptr);
+    auto* editor = static_cast<shekinah::ui::ReflowEditorDialog*>(editor_widget);
+    editor->set_title(QStringLiteral("New Creation"));
+    editor->set_text("First line\nSecond line");
+    auto* buttons = editor->findChild<QDialogButtonBox*>(QStringLiteral("song-editor-buttons"));
+    REQUIRE(buttons != nullptr);
+    QTest::mouseClick(buttons->button(QDialogButtonBox::Save), Qt::LeftButton);
+    QTest::qWait(20);
+
+    window.library_dock()->show_songs();
+    REQUIRE(window.library_dock()->visible_content_count() == 1);
 }
