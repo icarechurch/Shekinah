@@ -6,6 +6,7 @@
 
 class QListWidget;
 class QTabWidget;
+class QLineEdit;
 
 namespace shekinah::ui {
 
@@ -21,6 +22,7 @@ public:
     void add_asset(domain::AssetRecord asset);
     void add_song(domain::Song song);
     void add_sermon(domain::SermonDeck deck);
+    void set_search_text(const QString& text);
 
     [[nodiscard]] LibraryTab current_tab() const noexcept { return current_tab_; }
     [[nodiscard]] int visible_asset_count() const noexcept;
@@ -28,9 +30,11 @@ public:
 
 private:
     void set_tab(LibraryTab tab, int index);
+    void apply_filter();
 
     LibraryTab current_tab_{LibraryTab::assets};
     QTabWidget* tabs_{nullptr};
+    QLineEdit* search_{nullptr};
     QListWidget* assets_{nullptr};
     QListWidget* songs_{nullptr};
     QListWidget* sermons_{nullptr};

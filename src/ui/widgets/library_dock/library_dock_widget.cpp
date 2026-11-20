@@ -1,7 +1,9 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 
 #include <QListWidget>
+#include <QLineEdit>
 #include <QTabWidget>
+#include <QVBoxLayout>
 
 namespace shekinah::ui {
 
@@ -12,7 +14,14 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
                 QDockWidget::DockWidgetClosable);
 
-    tabs_ = new QTabWidget{this};
+    auto* container = new QWidget{this};
+    auto* container_layout = new QVBoxLayout(container);
+    container_layout->setContentsMargins(0, 0, 0, 0);
+    search_ = new QLineEdit{container};
+    search_->setObjectName(QStringLiteral("library-search"));
+    search_->setPlaceholderText(QStringLiteral("Search Assets, Songs, or Sermons"));
+    container_layout->addWidget(search_);
+    tabs_ = new QTabWidget{container};
     assets_ = new QListWidget{tabs_};
     songs_ = new QListWidget{tabs_};
     sermons_ = new QListWidget{tabs_};
@@ -22,7 +31,9 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     tabs_->addTab(assets_, QStringLiteral("Assets"));
     tabs_->addTab(songs_, QStringLiteral("Songs"));
     tabs_->addTab(sermons_, QStringLiteral("Sermons"));
-    setWidget(tabs_);
+    container_layout->addWidget(tabs_);
+    setWidget(container);
+    QObject::connect(search_, &QLineEdit::textChanged, this, [this] { apply_filter(); });
 }
 
 void LibraryDockWidget::show_assets() { set_tab(LibraryTab::assets, 0); }
@@ -33,26 +44,46 @@ void LibraryDockWidget::show_sermons() { set_tab(LibraryTab::sermons, 2); }
 
 void LibraryDockWidget::add_asset(domain::AssetRecord asset) {
     assets_->addItem(QString::fromStdString(asset.relative_path));
+    apply_filter();
 }
 
 void LibraryDockWidget::add_song(domain::Song song) {
     songs_->addItem(QString::fromStdString(song.title));
+    apply_filter();
 }
 
 void LibraryDockWidget::add_sermon(domain::SermonDeck deck) {
     sermons_->addItem(QString::fromStdString(deck.title));
+    apply_filter();
 }
 
+void LibraryDockWidget::set_search_text(const QString& text) { search_->setText(text); }
+
 int LibraryDockWidget::visible_asset_count() const noexcept {
-    return current_tab_ == LibraryTab::assets ? assets_->count() : 0;
+    if (current_tab_ != LibraryTab::assets) {
+        return 0;
+    }
+    int visible = 0;
+    for (int index = 0; index != assets_->count(); ++index) {
+        visible += assets_->item(index)->isHidden() ? 0 : 1;
+    }
+    return visible;
 }
 
 int LibraryDockWidget::visible_content_count() const noexcept {
     if (current_tab_ == LibraryTab::songs) {
-        return songs_->count();
+        int visible = 0;
+        for (int index = 0; index != songs_->count(); ++index) {
+            visible += songs_->item(index)->isHidden() ? 0 : 1;
+        }
+        return visible;
     }
     if (current_tab_ == LibraryTab::sermons) {
-        return sermons_->count();
+        int visible = 0;
+        for (int index = 0; index != sermons_->count(); ++index) {
+            visible += sermons_->item(index)->isHidden() ? 0 : 1;
+        }
+        return visible;
     }
     return 0;
 }
@@ -60,6 +91,19 @@ int LibraryDockWidget::visible_content_count() const noexcept {
 void LibraryDockWidget::set_tab(LibraryTab tab, int index) {
     current_tab_ = tab;
     tabs_->setCurrentIndex(index);
+}
+
+void LibraryDockWidget::apply_filter() {
+    const auto query = search_->text();
+    const auto filter = [&](QListWidget* list) {
+        for (int index = 0; index != list->count(); ++index) {
+            list->item(index)->setHidden(!query.isEmpty() &&
+                                         !list->item(index)->text().contains(query, Qt::CaseInsensitive));
+        }
+    };
+    filter(assets_);
+    filter(songs_);
+    filter(sermons_);
 }
 
 }  // namespace shekinah::ui
