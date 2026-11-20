@@ -1,6 +1,7 @@
 add_library(shekinah_media STATIC
     audience_output.cpp
     image_cache.cpp
+    low_end_profile.cpp
 )
 
 target_include_directories(shekinah_media

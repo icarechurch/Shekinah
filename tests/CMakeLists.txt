@@ -35,6 +35,7 @@ shekinah_register_test(shekinah_storage_tests storage)
 add_executable(shekinah_media_tests
     media/audience_output_test.cpp
     media/image_cache_test.cpp
+    media/low_end_profile_test.cpp
 )
 target_link_libraries(shekinah_media_tests PRIVATE shekinah_media Qt6::Widgets Catch2::Catch2WithMain)
 shekinah_register_test(shekinah_media_tests media)
