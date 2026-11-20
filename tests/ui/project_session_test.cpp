@@ -439,6 +439,43 @@ TEST_CASE("editing a reusable Song loads and persists its stored Reflow document
     REQUIRE(songs->item(0)->text() == "Goodness Rewritten");
 }
 
+TEST_CASE("typed lyric edits are persisted and restored from SQLite") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "goodness.txt";
+    std::ofstream{source} << "# Goodness\n[Verse]\nYou are good\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto song = window.import_song_file(source);
+    REQUIRE(song);
+    window.library_dock()->add_song(*song);
+    window.library_dock()->show_songs();
+    window.library_dock()->edit_song_row(0);
+
+    auto* editor_widget = window.findChild<QWidget*>(QStringLiteral("reflow-editor-dialog"));
+    REQUIRE(editor_widget != nullptr);
+    auto* editor = static_cast<shekinah::ui::ReflowEditorDialog*>(editor_widget);
+    editor->editor()->setFocus();
+    editor->editor()->selectAll();
+    QTest::keyClicks(editor->editor(), QStringLiteral("Edited lyric from operator"));
+    auto* buttons = editor->findChild<QDialogButtonBox*>(QStringLiteral("song-editor-buttons"));
+    REQUIRE(buttons != nullptr);
+    QTest::mouseClick(buttons->button(QDialogButtonBox::Save), Qt::LeftButton);
+    QTest::qWait(20);
+
+    shekinah::ui::ShekinahWindow reopened;
+    REQUIRE(reopened.open_project(project.root() / "Sunday"));
+    reopened.library_dock()->show_songs();
+    reopened.library_dock()->activate_song_row(0);
+    reopened.show();
+    QTest::qWait(20);
+    auto* cue = reopened.operator_page()->cue_grid()->findChild<QWidget*>(
+        QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[0].id.value)));
+    REQUIRE(cue != nullptr);
+    REQUIRE(static_cast<QPushButton*>(cue)->text().contains(QStringLiteral("Edited lyric from operator")));
+}
+
 TEST_CASE("global Program controls navigate, clear, and black the live output") {
     ensure_qapplication();
     auto project = TestProject::create();

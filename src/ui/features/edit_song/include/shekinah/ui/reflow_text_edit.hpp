@@ -35,6 +35,7 @@ protected:
 
 private:
     [[nodiscard]] int qt_position_for_utf8_offset(std::size_t offset) const;
+    void synchronize_document_text();
     void rebuild_markers();
 
     application::SongReflowDocument document_{{}, {}};

@@ -62,3 +62,21 @@ TEST_CASE("Reflow editor validates and materializes a reusable Song draft") {
     REQUIRE(draft->slides.size() == 1);
     REQUIRE_FALSE(ReflowEditorDialog{}.draft_song());
 }
+
+TEST_CASE("Reflow draft uses lyric text typed after the document was loaded") {
+    ensure_qapplication();
+    ReflowEditorDialog dialog;
+    dialog.load_song(shekinah::domain::SongId{"song-a"});
+    dialog.set_title(QStringLiteral("Goodness"));
+    dialog.set_text("Original lyric");
+    dialog.editor()->setFocus();
+    dialog.editor()->selectAll();
+    QTest::keyClicks(dialog.editor(), QStringLiteral("Updated lyric"));
+
+    const auto draft = dialog.draft_song();
+
+    REQUIRE(draft);
+    REQUIRE(draft->slides.size() == 1);
+    REQUIRE(draft->slides[0].lines.size() == 1);
+    REQUIRE(draft->slides[0].lines[0] == "Updated lyric");
+}
