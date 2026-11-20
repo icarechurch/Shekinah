@@ -15,8 +15,11 @@ public:
 
     domain::Result<domain::Song> save_song(const domain::Song& song);
     domain::Result<domain::Song> load_song(const domain::SongId& id) const;
+    domain::Result<std::vector<domain::Song>> list_songs() const;
     domain::Result<domain::SermonDeck> save_deck(const domain::SermonDeck& deck);
     domain::Result<domain::SermonDeck> load_deck(const domain::SermonId& id) const;
+    domain::Result<std::vector<domain::SermonDeck>> list_decks() const;
+    domain::Result<std::vector<domain::AssetRecord>> list_assets() const;
     domain::Status archive_song(const domain::SongId& id);
     domain::Status archive_deck(const domain::SermonId& id);
     domain::Status ensure_service_order(const domain::ServiceOrderId& id, std::string title);

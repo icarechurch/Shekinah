@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace shekinah::storage {
@@ -375,6 +376,35 @@ domain::Result<domain::Song> SqliteContentRepository::load_song(const domain::So
     });
 }
 
+domain::Result<std::vector<domain::Song>> SqliteContentRepository::list_songs() const {
+    Statement statement{store_.native_handle(),
+                        "SELECT id FROM songs WHERE archived=0 ORDER BY title COLLATE NOCASE ASC, id ASC;"};
+    if (!statement.ready()) {
+        return domain::Result<std::vector<domain::Song>>::fail(
+            {domain::ErrorCode::storage_failure, "Could not prepare Song listing"});
+    }
+
+    std::vector<domain::Song> songs;
+    int result = SQLITE_ROW;
+    while ((result = sqlite3_step(statement.get())) == SQLITE_ROW) {
+        const auto* raw_id = sqlite3_column_text(statement.get(), 0);
+        if (raw_id == nullptr) {
+            return domain::Result<std::vector<domain::Song>>::fail(
+                {domain::ErrorCode::storage_failure, "Song listing contains a NULL id"});
+        }
+        const auto song = load_song(domain::SongId{reinterpret_cast<const char*>(raw_id)});
+        if (!song) {
+            return domain::Result<std::vector<domain::Song>>::fail(song.error());
+        }
+        songs.push_back(*song);
+    }
+    if (result != SQLITE_DONE) {
+        return domain::Result<std::vector<domain::Song>>::fail(
+            {domain::ErrorCode::storage_failure, "Could not iterate Song listing"});
+    }
+    return domain::Result<std::vector<domain::Song>>::ok(std::move(songs));
+}
+
 domain::Result<domain::SermonDeck> SqliteContentRepository::save_deck(const domain::SermonDeck& deck) {
     if (deck.id.empty() || deck.title.empty()) {
         return domain::Result<domain::SermonDeck>::fail(
@@ -498,6 +528,73 @@ domain::Result<domain::SermonDeck> SqliteContentRepository::load_deck(const doma
         reinterpret_cast<const char*>(raw_title),
         std::move(slides),
     });
+}
+
+domain::Result<std::vector<domain::SermonDeck>> SqliteContentRepository::list_decks() const {
+    Statement statement{store_.native_handle(),
+                        "SELECT id FROM sermon_decks WHERE archived=0 "
+                        "ORDER BY title COLLATE NOCASE ASC, id ASC;"};
+    if (!statement.ready()) {
+        return domain::Result<std::vector<domain::SermonDeck>>::fail(
+            {domain::ErrorCode::storage_failure, "Could not prepare Sermon listing"});
+    }
+
+    std::vector<domain::SermonDeck> decks;
+    int result = SQLITE_ROW;
+    while ((result = sqlite3_step(statement.get())) == SQLITE_ROW) {
+        const auto* raw_id = sqlite3_column_text(statement.get(), 0);
+        if (raw_id == nullptr) {
+            return domain::Result<std::vector<domain::SermonDeck>>::fail(
+                {domain::ErrorCode::storage_failure, "Sermon listing contains a NULL id"});
+        }
+        const auto deck = load_deck(domain::SermonId{reinterpret_cast<const char*>(raw_id)});
+        if (!deck) {
+            return domain::Result<std::vector<domain::SermonDeck>>::fail(deck.error());
+        }
+        decks.push_back(*deck);
+    }
+    if (result != SQLITE_DONE) {
+        return domain::Result<std::vector<domain::SermonDeck>>::fail(
+            {domain::ErrorCode::storage_failure, "Could not iterate Sermon listing"});
+    }
+    return domain::Result<std::vector<domain::SermonDeck>>::ok(std::move(decks));
+}
+
+domain::Result<std::vector<domain::AssetRecord>> SqliteContentRepository::list_assets() const {
+    Statement statement{store_.native_handle(),
+                        "SELECT id,kind,sha256,relative_path FROM assets WHERE archived=0 "
+                        "ORDER BY relative_path COLLATE NOCASE ASC, id ASC;"};
+    if (!statement.ready()) {
+        return domain::Result<std::vector<domain::AssetRecord>>::fail(
+            {domain::ErrorCode::storage_failure, "Could not prepare Asset listing"});
+    }
+
+    std::vector<domain::AssetRecord> assets;
+    int result = SQLITE_ROW;
+    while ((result = sqlite3_step(statement.get())) == SQLITE_ROW) {
+        const auto* raw_id = sqlite3_column_text(statement.get(), 0);
+        const auto* raw_kind = sqlite3_column_text(statement.get(), 1);
+        const auto* raw_hash = sqlite3_column_text(statement.get(), 2);
+        const auto* raw_path = sqlite3_column_text(statement.get(), 3);
+        if (raw_id == nullptr || raw_kind == nullptr || raw_hash == nullptr || raw_path == nullptr) {
+            return domain::Result<std::vector<domain::AssetRecord>>::fail(
+                {domain::ErrorCode::storage_failure, "Asset listing contains NULL metadata"});
+        }
+        assets.push_back(domain::AssetRecord{
+            domain::AssetId{reinterpret_cast<const char*>(raw_id)},
+            std::string_view{reinterpret_cast<const char*>(raw_kind)} == "video"
+                ? domain::AssetKind::video
+                : domain::AssetKind::image,
+            reinterpret_cast<const char*>(raw_hash),
+            reinterpret_cast<const char*>(raw_path),
+            0,
+        });
+    }
+    if (result != SQLITE_DONE) {
+        return domain::Result<std::vector<domain::AssetRecord>>::fail(
+            {domain::ErrorCode::storage_failure, "Could not iterate Asset listing"});
+    }
+    return domain::Result<std::vector<domain::AssetRecord>>::ok(std::move(assets));
 }
 
 domain::Status SqliteContentRepository::archive_song(const domain::SongId& id) {

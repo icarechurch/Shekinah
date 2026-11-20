@@ -65,6 +65,36 @@ TEST_CASE("SQLite content repository refuses order references to missing content
     REQUIRE(result.error().code == ErrorCode::not_found);
 }
 
+TEST_CASE("SQLite content repository lists active reusable content and assets") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    SqliteContentRepository repository{*store};
+    REQUIRE(repository.save_song(Song{SongId{"song-z"}, "Z Song", std::nullopt, {}}));
+    REQUIRE(repository.save_song(Song{SongId{"song-a"}, "A Song", std::nullopt, {}}));
+    REQUIRE(repository.save_deck(SermonDeck{SermonId{"sermon-a"}, "A Sermon", {}}));
+
+    const auto songs = repository.list_songs();
+    REQUIRE(songs);
+    REQUIRE(songs->size() == 2);
+    REQUIRE(songs->front().title == "A Song");
+
+    const auto sermons = repository.list_decks();
+    REQUIRE(sermons);
+    REQUIRE(sermons->size() == 1);
+    REQUIRE(sermons->front().title == "A Sermon");
+
+    const auto assets = repository.list_assets();
+    REQUIRE(assets);
+    REQUIRE(assets->empty());
+
+    REQUIRE(repository.archive_song(SongId{"song-a"}));
+    const auto active_songs = repository.list_songs();
+    REQUIRE(active_songs);
+    REQUIRE(active_songs->size() == 1);
+    REQUIRE(active_songs->front().id == SongId{"song-z"});
+}
+
 TEST_CASE("reusable content cannot be archived while a service order references it") {
     auto project = TestProject::create();
     auto store = ProjectStore::create_or_open(project.root() / "Sunday");
