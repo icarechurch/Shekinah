@@ -1,10 +1,14 @@
 add_library(shekinah_ui STATIC
+    pages/operator/operator_page.cpp
+    widgets/program_status/program_status_widget.cpp
     widgets/cue_grid/cue_grid_widget.cpp
 )
 
 target_include_directories(shekinah_ui
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/widgets/cue_grid/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/widgets/program_status/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/pages/operator/include
 )
 
 target_link_libraries(shekinah_ui
