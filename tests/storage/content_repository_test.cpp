@@ -42,6 +42,11 @@ TEST_CASE("a SQLite content repository persists one reusable song and many order
     auto reopened = ProjectStore::create_or_open(project_root);
     REQUIRE(reopened);
     SqliteContentRepository repository{*reopened};
+    const auto loaded_song = repository.load_song(SongId{"song-a"});
+    REQUIRE(loaded_song);
+    REQUIRE(loaded_song->title == "Goodness of God");
+    REQUIRE(loaded_song->slides.size() == 1);
+    REQUIRE(loaded_song->slides.front().lines.front() == "I love You, Lord");
     const auto order = repository.load_order(ServiceOrderId{"order-a"});
     REQUIRE(order);
     REQUIRE(order->size() == 500);

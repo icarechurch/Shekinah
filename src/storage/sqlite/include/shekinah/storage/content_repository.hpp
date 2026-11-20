@@ -14,6 +14,7 @@ public:
     explicit SqliteContentRepository(ProjectStore& store) : store_(store) {}
 
     domain::Result<domain::Song> save_song(const domain::Song& song);
+    domain::Result<domain::Song> load_song(const domain::SongId& id) const;
     domain::Result<domain::SermonDeck> save_deck(const domain::SermonDeck& deck);
     domain::Status ensure_service_order(const domain::ServiceOrderId& id, std::string title);
     domain::Result<domain::ServiceOrderItem> append_to_order(
