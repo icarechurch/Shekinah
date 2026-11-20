@@ -4,7 +4,10 @@
 
 #include <filesystem>
 #include <memory>
+#include <string>
+#include <vector>
 
+#include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
 
 namespace shekinah::storage {
@@ -22,6 +25,7 @@ public:
     explicit ShekinahWindow(QWidget* parent = nullptr);
     ~ShekinahWindow() override;
     domain::Status open_project(const std::filesystem::path& root);
+    domain::Result<domain::AssetRecord> import_asset_file(const std::filesystem::path& source);
     [[nodiscard]] bool project_open() const noexcept { return store_ != nullptr; }
     [[nodiscard]] const std::filesystem::path& project_root() const noexcept { return project_root_; }
 

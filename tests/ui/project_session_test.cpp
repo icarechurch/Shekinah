@@ -2,6 +2,8 @@
 
 #include <QApplication>
 
+#include <fstream>
+
 #include "test_project.hpp"
 #include "shekinah/ui/main_window.hpp"
 
@@ -25,4 +27,18 @@ TEST_CASE("main window opens a migrated SQLite project session") {
     REQUIRE(window.open_project(project.root() / "Sunday"));
     REQUIRE(window.project_open());
     REQUIRE(window.project_root() == project.root() / "Sunday");
+}
+
+TEST_CASE("main window imports assets through the project session") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "background.png";
+    std::ofstream{source, std::ios::binary} << "png fixture";
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+
+    const auto imported = window.import_asset_file(source);
+
+    REQUIRE(imported);
+    REQUIRE(std::filesystem::path{imported->relative_path}.parent_path() == "assets");
 }

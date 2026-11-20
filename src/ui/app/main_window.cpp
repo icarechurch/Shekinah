@@ -111,10 +111,19 @@ void ShekinahWindow::import_asset() {
     if (path.isEmpty()) {
         return;
     }
-    const auto imported = storage::AssetImporter{*store_}.import_file(path.toStdString());
+    const auto imported = import_asset_file(path.toStdString());
     if (imported) {
         library_dock_->add_asset(*imported);
     }
+}
+
+domain::Result<domain::AssetRecord> ShekinahWindow::import_asset_file(
+    const std::filesystem::path& source) {
+    if (!store_) {
+        return domain::Result<domain::AssetRecord>::fail(
+            {domain::ErrorCode::storage_failure, "Open a project before importing assets"});
+    }
+    return storage::AssetImporter{*store_}.import_file(source);
 }
 
 void ShekinahWindow::import_song_text() {
