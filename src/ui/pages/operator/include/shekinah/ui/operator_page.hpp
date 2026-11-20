@@ -4,6 +4,7 @@
 
 #include <QWidget>
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -24,6 +25,8 @@ public:
 
     void set_service_order(std::vector<ServiceOrderView> items);
     void set_service_order_selection_handler(std::function<void(domain::ServiceOrderItemId)> handler);
+    void set_service_order_move_handler(
+        std::function<void(domain::ServiceOrderItemId, std::int64_t)> handler);
     void set_take_live_handler(std::function<void(domain::CueId)> handler);
     void set_background_handler(std::function<void(domain::CueId)> handler);
     void set_previous_handler(std::function<void()> handler);

@@ -121,6 +121,12 @@ void ShekinahWindow::configure_operator() {
             refresh_cues();
         }
     });
+    operator_page_->set_service_order_move_handler(
+        [this](domain::ServiceOrderItemId item_id, std::int64_t target_ordinal) {
+            if (repository_ && repository_->move_in_order(item_id, target_ordinal)) {
+                refresh_service_order();
+            }
+        });
     operator_page_->set_take_live_handler([this](domain::CueId cue) {
         const auto selected = presentation_.selected_item();
         if (selected.has_value() && presentation_.take_live(selected->id, cue)) {

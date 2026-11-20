@@ -131,6 +131,40 @@ TEST_CASE("repeated service-order references survive a project reopen") {
     REQUIRE(items[1].label == "Goodness");
 }
 
+TEST_CASE("service-order move controls persist the new reusable-content order") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto first_source = project.root() / "first.txt";
+    const auto second_source = project.root() / "second.txt";
+    std::ofstream{first_source} << "# First\n[Verse]\nFirst line\n";
+    std::ofstream{second_source} << "# Second\n[Verse]\nSecond line\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto first = window.import_song_file(first_source);
+    const auto second = window.import_song_file(second_source);
+    REQUIRE(first);
+    REQUIRE(second);
+    window.library_dock()->add_song(*first);
+    window.library_dock()->add_song(*second);
+    window.library_dock()->show_songs();
+    window.library_dock()->activate_song_row(0);
+    window.library_dock()->activate_song_row(1);
+    window.show();
+    QTest::qWait(20);
+
+    window.operator_page()->service_order_widget()->select_row(1);
+    auto* move_up = window.operator_page()->service_order_widget()->findChild<QPushButton*>(
+        QStringLiteral("service-order-move-up"));
+    REQUIRE(move_up != nullptr);
+    move_up->click();
+
+    const auto& items = window.operator_page()->service_order_widget()->items();
+    REQUIRE(items.size() == 2);
+    REQUIRE(items[0].label == "Second");
+    REQUIRE(items[1].label == "First");
+}
+
 TEST_CASE("service-order selection rebuilds cues and clicking a cue changes Program") {
     ensure_qapplication();
     auto project = TestProject::create();

@@ -48,6 +48,11 @@ void OperatorPage::set_service_order_selection_handler(
     service_order_->set_selection_handler(std::move(handler));
 }
 
+void OperatorPage::set_service_order_move_handler(
+    std::function<void(domain::ServiceOrderItemId, std::int64_t)> handler) {
+    service_order_->set_move_handler(std::move(handler));
+}
+
 void OperatorPage::set_take_live_handler(std::function<void(domain::CueId)> handler) {
     cue_grid_->set_take_live_handler(std::move(handler));
 }
