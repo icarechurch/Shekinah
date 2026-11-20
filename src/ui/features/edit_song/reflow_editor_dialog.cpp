@@ -45,6 +45,11 @@ void ReflowEditorDialog::set_text(std::string text) {
     refresh_thumbnails();
 }
 
+void ReflowEditorDialog::set_reflow_document(application::SongReflowDocument document) {
+    editor_->set_document(std::move(document));
+    refresh_thumbnails();
+}
+
 void ReflowEditorDialog::load_song(domain::SongId id) { song_id_ = std::move(id); }
 
 void ReflowEditorDialog::set_title(QString title) { title_->setText(std::move(title)); }

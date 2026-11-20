@@ -77,6 +77,7 @@ private:
     void import_song_text();
     void import_sermon_deck();
     void create_song();
+    void edit_song(const domain::SongId& id);
     std::string allocate_song_id();
     std::string allocate_sermon_id();
 };

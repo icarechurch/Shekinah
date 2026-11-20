@@ -4,6 +4,7 @@
 #include <QDialogButtonBox>
 #include <QImage>
 #include <QLabel>
+#include <QListWidget>
 #include <QPushButton>
 #include <QTest>
 
@@ -16,6 +17,7 @@
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
 #include "shekinah/ui/reflow_editor_dialog.hpp"
+#include "shekinah/ui/reflow_text_edit.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
 
@@ -267,6 +269,38 @@ TEST_CASE("New Song saves a Reflow draft into the reusable Songs library") {
 
     window.library_dock()->show_songs();
     REQUIRE(window.library_dock()->visible_content_count() == 1);
+}
+
+TEST_CASE("editing a reusable Song loads and persists its stored Reflow document") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "goodness.txt";
+    std::ofstream{source} << "# Goodness\n[Verse]\nYou are good\n\n[Chorus]\nAll the time\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto song = window.import_song_file(source);
+    REQUIRE(song);
+    window.library_dock()->add_song(*song);
+    window.library_dock()->show_songs();
+    window.library_dock()->edit_song_row(0);
+    auto* editor_widget = window.findChild<QWidget*>(QStringLiteral("reflow-editor-dialog"));
+    REQUIRE(editor_widget != nullptr);
+    auto* editor = static_cast<shekinah::ui::ReflowEditorDialog*>(editor_widget);
+    REQUIRE(editor->editor()->visible_break_count() == 1);
+    editor->set_title(QStringLiteral("Goodness Rewritten"));
+    editor->set_text("New verse\nNew chorus");
+    editor->editor()->set_cursor_utf8_offset(9);
+    REQUIRE(editor->editor()->insert_slide_break());
+    auto* buttons = editor->findChild<QDialogButtonBox*>(QStringLiteral("song-editor-buttons"));
+    REQUIRE(buttons != nullptr);
+    QTest::mouseClick(buttons->button(QDialogButtonBox::Save), Qt::LeftButton);
+    QTest::qWait(20);
+
+    auto* songs = window.library_dock()->findChild<QListWidget*>(QStringLiteral("songs-list"));
+    REQUIRE(songs != nullptr);
+    REQUIRE(songs->count() == 1);
+    REQUIRE(songs->item(0)->text() == "Goodness Rewritten");
 }
 
 TEST_CASE("global Program controls navigate, clear, and black the live output") {

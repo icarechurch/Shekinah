@@ -13,7 +13,11 @@ ReflowTextEdit::ReflowTextEdit(QWidget* parent) : QPlainTextEdit(parent) {
 }
 
 void ReflowTextEdit::set_text(std::string text) {
-    document_ = application::SongReflowDocument{std::move(text), {}};
+    set_document(application::SongReflowDocument{std::move(text), {}});
+}
+
+void ReflowTextEdit::set_document(application::SongReflowDocument document) {
+    document_ = std::move(document);
     setPlainText(QString::fromUtf8(document_.text().data(), static_cast<qsizetype>(document_.text().size())));
     rebuild_markers();
 }

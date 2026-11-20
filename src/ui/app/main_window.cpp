@@ -80,6 +80,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     library_dock_->set_new_song_handler([this] { create_song(); });
     library_dock_->set_import_sermon_handler([this] { import_sermon_deck(); });
     library_dock_->set_new_sermon_handler([this] { import_sermon_deck(); });
+    library_dock_->set_edit_song_handler([this](domain::SongId id) { edit_song(id); });
     library_dock_->set_add_content_handler([this](domain::ContentRef content) {
         if (!repository_) {
             return;
@@ -563,6 +564,48 @@ void ShekinahWindow::create_song() {
         const auto saved = repository_->save_song(song);
         if (saved) {
             library_dock_->add_song(*saved);
+        }
+    });
+    editor->show();
+}
+
+void ShekinahWindow::edit_song(const domain::SongId& id) {
+    if (!repository_) {
+        return;
+    }
+    const auto existing = repository_->load_song(id);
+    const auto reflow = repository_->load_song_reflow(id);
+    if (!existing || !reflow) {
+        return;
+    }
+
+    auto* editor = new ReflowEditorDialog{this};
+    editor->setAttribute(Qt::WA_DeleteOnClose);
+    editor->load_song(existing->id);
+    editor->set_title(QString::fromStdString(existing->title));
+    editor->set_reflow_document(*reflow);
+    QObject::connect(editor, &QDialog::accepted, this, [this, editor, existing] {
+        const auto draft = editor->draft_song();
+        if (!draft || !repository_) {
+            return;
+        }
+        auto song = *draft;
+        song.default_background = existing->default_background;
+        for (std::size_t index = 0; index != song.slides.size(); ++index) {
+            if (index < existing->slides.size()) {
+                song.slides[index].id = existing->slides[index].id;
+                song.slides[index].background = existing->slides[index].background;
+            } else {
+                song.slides[index].id = domain::CueId{
+                    song.id.value + "-slide-" + std::to_string(index)};
+            }
+        }
+        const auto saved = repository_->save_song(song);
+        if (saved) {
+            refresh_library();
+            presentation_.register_song(*saved);
+            refresh_cues();
+            update_program_status();
         }
     });
     editor->show();

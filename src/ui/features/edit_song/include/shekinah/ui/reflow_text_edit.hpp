@@ -15,6 +15,7 @@ public:
     explicit ReflowTextEdit(QWidget* parent = nullptr);
 
     void set_text(std::string text);
+    void set_document(application::SongReflowDocument document);
     void set_cursor_utf8_offset(std::size_t offset);
     [[nodiscard]] std::size_t cursor_utf8_offset() const;
     [[nodiscard]] std::string plain_text_utf8() const;

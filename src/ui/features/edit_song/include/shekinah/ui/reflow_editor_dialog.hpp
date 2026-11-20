@@ -17,6 +17,7 @@ public:
     explicit ReflowEditorDialog(QWidget* parent = nullptr);
 
     void set_text(std::string text);
+    void set_reflow_document(application::SongReflowDocument document);
     void load_song(domain::SongId id);
     void set_title(QString title);
     domain::Status save_song() const;
