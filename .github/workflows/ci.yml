@@ -43,3 +43,9 @@ jobs:
         with:
           name: shekinah-n4000-benchmark
           path: shekinah-n4000.json
+      - name: Configure release
+        run: cmake --preset windows-ucrt64-release
+      - name: Build release
+        run: cmake --build --preset windows-ucrt64-release --parallel 2
+      - name: Test release
+        run: ctest --test-dir build/windows-ucrt64-release --output-on-failure
