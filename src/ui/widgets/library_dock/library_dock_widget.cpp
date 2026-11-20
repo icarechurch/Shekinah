@@ -1,9 +1,13 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 
+#include <QImageReader>
+#include <QIcon>
 #include <QListWidget>
 #include <QLineEdit>
 #include <QMenu>
+#include <QPixmap>
 #include <QPushButton>
+#include <QStyle>
 #include <QTabWidget>
 #include <QVBoxLayout>
 
@@ -62,6 +66,11 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
             import_sermon_handler_();
         }
     });
+    add_action(QStringLiteral("Edit Sermon"), QStringLiteral("edit-sermon"), [this] {
+        if (edit_sermon_handler_) {
+            edit_sermon_row(sermons_->currentRow());
+        }
+    });
     add_action(QStringLiteral("Import Asset"), QStringLiteral("import-asset"), [this] {
         if (import_asset_handler_) {
             import_asset_handler_();
@@ -73,6 +82,8 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     songs_ = new QListWidget{tabs_};
     sermons_ = new QListWidget{tabs_};
     assets_->setObjectName(QStringLiteral("assets-list"));
+    assets_->setIconSize(QSize{128, 72});
+    assets_->setUniformItemSizes(true);
     songs_->setObjectName(QStringLiteral("songs-list"));
     sermons_->setObjectName(QStringLiteral("sermons-list"));
     songs_->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -100,6 +111,21 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
             add_content_handler_(domain::ContentRef::sermon(item->data(kContentIdRole).toString().toStdString()));
         }
     });
+    sermons_->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(sermons_, &QListWidget::customContextMenuRequested, this, [this](const QPoint& position) {
+        auto* item = sermons_->itemAt(position);
+        if (item == nullptr || !edit_sermon_handler_) {
+            return;
+        }
+        QMenu menu{this};
+        auto* edit = menu.addAction(QStringLiteral("Edit Sermon"));
+        QObject::connect(edit, &QAction::triggered, this, [this, item] {
+            if (edit_sermon_handler_) {
+                edit_sermon_handler_(domain::SermonId{item->data(kContentIdRole).toString().toStdString()});
+            }
+        });
+        menu.exec(sermons_->viewport()->mapToGlobal(position));
+    });
     tabs_->addTab(assets_, QStringLiteral("Assets"));
     tabs_->addTab(songs_, QStringLiteral("Songs"));
     tabs_->addTab(sermons_, QStringLiteral("Sermons"));
@@ -115,7 +141,28 @@ void LibraryDockWidget::show_songs() { set_tab(LibraryTab::songs, 1); }
 void LibraryDockWidget::show_sermons() { set_tab(LibraryTab::sermons, 2); }
 
 void LibraryDockWidget::add_asset(domain::AssetRecord asset) {
-    assets_->addItem(QString::fromStdString(asset.relative_path));
+    auto* item = new QListWidgetItem{QString::fromStdString(asset.relative_path)};
+    item->setData(kContentIdRole, QString::fromStdString(asset.id.value));
+    item->setToolTip(QStringLiteral("%1\n%2 bytes")
+                         .arg(QString::fromStdString(asset.relative_path))
+                         .arg(static_cast<qulonglong>(asset.size_bytes)));
+    if (asset.kind == domain::AssetKind::image && !asset_root_.empty()) {
+        QImageReader reader{QString::fromStdString((asset_root_ / asset.relative_path).string())};
+        reader.setAutoTransform(true);
+        const auto source_size = reader.size();
+        if (source_size.isValid()) {
+            constexpr int kThumbnailWidth = 128;
+            constexpr int kThumbnailHeight = 72;
+            reader.setScaledSize(source_size.scaled(kThumbnailWidth, kThumbnailHeight, Qt::KeepAspectRatio));
+        }
+        const auto image = reader.read();
+        if (!image.isNull()) {
+            item->setIcon(QIcon{QPixmap::fromImage(image)});
+        }
+    } else if (asset.kind == domain::AssetKind::video) {
+        item->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+    }
+    assets_->addItem(item);
     apply_filter();
 }
 
@@ -165,6 +212,15 @@ void LibraryDockWidget::activate_sermon_row(int row) {
         const auto* item = sermons_->item(row);
         if (add_content_handler_ && item != nullptr) {
             add_content_handler_(domain::ContentRef::sermon(item->data(kContentIdRole).toString().toStdString()));
+        }
+    }
+}
+
+void LibraryDockWidget::edit_sermon_row(int row) {
+    if (row >= 0 && row < sermons_->count()) {
+        const auto* item = sermons_->item(row);
+        if (edit_sermon_handler_ && item != nullptr) {
+            edit_sermon_handler_(domain::SermonId{item->data(kContentIdRole).toString().toStdString()});
         }
     }
 }

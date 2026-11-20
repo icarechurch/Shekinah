@@ -71,7 +71,10 @@ bool natural_less(const std::string& left, const std::string& right) {
 }  // namespace
 
 domain::Result<domain::SermonDeck> SermonDeckImporter::import_pngs(
-    domain::SermonId id, std::string title, std::vector<std::filesystem::path> paths) {
+    domain::SermonId id,
+    std::string title,
+    std::vector<std::filesystem::path> paths,
+    bool preserve_order) {
     if (id.empty() || title.empty() || paths.empty()) {
         return domain::Result<domain::SermonDeck>::fail(
             {domain::ErrorCode::invalid_input, "A Sermon deck needs an id, title, and at least one PNG"});
@@ -92,16 +95,20 @@ domain::Result<domain::SermonDeck> SermonDeckImporter::import_pngs(
         candidates.push_back(Candidate{std::move(path), normalized_name});
     }
 
-    std::sort(candidates.begin(), candidates.end(), [](const Candidate& left, const Candidate& right) {
-        if (left.normalized_name == right.normalized_name) {
-            return left.path.string() < right.path.string();
-        }
-        return natural_less(left.normalized_name, right.normalized_name);
-    });
-    for (std::size_t index = 1; index < candidates.size(); ++index) {
-        if (candidates[index - 1].normalized_name == candidates[index].normalized_name) {
-            return domain::Result<domain::SermonDeck>::fail(
-                {domain::ErrorCode::invalid_input, "Sermon slide filenames must be unique"});
+    if (!preserve_order) {
+        std::sort(candidates.begin(), candidates.end(), [](const Candidate& left, const Candidate& right) {
+            if (left.normalized_name == right.normalized_name) {
+                return left.path.string() < right.path.string();
+            }
+            return natural_less(left.normalized_name, right.normalized_name);
+        });
+    }
+    for (std::size_t left = 0; left < candidates.size(); ++left) {
+        for (std::size_t right = left + 1; right < candidates.size(); ++right) {
+            if (candidates[left].normalized_name == candidates[right].normalized_name) {
+                return domain::Result<domain::SermonDeck>::fail(
+                    {domain::ErrorCode::invalid_input, "Sermon slide filenames must be unique"});
+            }
         }
     }
 

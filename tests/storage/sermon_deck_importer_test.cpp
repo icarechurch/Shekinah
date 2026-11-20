@@ -71,3 +71,32 @@ TEST_CASE("sermon deck importer rejects duplicate names and non-PNG files") {
     REQUIRE_FALSE(extension_result);
     REQUIRE(extension_result.error().code == ErrorCode::unsupported_media);
 }
+
+TEST_CASE("sermon deck importer preserves the operator-defined order when requested") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+
+    const auto third = project.root() / "Slide 3.png";
+    const auto first = project.root() / "Slide 1.png";
+    const auto second = project.root() / "Slide 2.png";
+    std::ofstream(third, std::ios::binary) << "three";
+    std::ofstream(first, std::ios::binary) << "one";
+    std::ofstream(second, std::ios::binary) << "two";
+
+    SermonDeckImporter importer{*store};
+    const auto deck = importer.import_pngs(
+        SermonId{"sermon-ordered"}, "Ordered Sermon", {third, first, second}, true);
+
+    REQUIRE(deck);
+    AssetImporter assets{*store};
+    const auto expected_third = assets.import_file(third);
+    const auto expected_first = assets.import_file(first);
+    const auto expected_second = assets.import_file(second);
+    REQUIRE(expected_third);
+    REQUIRE(expected_first);
+    REQUIRE(expected_second);
+    REQUIRE(deck->slides[0].image == expected_third->id);
+    REQUIRE(deck->slides[1].image == expected_first->id);
+    REQUIRE(deck->slides[2].image == expected_second->id);
+}

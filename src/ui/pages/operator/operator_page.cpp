@@ -67,6 +67,26 @@ void OperatorPage::set_authoring_handlers(std::function<void()> new_song,
         std::move(new_song), std::move(import_song), std::move(import_sermon), std::move(import_asset));
 }
 
+void OperatorPage::set_inspector_handler(std::function<void(domain::CueId)> handler) {
+    inspector_handler_ = std::move(handler);
+}
+
+void OperatorPage::set_edit_slide_handler(std::function<void(domain::CueId)> handler) {
+    edit_slide_handler_ = std::move(handler);
+}
+
+void OperatorPage::set_duplicate_slide_handler(std::function<void(domain::CueId)> handler) {
+    duplicate_slide_handler_ = std::move(handler);
+}
+
+void OperatorPage::set_delete_slide_handler(std::function<void(domain::CueId)> handler) {
+    delete_slide_handler_ = std::move(handler);
+}
+
+void OperatorPage::set_inspector_save_handler(InspectorDialog::SaveHandler handler) {
+    inspector_->set_save_handler(std::move(handler));
+}
+
 void OperatorPage::set_take_live_handler(std::function<void(domain::CueId)> handler) {
     cue_grid_->set_take_live_handler(std::move(handler));
 }
@@ -94,16 +114,35 @@ void OperatorPage::set_black_handler(std::function<void()> handler) {
 QMenu* OperatorPage::create_context_menu(const domain::CueId& cue) {
     auto* menu = new QMenu{this};
     auto* inspector = menu->addAction(QStringLiteral("Open Inspector"));
-    menu->addAction(QStringLiteral("Edit slide"));
+    auto* edit = menu->addAction(QStringLiteral("Edit slide"));
     auto* background = menu->addAction(QStringLiteral("Set background"));
-    menu->addAction(QStringLiteral("Duplicate"));
-    menu->addAction(QStringLiteral("Delete"));
+    auto* duplicate = menu->addAction(QStringLiteral("Duplicate"));
+    auto* remove = menu->addAction(QStringLiteral("Delete"));
     QObject::connect(inspector, &QAction::triggered, this, [this, cue] {
-        inspector_->show_inspector(domain::ContentRef::song("selected"), cue);
+        if (inspector_handler_) {
+            inspector_handler_(cue);
+        } else {
+            inspector_->show_inspector(domain::ContentRef::song("selected"), cue);
+        }
+    });
+    QObject::connect(edit, &QAction::triggered, this, [this, cue] {
+        if (edit_slide_handler_) {
+            edit_slide_handler_(cue);
+        }
     });
     QObject::connect(background, &QAction::triggered, this, [this, cue] {
         if (background_handler_) {
             background_handler_(cue);
+        }
+    });
+    QObject::connect(duplicate, &QAction::triggered, this, [this, cue] {
+        if (duplicate_slide_handler_) {
+            duplicate_slide_handler_(cue);
+        }
+    });
+    QObject::connect(remove, &QAction::triggered, this, [this, cue] {
+        if (delete_slide_handler_) {
+            delete_slide_handler_(cue);
         }
     });
     return menu;

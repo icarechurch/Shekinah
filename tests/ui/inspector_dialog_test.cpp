@@ -1,7 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QComboBox>
+#include <QDialogButtonBox>
+#include <QLineEdit>
 #include <QMenu>
+#include <QPlainTextEdit>
+#include <QPushButton>
 
 #include "shekinah/ui/inspector_dialog.hpp"
 #include "shekinah/ui/operator_page.hpp"
@@ -59,4 +64,43 @@ TEST_CASE("Inspector is a non-live floating popup") {
     REQUIRE(dialog.requested_cue().value == "bridge-1");
     dialog.close();
     REQUIRE_FALSE(dialog.isVisible());
+}
+
+TEST_CASE("Inspector edits a slide draft without closing the non-live popup") {
+    ensure_qapplication();
+    InspectorDialog dialog;
+    shekinah::domain::CueId saved_cue;
+    std::string saved_section;
+    std::vector<std::string> saved_lines;
+    shekinah::domain::FitMode saved_fit = shekinah::domain::FitMode::contain;
+    dialog.set_save_handler([&](shekinah::domain::CueId cue,
+                                std::string section,
+                                std::vector<std::string> lines,
+                                shekinah::domain::FitMode fit) {
+        saved_cue = std::move(cue);
+        saved_section = std::move(section);
+        saved_lines = std::move(lines);
+        saved_fit = fit;
+    });
+    dialog.show_slide(ContentRef::song("song-a"),
+                      CueId{"slide-1"},
+                      "Verse 1",
+                      {"First line", "Second line"},
+                      FitMode::cover);
+
+    dialog.findChild<QLineEdit*>(QStringLiteral("inspector-section"))->setText(QStringLiteral("Bridge"));
+    dialog.findChild<QPlainTextEdit*>(QStringLiteral("inspector-lyrics"))->setPlainText(
+        QStringLiteral("Bridge line 1\nBridge line 2"));
+    auto* fit = dialog.findChild<QComboBox*>(QStringLiteral("inspector-fit-mode"));
+    REQUIRE(fit != nullptr);
+    fit->setCurrentText(QStringLiteral("Contain"));
+    auto* buttons = dialog.findChild<QDialogButtonBox*>(QStringLiteral("inspector-buttons"));
+    REQUIRE(buttons != nullptr);
+    buttons->button(QDialogButtonBox::Save)->click();
+
+    REQUIRE(saved_cue == CueId{"slide-1"});
+    REQUIRE(saved_section == "Bridge");
+    REQUIRE(saved_lines == std::vector<std::string>{"Bridge line 1", "Bridge line 2"});
+    REQUIRE(saved_fit == FitMode::contain);
+    REQUIRE(dialog.isVisible());
 }

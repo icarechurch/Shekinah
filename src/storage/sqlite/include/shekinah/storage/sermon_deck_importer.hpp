@@ -14,7 +14,10 @@ public:
     explicit SermonDeckImporter(ProjectStore& store) : store_(store) {}
 
     domain::Result<domain::SermonDeck> import_pngs(
-        domain::SermonId id, std::string title, std::vector<std::filesystem::path> paths);
+        domain::SermonId id,
+        std::string title,
+        std::vector<std::filesystem::path> paths,
+        bool preserve_order = false);
 
 private:
     ProjectStore& store_;

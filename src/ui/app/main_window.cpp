@@ -13,10 +13,12 @@
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
 #include "shekinah/ui/reflow_editor_dialog.hpp"
+#include "shekinah/ui/sermon_editor_dialog.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QKeySequence>
 #include <QMenu>
 #include <QMenuBar>
 #include <QStringList>
@@ -97,13 +99,22 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     library_dock_->set_import_song_handler([this] { import_song_text(); });
     library_dock_->set_new_song_handler([this] { create_song(); });
     library_dock_->set_import_sermon_handler([this] { import_sermon_deck(); });
-    library_dock_->set_new_sermon_handler([this] { import_sermon_deck(); });
+    library_dock_->set_new_sermon_handler([this] { create_sermon(); });
+    library_dock_->set_edit_sermon_handler([this](domain::SermonId id) { edit_sermon(id); });
     library_dock_->set_edit_song_handler([this](domain::SongId id) { edit_song(id); });
     operator_page_->set_authoring_handlers(
         [this] { create_song(); },
         [this] { import_song_text(); },
         [this] { import_sermon_deck(); },
         [this] { import_asset(); });
+    operator_page_->set_inspector_handler([this](domain::CueId cue) { show_inspector(cue); });
+    operator_page_->set_edit_slide_handler([this](domain::CueId cue) { show_inspector(cue); });
+    operator_page_->set_duplicate_slide_handler([this](domain::CueId cue) { duplicate_slide(cue); });
+    operator_page_->set_delete_slide_handler([this](domain::CueId cue) { delete_slide(cue); });
+    operator_page_->set_inspector_save_handler(
+        [this](domain::CueId cue, std::string section, std::vector<std::string> lines, domain::FitMode fit) {
+            save_inspected_slide(std::move(cue), std::move(section), std::move(lines), fit);
+        });
     library_dock_->setMinimumHeight(190);
     library_dock_->show();
     library_dock_->set_add_content_handler([this](domain::ContentRef content) {
@@ -116,6 +127,70 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
             refresh_service_order();
         }
     });
+
+    auto* file_menu = menuBar()->addMenu(QStringLiteral("File"));
+    auto* new_project_action = file_menu->addAction(QStringLiteral("New Project"));
+    new_project_action->setObjectName(QStringLiteral("new-project"));
+    new_project_action->setShortcut(QKeySequence::New);
+    QObject::connect(new_project_action, &QAction::triggered, this, [this] {
+        const auto root = QFileDialog::getExistingDirectory(this, QStringLiteral("Create or Open Project"));
+        if (!root.isEmpty()) {
+            open_project(root.toStdString());
+        }
+    });
+    auto* open_project_action = file_menu->addAction(QStringLiteral("Open Project"));
+    open_project_action->setObjectName(QStringLiteral("open-project"));
+    open_project_action->setShortcut(QKeySequence::Open);
+    QObject::connect(open_project_action, &QAction::triggered, this, [this] {
+        const auto root = QFileDialog::getExistingDirectory(this, QStringLiteral("Open Project"));
+        if (!root.isEmpty()) {
+            open_project(root.toStdString());
+        }
+    });
+    auto* close_project_action = file_menu->addAction(QStringLiteral("Close Project"));
+    close_project_action->setObjectName(QStringLiteral("close-project"));
+    QObject::connect(close_project_action, &QAction::triggered, this, [this] {
+        repository_.reset();
+        store_.reset();
+        project_root_.clear();
+        presentation_.reset();
+        refresh_library();
+        refresh_service_order();
+    });
+
+    auto* presentation_menu = menuBar()->addMenu(QStringLiteral("Presentation"));
+    const auto add_presentation_action = [&](const QString& label,
+                                             const QString& object_name,
+                                             const QKeySequence& shortcut,
+                                             auto handler) {
+        auto* action = presentation_menu->addAction(label);
+        action->setObjectName(object_name);
+        action->setShortcut(shortcut);
+        action->setShortcutContext(Qt::WindowShortcut);
+        QObject::connect(action, &QAction::triggered, this, handler);
+    };
+    add_presentation_action(QStringLiteral("Previous Cue"), QStringLiteral("previous-cue"),
+                            QKeySequence{Qt::Key_PageUp}, [this] {
+                                if (presentation_.previous()) {
+                                    update_program_status();
+                                }
+                            });
+    add_presentation_action(QStringLiteral("Next Cue"), QStringLiteral("next-cue"),
+                            QKeySequence{Qt::Key_PageDown}, [this] {
+                                if (presentation_.next()) {
+                                    update_program_status();
+                                }
+                            });
+    add_presentation_action(QStringLiteral("Clear Program"), QStringLiteral("clear-program"),
+                            QKeySequence{Qt::Key_Escape}, [this] {
+                                presentation_.clear();
+                                update_program_status();
+                            });
+    add_presentation_action(QStringLiteral("Blackout"), QStringLiteral("blackout"),
+                            QKeySequence{Qt::Key_B}, [this] {
+                                presentation_.black();
+                                update_program_status();
+                            });
 }
 
 ShekinahWindow::~ShekinahWindow() = default;
@@ -214,6 +289,7 @@ void ShekinahWindow::refresh_library() {
         return;
     }
 
+    library_dock_->set_asset_root(project_root_);
     const auto assets = repository_->list_assets();
     if (assets) {
         for (const auto& asset : *assets) {
@@ -547,21 +623,98 @@ void ShekinahWindow::import_sermon_deck() {
     for (const auto& path : paths) {
         files.emplace_back(path.toStdString());
     }
-    const auto imported = import_sermon_files(std::move(files), "Imported Sermon");
-    if (imported) {
-        library_dock_->add_sermon(*imported);
-    }
+    auto* editor = new SermonEditorDialog{this};
+    editor->setAttribute(Qt::WA_DeleteOnClose);
+    editor->set_title(QStringLiteral("Imported Sermon"));
+    editor->set_files(std::move(files));
+    QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
+        const auto imported = import_sermon_files(
+            editor->files(), editor->title().toStdString(), true);
+        if (imported) {
+            library_dock_->add_sermon(*imported);
+        }
+    });
+    editor->show();
 }
 
 domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
-    std::vector<std::filesystem::path> sources, std::string title) {
+    std::vector<std::filesystem::path> sources, std::string title, bool preserve_order) {
     if (!store_) {
         return domain::Result<domain::SermonDeck>::fail(
             {domain::ErrorCode::storage_failure, "Open a project before importing sermons"});
     }
     return storage::SermonDeckImporter{*store_}.import_pngs(
         domain::SermonId{allocate_sermon_id()}, std::move(title),
-        std::move(sources));
+        std::move(sources), preserve_order);
+}
+
+void ShekinahWindow::create_sermon() {
+    if (!store_) {
+        return;
+    }
+    auto* editor = new SermonEditorDialog{this};
+    editor->setAttribute(Qt::WA_DeleteOnClose);
+    editor->set_title(QStringLiteral("New Sermon"));
+    QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
+        const auto imported = import_sermon_files(
+            editor->files(), editor->title().toStdString(), true);
+        if (imported) {
+            library_dock_->add_sermon(*imported);
+        }
+    });
+    editor->show();
+}
+
+void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
+    if (!store_ || !repository_) {
+        return;
+    }
+    const auto existing = repository_->load_deck(id);
+    if (!existing) {
+        return;
+    }
+    std::vector<std::filesystem::path> files;
+    files.reserve(existing->slides.size());
+    for (const auto& slide : existing->slides) {
+        const auto asset = repository_->load_asset(slide.image);
+        if (!asset) {
+            return;
+        }
+        files.push_back(store_->root() / asset->relative_path);
+    }
+
+    auto* editor = new SermonEditorDialog{this};
+    editor->setAttribute(Qt::WA_DeleteOnClose);
+    editor->set_title(QString::fromStdString(existing->title));
+    editor->set_files(std::move(files));
+    QObject::connect(editor, &QDialog::accepted, this, [this, editor, existing] {
+        if (!store_ || !repository_) {
+            return;
+        }
+        const auto files = editor->files();
+        std::vector<domain::SermonSlide> slides;
+        slides.reserve(files.size());
+        storage::AssetImporter assets{*store_};
+        for (std::size_t index = 0; index != files.size(); ++index) {
+            const auto imported = assets.import_file(files[index]);
+            if (!imported) {
+                return;
+            }
+            slides.push_back(domain::SermonSlide{
+                domain::CueId{"slide-" + std::to_string(index)}, imported->id});
+        }
+        auto updated = *existing;
+        updated.title = editor->title().toStdString();
+        updated.slides = std::move(slides);
+        const auto saved = repository_->save_deck(updated);
+        if (saved) {
+            refresh_library();
+            presentation_.register_sermon(*saved);
+            refresh_cues();
+            update_program_status();
+        }
+    });
+    editor->show();
 }
 
 domain::Status ShekinahWindow::set_slide_background(
@@ -600,6 +753,196 @@ domain::Status ShekinahWindow::set_slide_background(
         update_program_status();
     }
     return domain::success();
+}
+
+void ShekinahWindow::show_inspector(const domain::CueId& cue) {
+    if (!repository_) {
+        return;
+    }
+    const auto selected = presentation_.selected_item();
+    if (!selected.has_value()) {
+        return;
+    }
+    if (selected->content.kind == domain::ContentKind::song) {
+        const auto song_id = std::get<domain::SongId>(selected->content.id);
+        const auto song = repository_->load_song(song_id);
+        if (!song) {
+            return;
+        }
+        const auto slide = std::find_if(song->slides.begin(), song->slides.end(), [&](const auto& candidate) {
+            return candidate.id == cue;
+        });
+        if (slide == song->slides.end()) {
+            return;
+        }
+        const auto fit = slide->background.has_value() ? slide->background->fit : domain::FitMode::cover;
+        operator_page_->inspector()->show_slide(
+            selected->content, slide->id, slide->section, slide->lines, fit);
+        return;
+    }
+
+    const auto sermon_id = std::get<domain::SermonId>(selected->content.id);
+    const auto sermon = repository_->load_deck(sermon_id);
+    if (!sermon) {
+        return;
+    }
+    const auto slide = std::find_if(sermon->slides.begin(), sermon->slides.end(), [&](const auto& candidate) {
+        return candidate.id == cue;
+    });
+    if (slide != sermon->slides.end()) {
+        operator_page_->inspector()->show_slide(
+            selected->content, slide->id, "Sermon slide", {slide->image.value}, domain::FitMode::cover);
+    }
+}
+
+void ShekinahWindow::save_inspected_slide(domain::CueId cue,
+                                          std::string section,
+                                          std::vector<std::string> lines,
+                                          domain::FitMode fit) {
+    if (!repository_) {
+        return;
+    }
+    const auto selected = presentation_.selected_item();
+    if (!selected.has_value() || selected->content.kind != domain::ContentKind::song) {
+        return;
+    }
+    const auto song_id = std::get<domain::SongId>(selected->content.id);
+    auto song = repository_->load_song(song_id);
+    if (!song) {
+        return;
+    }
+    const auto slide = std::find_if(song->slides.begin(), song->slides.end(), [&](const auto& candidate) {
+        return candidate.id == cue;
+    });
+    if (slide == song->slides.end()) {
+        return;
+    }
+    slide->section = std::move(section);
+    slide->lines = std::move(lines);
+    if (slide->background.has_value()) {
+        slide->background->fit = fit;
+    }
+    const auto saved = repository_->save_song(*song);
+    if (!saved) {
+        return;
+    }
+    presentation_.register_song(*saved);
+    refresh_library();
+    refresh_cues();
+    if (presentation_.program().live_cue.has_value() &&
+        presentation_.program().live_cue->cue == cue) {
+        update_program_status();
+    }
+}
+
+void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
+    if (!repository_) {
+        return;
+    }
+    const auto selected = presentation_.selected_item();
+    if (!selected.has_value()) {
+        return;
+    }
+    if (selected->content.kind == domain::ContentKind::song) {
+        const auto id = std::get<domain::SongId>(selected->content.id);
+        auto song = repository_->load_song(id);
+        if (!song) {
+            return;
+        }
+        const auto position = std::find_if(song->slides.begin(), song->slides.end(), [&](const auto& slide) {
+            return slide.id == cue;
+        });
+        if (position == song->slides.end()) {
+            return;
+        }
+        auto duplicate = *position;
+        duplicate.id = domain::CueId{song->id.value + "-copy-" + std::to_string(song->slides.size())};
+        song->slides.insert(position + 1, std::move(duplicate));
+        const auto saved = repository_->save_song(*song);
+        if (saved) {
+            presentation_.register_song(*saved);
+            refresh_cues();
+        }
+        return;
+    }
+
+    const auto id = std::get<domain::SermonId>(selected->content.id);
+    auto sermon = repository_->load_deck(id);
+    if (!sermon || sermon->slides.size() == 0) {
+        return;
+    }
+    const auto position = std::find_if(sermon->slides.begin(), sermon->slides.end(), [&](const auto& slide) {
+        return slide.id == cue;
+    });
+    if (position == sermon->slides.end()) {
+        return;
+    }
+    auto duplicate = *position;
+    duplicate.id = domain::CueId{sermon->id.value + "-copy-" + std::to_string(sermon->slides.size())};
+    sermon->slides.insert(position + 1, std::move(duplicate));
+    const auto saved = repository_->save_deck(*sermon);
+    if (saved) {
+        presentation_.register_sermon(*saved);
+        refresh_cues();
+    }
+}
+
+void ShekinahWindow::delete_slide(const domain::CueId& cue) {
+    if (!repository_) {
+        return;
+    }
+    const auto selected = presentation_.selected_item();
+    if (!selected.has_value()) {
+        return;
+    }
+    if (selected->content.kind == domain::ContentKind::song) {
+        const auto id = std::get<domain::SongId>(selected->content.id);
+        auto song = repository_->load_song(id);
+        if (!song || song->slides.size() <= 1) {
+            return;
+        }
+        const auto position = std::find_if(song->slides.begin(), song->slides.end(), [&](const auto& slide) {
+            return slide.id == cue;
+        });
+        if (position == song->slides.end()) {
+            return;
+        }
+        song->slides.erase(position);
+        const auto saved = repository_->save_song(*song);
+        if (saved) {
+            presentation_.register_song(*saved);
+            if (presentation_.program().live_cue.has_value() &&
+                presentation_.program().live_cue->cue == cue) {
+                presentation_.clear();
+            }
+            refresh_cues();
+            update_program_status();
+        }
+        return;
+    }
+
+    const auto id = std::get<domain::SermonId>(selected->content.id);
+    auto sermon = repository_->load_deck(id);
+    if (!sermon || sermon->slides.size() <= 1) {
+        return;
+    }
+    const auto position = std::find_if(sermon->slides.begin(), sermon->slides.end(), [&](const auto& slide) {
+        return slide.id == cue;
+    });
+    if (position == sermon->slides.end()) {
+        return;
+    }
+    sermon->slides.erase(position);
+    const auto saved = repository_->save_deck(*sermon);
+    if (saved) {
+        presentation_.register_sermon(*saved);
+        if (presentation_.program().live_cue.has_value() &&
+            presentation_.program().live_cue->cue == cue) {
+            presentation_.clear();
+        }
+        refresh_cues();
+        update_program_status();
+    }
 }
 
 std::string ShekinahWindow::allocate_song_id() {

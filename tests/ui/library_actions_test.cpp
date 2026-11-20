@@ -74,3 +74,20 @@ TEST_CASE("library exposes a visible Edit Song action") {
 
     REQUIRE(edited == shekinah::domain::SongId{"song-a"});
 }
+
+TEST_CASE("library exposes an Edit Sermon boundary") {
+    ensure_qapplication();
+    shekinah::ui::LibraryDockWidget dock;
+    dock.add_sermon(shekinah::domain::SermonDeck{
+        shekinah::domain::SermonId{"sermon-a"}, "Sunday", {}});
+    shekinah::domain::SermonId edited;
+    dock.set_edit_sermon_handler([&](shekinah::domain::SermonId id) { edited = std::move(id); });
+    dock.show_sermons();
+    dock.findChild<QListWidget*>(QStringLiteral("sermons-list"))->setCurrentRow(0);
+
+    auto* edit = dock.findChild<QPushButton*>(QStringLiteral("edit-sermon"));
+    REQUIRE(edit != nullptr);
+    edit->click();
+
+    REQUIRE(edited == shekinah::domain::SermonId{"sermon-a"});
+}

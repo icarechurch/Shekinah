@@ -41,7 +41,7 @@ public:
     domain::Result<domain::AssetRecord> import_asset_file(const std::filesystem::path& source);
     domain::Result<domain::Song> import_song_file(const std::filesystem::path& source);
     domain::Result<domain::SermonDeck> import_sermon_files(
-        std::vector<std::filesystem::path> sources, std::string title);
+        std::vector<std::filesystem::path> sources, std::string title, bool preserve_order = false);
     domain::Status set_slide_background(const domain::CueId& cue, const domain::AssetId& asset);
     media::AudienceOutput* audience_output();
     void sample_memory_usage(std::size_t working_set_bytes);
@@ -76,8 +76,17 @@ private:
     void import_asset();
     void import_song_text();
     void import_sermon_deck();
+    void create_sermon();
+    void edit_sermon(const domain::SermonId& id);
     void create_song();
     void edit_song(const domain::SongId& id);
+    void show_inspector(const domain::CueId& cue);
+    void save_inspected_slide(domain::CueId cue,
+                              std::string section,
+                              std::vector<std::string> lines,
+                              domain::FitMode fit);
+    void duplicate_slide(const domain::CueId& cue);
+    void delete_slide(const domain::CueId& cue);
     std::string allocate_song_id();
     std::string allocate_sermon_id();
 };

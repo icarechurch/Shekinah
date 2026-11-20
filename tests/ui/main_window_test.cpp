@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QAction>
+#include <QKeySequence>
 
 #include "shekinah/ui/main_window.hpp"
 
@@ -27,6 +28,23 @@ TEST_CASE("main window composes the operator page and bottom Library dock") {
     REQUIRE(window.findChild<QWidget*>(QStringLiteral("library-dock")) != nullptr);
     REQUIRE(window.findChild<QAction*>(QStringLiteral("show-audience-output")) != nullptr);
     REQUIRE(window.findChild<QWidget*>(QStringLiteral("presentation-section")) != nullptr);
+}
+
+TEST_CASE("main window exposes project and presentation actions") {
+    ensure_qapplication();
+    ShekinahWindow window;
+
+    const auto require_action = [&](const QString& name) {
+        auto* action = window.findChild<QAction*>(name);
+        REQUIRE(action != nullptr);
+        return action;
+    };
+    REQUIRE(require_action(QStringLiteral("new-project"))->shortcut() == QKeySequence::New);
+    REQUIRE(require_action(QStringLiteral("open-project"))->shortcut() == QKeySequence::Open);
+    REQUIRE(require_action(QStringLiteral("previous-cue"))->shortcut() == QKeySequence{Qt::Key_PageUp});
+    REQUIRE(require_action(QStringLiteral("next-cue"))->shortcut() == QKeySequence{Qt::Key_PageDown});
+    REQUIRE(require_action(QStringLiteral("clear-program"))->shortcut() == QKeySequence{Qt::Key_Escape});
+    REQUIRE(require_action(QStringLiteral("blackout"))->shortcut() == QKeySequence{Qt::Key_B});
 }
 
 TEST_CASE("main window applies the bounded live-media admission thresholds") {

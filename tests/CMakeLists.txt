@@ -52,6 +52,7 @@ add_executable(shekinah_ui_tests
     ui/program_status_widget_test.cpp
     ui/project_session_test.cpp
     ui/reflow_editor_dialog_test.cpp
+    ui/sermon_editor_dialog_test.cpp
     ui/service_order_widget_test.cpp
 )
 target_include_directories(shekinah_ui_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/support)

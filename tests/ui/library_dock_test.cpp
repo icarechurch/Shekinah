@@ -1,7 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QImage>
+#include <QListWidget>
 
+#include "test_project.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 
 using namespace shekinah::domain;
@@ -59,4 +62,22 @@ TEST_CASE("library clears all catalogs for a project reload") {
     REQUIRE(dock.visible_content_count() == 0);
     dock.show_sermons();
     REQUIRE(dock.visible_content_count() == 0);
+}
+
+TEST_CASE("library creates bounded thumbnails for image assets") {
+    ensure_qapplication();
+    const auto project = TestProject::create();
+    const auto image_path = project.root() / "slide.png";
+    QImage image{320, 180, QImage::Format_ARGB32};
+    image.fill(Qt::blue);
+    REQUIRE(image.save(QString::fromStdString(image_path.string()), "PNG"));
+
+    LibraryDockWidget dock;
+    dock.set_asset_root(project.root());
+    dock.add_asset(AssetRecord{AssetId{"asset-image"}, AssetKind::image, "hash", "slide.png", 128});
+
+    auto* list = dock.findChild<QListWidget*>(QStringLiteral("assets-list"));
+    REQUIRE(list != nullptr);
+    REQUIRE(list->count() == 1);
+    REQUIRE_FALSE(list->item(0)->icon().isNull());
 }

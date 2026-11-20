@@ -4,7 +4,9 @@
 
 #include <QDockWidget>
 
+#include <filesystem>
 #include <functional>
+#include <utility>
 
 class QListWidget;
 class QTabWidget;
@@ -21,6 +23,7 @@ public:
     void show_assets();
     void show_songs();
     void show_sermons();
+    void set_asset_root(std::filesystem::path root) { asset_root_ = std::move(root); }
     void add_asset(domain::AssetRecord asset);
     void add_song(domain::Song song);
     void add_sermon(domain::SermonDeck deck);
@@ -37,9 +40,13 @@ public:
     void set_edit_song_handler(std::function<void(domain::SongId)> handler) {
         edit_song_handler_ = std::move(handler);
     }
+    void set_edit_sermon_handler(std::function<void(domain::SermonId)> handler) {
+        edit_sermon_handler_ = std::move(handler);
+    }
     void activate_song_row(int row);
     void edit_song_row(int row);
     void activate_sermon_row(int row);
+    void edit_sermon_row(int row);
 
     [[nodiscard]] LibraryTab current_tab() const noexcept { return current_tab_; }
     [[nodiscard]] int visible_asset_count() const noexcept;
@@ -55,6 +62,7 @@ private:
     QListWidget* assets_{nullptr};
     QListWidget* songs_{nullptr};
     QListWidget* sermons_{nullptr};
+    std::filesystem::path asset_root_;
     std::function<void()> new_song_handler_;
     std::function<void()> import_song_handler_;
     std::function<void()> new_sermon_handler_;
@@ -62,6 +70,7 @@ private:
     std::function<void()> import_asset_handler_;
     std::function<void(domain::ContentRef)> add_content_handler_;
     std::function<void(domain::SongId)> edit_song_handler_;
+    std::function<void(domain::SermonId)> edit_sermon_handler_;
 };
 
 }  // namespace shekinah::ui
