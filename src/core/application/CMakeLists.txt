@@ -1,4 +1,5 @@
 add_library(shekinah_application STATIC
+    presentation_service.cpp
     service_order_service.cpp
     song_reflow.cpp
     song_text_importer.cpp
