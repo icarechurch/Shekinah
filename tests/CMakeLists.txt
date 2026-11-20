@@ -45,6 +45,7 @@ add_executable(shekinah_ui_tests
     ui/inspector_dialog_test.cpp
     ui/library_dock_test.cpp
     ui/library_actions_test.cpp
+    ui/library_reuse_test.cpp
     ui/library_search_test.cpp
     ui/main_window_test.cpp
     ui/operator_page_test.cpp

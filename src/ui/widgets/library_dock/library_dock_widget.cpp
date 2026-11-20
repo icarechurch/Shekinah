@@ -7,6 +7,11 @@
 #include <QVBoxLayout>
 
 namespace shekinah::ui {
+namespace {
+
+constexpr int kContentIdRole = Qt::UserRole + 1;
+
+}  // namespace
 
 LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     setObjectName(QStringLiteral("library-dock"));
@@ -64,6 +69,16 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     assets_->setObjectName(QStringLiteral("assets-list"));
     songs_->setObjectName(QStringLiteral("songs-list"));
     sermons_->setObjectName(QStringLiteral("sermons-list"));
+    QObject::connect(songs_, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
+        if (item != nullptr && add_content_handler_) {
+            add_content_handler_(domain::ContentRef::song(item->data(kContentIdRole).toString().toStdString()));
+        }
+    });
+    QObject::connect(sermons_, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
+        if (item != nullptr && add_content_handler_) {
+            add_content_handler_(domain::ContentRef::sermon(item->data(kContentIdRole).toString().toStdString()));
+        }
+    });
     tabs_->addTab(assets_, QStringLiteral("Assets"));
     tabs_->addTab(songs_, QStringLiteral("Songs"));
     tabs_->addTab(sermons_, QStringLiteral("Sermons"));
@@ -84,16 +99,38 @@ void LibraryDockWidget::add_asset(domain::AssetRecord asset) {
 }
 
 void LibraryDockWidget::add_song(domain::Song song) {
-    songs_->addItem(QString::fromStdString(song.title));
+    auto* item = new QListWidgetItem{QString::fromStdString(song.title)};
+    item->setData(kContentIdRole, QString::fromStdString(song.id.value));
+    songs_->addItem(item);
     apply_filter();
 }
 
 void LibraryDockWidget::add_sermon(domain::SermonDeck deck) {
-    sermons_->addItem(QString::fromStdString(deck.title));
+    auto* item = new QListWidgetItem{QString::fromStdString(deck.title)};
+    item->setData(kContentIdRole, QString::fromStdString(deck.id.value));
+    sermons_->addItem(item);
     apply_filter();
 }
 
 void LibraryDockWidget::set_search_text(const QString& text) { search_->setText(text); }
+
+void LibraryDockWidget::activate_song_row(int row) {
+    if (row >= 0 && row < songs_->count()) {
+        const auto* item = songs_->item(row);
+        if (add_content_handler_ && item != nullptr) {
+            add_content_handler_(domain::ContentRef::song(item->data(kContentIdRole).toString().toStdString()));
+        }
+    }
+}
+
+void LibraryDockWidget::activate_sermon_row(int row) {
+    if (row >= 0 && row < sermons_->count()) {
+        const auto* item = sermons_->item(row);
+        if (add_content_handler_ && item != nullptr) {
+            add_content_handler_(domain::ContentRef::sermon(item->data(kContentIdRole).toString().toStdString()));
+        }
+    }
+}
 
 int LibraryDockWidget::visible_asset_count() const noexcept {
     if (current_tab_ != LibraryTab::assets) {
