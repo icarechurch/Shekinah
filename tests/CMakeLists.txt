@@ -52,6 +52,7 @@ shekinah_register_test(shekinah_ui_tests ui)
 
 add_executable(shekinah_application_tests
     application/presentation_service_test.cpp
+    application/resource_governor_test.cpp
     application/service_order_service_test.cpp
     application/song_reflow_test.cpp
     application/song_text_importer_test.cpp
