@@ -42,6 +42,7 @@ shekinah_register_test(shekinah_media_tests media)
 add_executable(shekinah_ui_tests
     ui/cue_grid_test.cpp
     ui/inspector_dialog_test.cpp
+    ui/library_dock_test.cpp
     ui/operator_page_test.cpp
 )
 target_link_libraries(shekinah_ui_tests PRIVATE shekinah_ui Qt6::Test Catch2::Catch2WithMain)
