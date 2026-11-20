@@ -35,3 +35,9 @@ add_executable(shekinah_media_tests
 )
 target_link_libraries(shekinah_media_tests PRIVATE shekinah_media Catch2::Catch2WithMain)
 shekinah_register_test(shekinah_media_tests media)
+
+add_executable(shekinah_application_tests
+    application/song_reflow_test.cpp
+)
+target_link_libraries(shekinah_application_tests PRIVATE shekinah_application Catch2::Catch2WithMain)
+shekinah_register_test(shekinah_application_tests application)
