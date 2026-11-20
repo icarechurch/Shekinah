@@ -114,6 +114,7 @@ TEST_CASE("SQLite content repository loads stored asset metadata by id") {
     REQUIRE(loaded->id == imported->id);
     REQUIRE(loaded->kind == AssetKind::image);
     REQUIRE(loaded->relative_path == imported->relative_path);
+    REQUIRE(loaded->size_bytes == imported->size_bytes);
 }
 
 TEST_CASE("reusable content cannot be archived while a service order references it") {

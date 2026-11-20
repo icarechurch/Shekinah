@@ -116,7 +116,8 @@ domain::Result<domain::AssetRecord> AssetImporter::import_file(
     };
     const auto status = store_.transaction([&](sqlite3* db) {
         sqlite3_stmt* lookup = nullptr;
-        constexpr char lookup_sql[] = "SELECT id, kind, relative_path FROM assets WHERE sha256=?1 LIMIT 1;";
+        constexpr char lookup_sql[] =
+            "SELECT id, kind, relative_path, size_bytes FROM assets WHERE sha256=?1 LIMIT 1;";
         if (sqlite3_prepare_v2(db, lookup_sql, -1, &lookup, nullptr) != SQLITE_OK) {
             return domain::Status::fail({domain::ErrorCode::storage_failure, sqlite3_errmsg(db)});
         }
@@ -131,6 +132,7 @@ domain::Result<domain::AssetRecord> AssetImporter::import_file(
                               ? domain::AssetKind::video
                               : domain::AssetKind::image;
             record.relative_path = stored_path == nullptr ? record.relative_path : stored_path;
+            record.size_bytes = static_cast<std::uint64_t>(sqlite3_column_int64(lookup, 3));
             sqlite3_finalize(lookup);
             return domain::success();
         }
@@ -138,7 +140,8 @@ domain::Result<domain::AssetRecord> AssetImporter::import_file(
 
         sqlite3_stmt* insert = nullptr;
         constexpr char insert_sql[] =
-            "INSERT INTO assets(id, kind, sha256, relative_path) VALUES(?1, ?2, ?3, ?4);";
+            "INSERT INTO assets(id, kind, sha256, relative_path, size_bytes) "
+            "VALUES(?1, ?2, ?3, ?4, ?5);";
         if (sqlite3_prepare_v2(db, insert_sql, -1, &insert, nullptr) != SQLITE_OK) {
             return domain::Status::fail({domain::ErrorCode::storage_failure, sqlite3_errmsg(db)});
         }
@@ -146,6 +149,7 @@ domain::Result<domain::AssetRecord> AssetImporter::import_file(
         sqlite3_bind_text(insert, 2, kind_name(record.kind), -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(insert, 3, record.sha256.c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_text(insert, 4, record.relative_path.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(insert, 5, static_cast<sqlite3_int64>(record.size_bytes));
         const auto result = sqlite3_step(insert);
         sqlite3_finalize(insert);
         if (result != SQLITE_DONE) {

@@ -562,7 +562,7 @@ domain::Result<std::vector<domain::SermonDeck>> SqliteContentRepository::list_de
 
 domain::Result<std::vector<domain::AssetRecord>> SqliteContentRepository::list_assets() const {
     Statement statement{store_.native_handle(),
-                        "SELECT id,kind,sha256,relative_path FROM assets WHERE archived=0 "
+                        "SELECT id,kind,sha256,relative_path,size_bytes FROM assets WHERE archived=0 "
                         "ORDER BY relative_path COLLATE NOCASE ASC, id ASC;"};
     if (!statement.ready()) {
         return domain::Result<std::vector<domain::AssetRecord>>::fail(
@@ -587,7 +587,7 @@ domain::Result<std::vector<domain::AssetRecord>> SqliteContentRepository::list_a
                 : domain::AssetKind::image,
             reinterpret_cast<const char*>(raw_hash),
             reinterpret_cast<const char*>(raw_path),
-            0,
+            static_cast<std::uint64_t>(sqlite3_column_int64(statement.get(), 4)),
         });
     }
     if (result != SQLITE_DONE) {
@@ -604,7 +604,7 @@ domain::Result<domain::AssetRecord> SqliteContentRepository::load_asset(
             {domain::ErrorCode::invalid_input, "An asset id is required"});
     }
     Statement statement{store_.native_handle(),
-                        "SELECT kind,sha256,relative_path FROM assets "
+                        "SELECT kind,sha256,relative_path,size_bytes FROM assets "
                         "WHERE id=?1 AND archived=0 LIMIT 1;"};
     if (!statement.ready()) {
         return domain::Result<domain::AssetRecord>::fail(
@@ -631,7 +631,7 @@ domain::Result<domain::AssetRecord> SqliteContentRepository::load_asset(
             : domain::AssetKind::image,
         reinterpret_cast<const char*>(raw_hash),
         reinterpret_cast<const char*>(raw_path),
-        0,
+        static_cast<std::uint64_t>(sqlite3_column_int64(statement.get(), 3)),
     });
 }
 
