@@ -1,9 +1,12 @@
 #include "shekinah/ui/operator_page.hpp"
 
 #include "shekinah/ui/cue_grid_widget.hpp"
+#include "shekinah/ui/inspector_dialog.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
 
+#include <QAction>
 #include <QListWidget>
+#include <QMenu>
 #include <QSplitter>
 #include <QVBoxLayout>
 
@@ -22,6 +25,11 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     service_order_->addItem(QStringLiteral("Service Order"));
     cue_grid_ = new CueGridWidget{workspace};
     cue_grid_->setObjectName(QStringLiteral("cue-grid"));
+    cue_grid_->set_context_handler([this](domain::CueId cue, QPoint position) {
+        auto* menu = create_context_menu(cue);
+        menu->exec(position);
+        menu->deleteLater();
+    });
     workspace->addWidget(service_order_);
     workspace->addWidget(cue_grid_);
     workspace->setStretchFactor(0, 0);
@@ -30,6 +38,20 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
 
     program_status_ = new ProgramStatusWidget{this};
     layout->addWidget(program_status_, 0);
+    inspector_ = new InspectorDialog{this};
+}
+
+QMenu* OperatorPage::create_context_menu(const domain::CueId& cue) {
+    auto* menu = new QMenu{this};
+    auto* inspector = menu->addAction(QStringLiteral("Open Inspector"));
+    menu->addAction(QStringLiteral("Edit slide"));
+    menu->addAction(QStringLiteral("Set background"));
+    menu->addAction(QStringLiteral("Duplicate"));
+    menu->addAction(QStringLiteral("Delete"));
+    QObject::connect(inspector, &QAction::triggered, this, [this, cue] {
+        inspector_->show_inspector(domain::ContentRef::song("selected"), cue);
+    });
+    return menu;
 }
 
 }  // namespace shekinah::ui
