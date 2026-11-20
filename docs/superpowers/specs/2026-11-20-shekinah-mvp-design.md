@@ -213,6 +213,43 @@ The implementation will enforce bounded resource use:
 - large cue grids and service orders use lazy/virtualized item models;
 - memory diagnostics report peak working set, cache size, decoded image count, and media-buffer count.
 
+### Intel Celeron N4000 compatibility profile
+
+The application must run on an Intel Celeron N4000 with 4 GB RAM, Windows 10/11 64-bit, and Intel UHD Graphics 600. This two-core/four-watt-class system is the minimum performance target, not an aspirational configuration.
+
+`LowEndCompatibilityProfile` is enabled automatically for an N4000-class system and can be enabled manually for testing. It enforces:
+
+- 1920×1080 audience output at a maximum of 30 fps; no 4K output in this profile.
+- One active video background only, constrained to MP4/H.264, 1920×1080 or below, and 30 fps or below.
+- Windows Media Foundation hardware decode when available; a preflight check rejects video playback that cannot sustain the profile and offers the same asset’s still-image fallback or a user-selected still image.
+- No overlapping video playback, animated cue thumbnails, alpha-video compositing, or background preloading.
+- Cut transitions by default. A fade may be enabled only after the runtime frame-time monitor remains below the profile threshold.
+- One background worker for import, hashing, thumbnail generation, and image scaling; all other non-live work is queued behind it.
+- Disk-backed 256-pixel thumbnails; the UI never retains every source image or source-video frame in memory.
+
+The application owns and caps these dynamic pools:
+
+| Pool | Cap |
+| --- | ---: |
+| Asset-library thumbnails | 16 MiB |
+| Cue-card artwork | 12 MiB |
+| Active still-image textures | 36 MiB |
+| Active video frame queue | 48 MiB |
+| Import/decode staging | 16 MiB |
+| SQLite and file-I/O buffers | 8 MiB |
+
+`ResourceGovernor` samples process working set. At 220,000,000 bytes it evicts non-live caches and stops new thumbnail work; at 250,000,000 bytes it cancels queued imports and releases all non-active media buffers; at 270,000,000 bytes it rejects a new live media load before program state changes and displays a recoverable resource warning. The hard ceiling is strictly below 300,000,000 bytes (300 MB decimal) and is verified by an actual process-working-set test, not inferred from the pool caps.
+
+### N4000 hardware acceptance gate
+
+Automated tests provide deterministic memory and governor coverage, but they cannot prove the performance of the target machine. Before release, the full N4000 compatibility scenario must run on a physical Intel Celeron N4000 device:
+
+1. Open a project with 500 service-order references, 100 1080p image assets, and one 1080p30 H.264 looping background.
+2. Operate the cue grid, direct-jump between lyrics, open/close Inspector, and switch between Song and Sermon content for 30 minutes.
+3. Record peak process working set, CPU time, normalized process-CPU percentage, cue-to-program latency percentiles, frame-time percentiles, active decode path, and resource-governor transitions.
+4. Pass only if peak working set remains below 300,000,000 bytes, no live cue is dropped, process CPU p95 remains at or below 70% of the two-logical-processor capacity, direct cue-to-program latency p95 remains at or below 100 ms, and 1080p30 program output maintains a 33.3 ms p95 frame-time budget while the H.264 decoder is hardware-accelerated.
+5. If hardware decode is unavailable or misses the budget, the run passes only using image backgrounds; the application must state that the selected video is incompatible with the LowEnd profile.
+
 ## Test architecture
 
 The test suite mirrors the boundaries:
@@ -225,6 +262,8 @@ The test suite mirrors the boundaries:
 - **UI contract tests:** service-order selection, left-click live behavior, right-click menu actions, Inspector popup lifecycle, responsive column policy, and unified controls.
 - **End-to-end smoke test:** create a project, import a Song and PNG Sermon, add multiple entries to the service order, load cues, jump directly between cues, clear, black out, and restore output.
 - **Memory test:** exercise a representative service with many 1080p PNGs, multiple reusable content records, and a looping MP4 while measuring process working set.
+- **Low-end governor tests:** deterministic pool caps, eviction thresholds, queued-work cancellation, and preflight rejection before a live-media change.
+- **N4000 benchmark executable:** machine-readable capture of frame times, normalized CPU percentage, cue latency, working set, decode path, and governor transitions for the physical-device release gate.
 
 All behavior changes follow TDD: write a failing test, verify the expected failure, implement the smallest behavior, then run targeted and full gates. Focused tests, skipped tests, weakened assertions, and disabled CI lanes are prohibited.
 
@@ -257,5 +296,6 @@ The MVP is ready for implementation handoff when the following are true:
 10. The cue grid automatically adapts from 1 through 6 columns and defaults to 3 at 1366×768 and 4 at 1920×1080.
 11. Audience output works as selected-monitor full-screen or movable output window.
 12. Asset and content references remain separate, reusable, and safe from accidental deletion.
-13. The representative memory test stays below 300 MB and reports the preferred 100 MB target.
-14. All required local and CI checks pass with fresh verification output.
+13. The representative memory test stays below 300,000,000 bytes and reports the preferred 100 MB target.
+14. The physical N4000 compatibility scenario stays below 300,000,000 bytes and sustains 1080p30 H.264 only when hardware decode meets the stated frame-time budget; otherwise it safely uses image backgrounds.
+15. All required local and CI checks pass with fresh verification output.

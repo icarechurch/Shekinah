@@ -19,6 +19,8 @@
 - Left-clicking a cue takes it live. Selecting a service-order item never changes program. Right-clicking a cue opens per-slide actions; Inspector is a floating non-live popup.
 - Put Previous, Next, Clear, and Black directly beneath Program Status. Do not add a permanent preview surface or a Studio Mode workflow.
 - Keep representative working set under 100 MB when practical and fail the stress-performance test above 300 MB.
+- Treat Intel Celeron N4000 with 4 GB RAM and UHD 600 graphics as the minimum target. Its LowEndCompatibilityProfile limits audience output to 1080p30, permits one active 1080p30 MP4/H.264 background, requires a hardware-decode preflight, and falls back to still images when that profile cannot be met.
+- Cap dynamic memory pools at 16 MiB asset thumbnails, 12 MiB cue artwork, 36 MiB active still textures, 48 MiB active video frames, 16 MiB import/decode staging, and 8 MiB SQLite/file-I/O buffers. At 220,000,000/250,000,000/270,000,000 bytes, ResourceGovernor respectively evicts non-live caches, cancels queued work/releases non-active buffers, and rejects new live-media loads before program state changes. The process must remain below 300,000,000 bytes.
 - Every behavior change follows red-green-refactor. Never use focused, skipped, or weakened tests.
 - Keep individual test lanes below 110 seconds; use deterministic fixtures and no live network input.
 - Build every Song through a Reflow document: continuous UTF-8 text plus validated slide-break positions. `Ctrl+Enter` inserts a break, Backspace at the following text start merges slides, and normal Enter remains a lyric line break.
@@ -26,7 +28,7 @@
 
 ## Commit Cadence
 
-The task commits below are delivery milestones, not the complete commit count. Within each task, preserve each independently buildable green behavior as its own commit. The minimum schedule is: Task 1 (7 commits), Task 2 (10), Task 3 (12), Task 4 (8), Task 5 (12), Task 6 (7), Task 7 (7), Task 8 (8), Task 9 (6), Task 10 (8), Task 11 (7), and Task 12 (5): **97 meaningful commits total**. Each commit must include its passing tests and must leave its affected CTest labels green.
+The task commits below are delivery milestones, not the complete commit count. Within each task, preserve each independently buildable green behavior as its own commit. The minimum schedule is: Task 1 (7 commits), Task 2 (10), Task 3 (12), Task 4 (8), Task 5 (12), Task 6 (7), Task 7 (7), Task 8 (8), Task 9 (6), Task 10 (8), Task 11 (7), Task 12 (6), and Task 13 (5): **103 meaningful commits total**. Each commit must include its passing tests and must leave its affected CTest labels green.
 
 ## Repository Map
 
@@ -666,7 +668,61 @@ git add src/ui/widgets/library_dock src/ui/features/import_asset src/ui/features
 git commit -m "feat: add reusable content library dock"
 ```
 
-## Task 12: Memory diagnostics, stress gate, and CI completion
+## Task 12: Low-end compatibility profile and resource governor
+
+**Files:**
+- Create: `src/core/application/include/shekinah/application/resource_governor.hpp`, `src/core/application/resource_governor.cpp`
+- Create: `src/media/include/shekinah/media/low_end_profile.hpp`, `src/media/low_end_profile.cpp`
+- Create: `tests/application/resource_governor_test.cpp`, `tests/media/low_end_profile_test.cpp`, `tools/n4000_bench/main.cpp`
+
+**Interfaces:** Produces `LowEndCompatibilityProfile`, `ResourceGovernor::on_working_set_sample(std::size_t)`, and a machine-readable N4000 benchmark executable.
+
+- [ ] **Step 1: Write failing governor and preflight tests.**
+
+```cpp
+TEST_CASE("resource governor purges caches before it reaches the hard limit") {
+  FakeResourcePools pools; ResourceGovernor governor{pools}; governor.on_working_set_sample(220'000'000);
+  REQUIRE(pools.non_live_caches_purged()); governor.on_working_set_sample(250'000'000);
+  REQUIRE(pools.queued_imports_cancelled()); REQUIRE(pools.non_active_media_released());
+}
+TEST_CASE("N4000 profile rejects nonaccelerated video before Program changes") {
+  LowEndCompatibilityProfile profile; auto result = profile.preflight(VideoInfo{1920, 1080, 30, false});
+  REQUIRE_FALSE(result); REQUIRE(result.error().code == ErrorCode::unsupported_media);
+}
+```
+
+- [ ] **Step 2: Verify red.**
+
+Run: `ctest --test-dir build/windows-ucrt64-release -R "resource_governor|low_end_profile" --output-on-failure`
+
+Expected: the profile and governor are absent.
+
+- [ ] **Step 3: Implement bounded runtime controls.**
+
+```cpp
+class ResourceGovernor {
+public: void on_working_set_sample(std::size_t bytes); [[nodiscard]] bool may_load_live_media() const noexcept;
+};
+struct VideoInfo { int width; int height; int frames_per_second; bool hardware_accelerated; };
+class LowEndCompatibilityProfile { public: Status preflight(const VideoInfo&) const; };
+```
+
+Use one 500 ms sampler while output is active. At 220,000,000 bytes purge non-live thumbnail and cue-art caches; at 250,000,000 bytes cancel queued imports and release non-active decode resources; at 270,000,000 bytes return a recoverable preflight error before `PresentationService::take_live` can replace Program. Enforce 1080p30 maximum and one active video. `tools/n4000_bench` writes JSON with `peak_working_set_bytes`, `cpu_time_ms`, `cpu_percent_p95`, `cue_latency_p95_ms`, `frame_time_p95_ms`, `decode_path`, and `governor_transitions`; the physical N4000 gate requires respectively less than 300,000,000 bytes, at most 70% CPU p95 across two logical processors, at most 100 ms cue latency p95, and at most 33.3 ms frame-time p95.
+
+- [ ] **Step 4: Verify deterministic low-end tests.**
+
+Run: `ctest --test-dir build/windows-ucrt64-release -L "application|media" --output-on-failure`
+
+Expected: pool caps, 220M/250M/270M byte actions, 1080p30 limit, and nonaccelerated-video rejection pass.
+
+- [ ] **Step 5: Commit.**
+
+```powershell
+git add src/core/application/resource_governor.* src/core/application/include/shekinah/application/resource_governor.hpp src/media/low_end_profile.* src/media/include/shekinah/media/low_end_profile.hpp tests/application/resource_governor_test.cpp tests/media/low_end_profile_test.cpp tools/n4000_bench
+git commit -m "perf: add N4000 compatibility governor"
+```
+
+## Task 13: Memory diagnostics, stress gate, and CI completion
 
 **Files:**
 - Create: `src/media/include/shekinah/media/memory_diagnostics.hpp`, `src/media/memory_diagnostics.cpp`, `tests/performance/memory_budget_test.cpp`
@@ -680,7 +736,7 @@ git commit -m "feat: add reusable content library dock"
 TEST_CASE("representative worship service stays below the hard 300 MB working-set ceiling") {
   auto result = run_representative_service(fixture_project());
   CAPTURE(result.peak_working_set_bytes, result.image_cache_bytes, result.decoded_images, result.media_buffers);
-  REQUIRE(result.peak_working_set_bytes < 300ULL * 1024ULL * 1024ULL);
+  REQUIRE(result.peak_working_set_bytes < 300'000'000ULL);
 }
 ```
 
