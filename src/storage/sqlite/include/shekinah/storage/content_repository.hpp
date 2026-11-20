@@ -16,6 +16,7 @@ public:
     domain::Result<domain::Song> save_song(const domain::Song& song);
     domain::Result<domain::Song> load_song(const domain::SongId& id) const;
     domain::Result<domain::SermonDeck> save_deck(const domain::SermonDeck& deck);
+    domain::Result<domain::SermonDeck> load_deck(const domain::SermonId& id) const;
     domain::Status ensure_service_order(const domain::ServiceOrderId& id, std::string title);
     domain::Result<domain::ServiceOrderItem> append_to_order(
         const domain::ServiceOrderId& order_id, domain::ContentRef content);

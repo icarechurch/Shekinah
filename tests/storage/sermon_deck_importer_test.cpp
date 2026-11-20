@@ -4,6 +4,7 @@
 
 #include "test_project.hpp"
 #include "shekinah/storage/asset_importer.hpp"
+#include "shekinah/storage/content_repository.hpp"
 #include "shekinah/storage/project_store.hpp"
 #include "shekinah/storage/sermon_deck_importer.hpp"
 
@@ -38,6 +39,11 @@ TEST_CASE("sermon deck importer naturally orders PNG slides") {
     REQUIRE(deck->slides[0].image == expected_one->id);
     REQUIRE(deck->slides[1].image == expected_two->id);
     REQUIRE(deck->slides[2].image == expected_ten->id);
+    const auto loaded = SqliteContentRepository{*store}.load_deck(SermonId{"sermon-a"});
+    REQUIRE(loaded);
+    REQUIRE(loaded->title == "Sunday Sermon");
+    REQUIRE(loaded->slides.size() == 3);
+    REQUIRE(loaded->slides[0].image == expected_one->id);
     REQUIRE(deck->slides[0].id.value == "slide-0");
 
 }
