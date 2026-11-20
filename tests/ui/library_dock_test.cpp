@@ -43,3 +43,20 @@ TEST_CASE("library owns independent reusable Song and Sermon collections") {
     dock.show_sermons();
     REQUIRE(dock.visible_content_count() == 1);
 }
+
+TEST_CASE("library clears all catalogs for a project reload") {
+    ensure_qapplication();
+    LibraryDockWidget dock;
+    dock.add_asset(AssetRecord{AssetId{"asset-1"}, AssetKind::image, "hash-1", "assets/one.png", 100});
+    dock.add_song(Song{SongId{"song-a"}, "Goodness", std::nullopt, {}});
+    dock.add_sermon(SermonDeck{SermonId{"sermon-a"}, "Sunday", {}});
+
+    dock.clear_contents();
+
+    dock.show_assets();
+    REQUIRE(dock.visible_asset_count() == 0);
+    dock.show_songs();
+    REQUIRE(dock.visible_content_count() == 0);
+    dock.show_sermons();
+    REQUIRE(dock.visible_content_count() == 0);
+}

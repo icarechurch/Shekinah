@@ -24,6 +24,7 @@ public:
     void add_asset(domain::AssetRecord asset);
     void add_song(domain::Song song);
     void add_sermon(domain::SermonDeck deck);
+    void clear_contents();
     void set_search_text(const QString& text);
     void set_new_song_handler(std::function<void()> handler) { new_song_handler_ = std::move(handler); }
     void set_import_song_handler(std::function<void()> handler) { import_song_handler_ = std::move(handler); }

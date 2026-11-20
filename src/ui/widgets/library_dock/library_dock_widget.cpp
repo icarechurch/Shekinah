@@ -112,6 +112,13 @@ void LibraryDockWidget::add_sermon(domain::SermonDeck deck) {
     apply_filter();
 }
 
+void LibraryDockWidget::clear_contents() {
+    assets_->clear();
+    songs_->clear();
+    sermons_->clear();
+    apply_filter();
+}
+
 void LibraryDockWidget::set_search_text(const QString& text) { search_->setText(text); }
 
 void LibraryDockWidget::activate_song_row(int row) {
