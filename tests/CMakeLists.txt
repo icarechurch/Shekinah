@@ -58,6 +58,13 @@ target_include_directories(shekinah_ui_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/s
 target_link_libraries(shekinah_ui_tests PRIVATE shekinah_ui Qt6::Test Catch2::Catch2WithMain)
 shekinah_register_test(shekinah_ui_tests ui)
 
+add_executable(shekinah_e2e_tests
+    e2e/operator_to_output_test.cpp
+)
+target_include_directories(shekinah_e2e_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/support)
+target_link_libraries(shekinah_e2e_tests PRIVATE shekinah_ui Qt6::Test Catch2::Catch2WithMain)
+shekinah_register_test(shekinah_e2e_tests e2e)
+
 add_executable(shekinah_performance_tests
     performance/memory_budget_test.cpp
 )
