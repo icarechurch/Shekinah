@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "shekinah/application/presentation_service.hpp"
 #include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
 
@@ -42,9 +43,13 @@ private:
     std::unique_ptr<storage::ProjectStore> store_;
     std::unique_ptr<storage::SqliteContentRepository> repository_;
     int next_content_id_{1};
+    application::PresentationService presentation_;
 
+    void configure_operator();
     void refresh_library();
     void refresh_service_order();
+    void refresh_cues();
+    void update_program_status();
     void import_asset();
     void import_song_text();
     void import_sermon_deck();

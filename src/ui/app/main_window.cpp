@@ -5,14 +5,17 @@
 #include "shekinah/storage/content_repository.hpp"
 #include "shekinah/storage/project_store.hpp"
 #include "shekinah/storage/sermon_deck_importer.hpp"
+#include "shekinah/ui/cue_grid_widget.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
+#include "shekinah/ui/program_status_widget.hpp"
 #include "shekinah/ui/reflow_editor_dialog.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 
 #include <QFileDialog>
 
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,6 +29,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
 
     operator_page_ = new OperatorPage{this};
     setCentralWidget(operator_page_);
+    configure_operator();
     library_dock_ = new LibraryDockWidget{this};
     addDockWidget(Qt::BottomDockWidgetArea, library_dock_);
 
@@ -46,6 +50,38 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 ShekinahWindow::~ShekinahWindow() = default;
+
+void ShekinahWindow::configure_operator() {
+    operator_page_->set_service_order_selection_handler([this](domain::ServiceOrderItemId item_id) {
+        if (presentation_.select_service_item(item_id)) {
+            refresh_cues();
+        }
+    });
+    operator_page_->set_take_live_handler([this](domain::CueId cue) {
+        const auto selected = presentation_.selected_item();
+        if (selected.has_value() && presentation_.take_live(selected->id, cue)) {
+            update_program_status();
+        }
+    });
+    operator_page_->set_previous_handler([this] {
+        if (presentation_.previous()) {
+            update_program_status();
+        }
+    });
+    operator_page_->set_next_handler([this] {
+        if (presentation_.next()) {
+            update_program_status();
+        }
+    });
+    operator_page_->set_clear_handler([this] {
+        presentation_.clear();
+        update_program_status();
+    });
+    operator_page_->set_black_handler([this] {
+        presentation_.black();
+        update_program_status();
+    });
+}
 
 domain::Status ShekinahWindow::open_project(const std::filesystem::path& root) {
     repository_.reset();
@@ -102,14 +138,19 @@ void ShekinahWindow::refresh_library() {
 }
 
 void ShekinahWindow::refresh_service_order() {
+    presentation_.reset();
     if (!repository_) {
         operator_page_->set_service_order({});
+        operator_page_->cue_grid()->set_cues({});
+        update_program_status();
         return;
     }
 
     const auto loaded = repository_->load_order(domain::ServiceOrderId{"default-service"});
     if (!loaded) {
         operator_page_->set_service_order({});
+        operator_page_->cue_grid()->set_cues({});
+        update_program_status();
         return;
     }
 
@@ -120,17 +161,83 @@ void ShekinahWindow::refresh_service_order() {
         if (item.content.kind == domain::ContentKind::song) {
             const auto content_id = std::get<domain::SongId>(item.content.id);
             const auto song = repository_->load_song(content_id);
-            label = song ? QString::fromStdString(song->title)
-                         : QStringLiteral("Song %1").arg(QString::fromStdString(content_id.value));
+            if (song) {
+                presentation_.register_song(*song);
+                label = QString::fromStdString(song->title);
+            } else {
+                label = QStringLiteral("Song %1").arg(QString::fromStdString(content_id.value));
+            }
         } else {
             const auto content_id = std::get<domain::SermonId>(item.content.id);
             const auto sermon = repository_->load_deck(content_id);
-            label = sermon ? QString::fromStdString(sermon->title)
-                           : QStringLiteral("Sermon %1").arg(QString::fromStdString(content_id.value));
+            if (sermon) {
+                presentation_.register_sermon(*sermon);
+                label = QString::fromStdString(sermon->title);
+            } else {
+                label = QStringLiteral("Sermon %1").arg(QString::fromStdString(content_id.value));
+            }
         }
         views.push_back(ServiceOrderView{item, std::move(label)});
     }
+    presentation_.set_service_order(*loaded);
     operator_page_->set_service_order(std::move(views));
+    if (!loaded->empty()) {
+        operator_page_->service_order_widget()->select_row(0);
+    } else {
+        operator_page_->cue_grid()->set_cues({});
+    }
+    update_program_status();
+}
+
+void ShekinahWindow::refresh_cues() {
+    const auto selected = presentation_.selected_item();
+    if (!selected.has_value() || !repository_) {
+        operator_page_->cue_grid()->set_cues({});
+        return;
+    }
+
+    std::vector<CueView> cues;
+    if (selected->content.kind == domain::ContentKind::song) {
+        const auto song = repository_->load_song(std::get<domain::SongId>(selected->content.id));
+        if (!song) {
+            operator_page_->cue_grid()->set_cues({});
+            return;
+        }
+        cues.reserve(song->slides.size());
+        for (const auto& slide : song->slides) {
+            std::ostringstream summary;
+            for (std::size_t index = 0; index != slide.lines.size(); ++index) {
+                if (index != 0) {
+                    summary << '\n';
+                }
+                summary << slide.lines[index];
+            }
+            cues.push_back(CueView{
+                slide.id,
+                QString::fromStdString(slide.section),
+                QString::fromStdString(summary.str()),
+            });
+        }
+    } else {
+        const auto sermon = repository_->load_deck(std::get<domain::SermonId>(selected->content.id));
+        if (!sermon) {
+            operator_page_->cue_grid()->set_cues({});
+            return;
+        }
+        cues.reserve(sermon->slides.size());
+        for (std::size_t index = 0; index != sermon->slides.size(); ++index) {
+            cues.push_back(CueView{
+                sermon->slides[index].id,
+                QStringLiteral("Slide %1").arg(static_cast<qulonglong>(index + 1)),
+                QString::fromStdString(sermon->slides[index].image.value),
+            });
+        }
+    }
+    operator_page_->cue_grid()->set_cues(std::move(cues));
+}
+
+void ShekinahWindow::update_program_status() {
+    operator_page_->program_status()->set_program(presentation_.program());
 }
 
 void ShekinahWindow::import_asset() {

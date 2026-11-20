@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QLabel>
+#include <QTest>
 
 #include <fstream>
 
@@ -8,7 +10,9 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/main_window.hpp"
 #include "shekinah/ui/operator_page.hpp"
+#include "shekinah/ui/program_status_widget.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
+#include "shekinah/ui/cue_grid_widget.hpp"
 
 namespace {
 
@@ -120,4 +124,30 @@ TEST_CASE("repeated service-order references survive a project reopen") {
     REQUIRE(items.size() == 2);
     REQUIRE(items[0].label == "Goodness");
     REQUIRE(items[1].label == "Goodness");
+}
+
+TEST_CASE("service-order selection rebuilds cues and clicking a cue changes Program") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "goodness.txt";
+    std::ofstream{source} << "# Goodness\n[Verse]\nYou are good\n\n[Chorus]\nAll the time\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto song = window.import_song_file(source);
+    REQUIRE(song);
+    window.library_dock()->add_song(*song);
+    window.library_dock()->show_songs();
+    window.library_dock()->activate_song_row(0);
+    window.show();
+    QTest::qWait(20);
+
+    auto* chorus = window.operator_page()->cue_grid()->findChild<QWidget*>(QStringLiteral("cue-slide-1"));
+    REQUIRE(chorus != nullptr);
+    QTest::mouseClick(chorus, Qt::LeftButton, Qt::NoModifier, chorus->rect().center());
+
+    const auto* program_cue = window.operator_page()->program_status()->findChild<QLabel*>(
+        QStringLiteral("program-cue"));
+    REQUIRE(program_cue != nullptr);
+    REQUIRE(program_cue->text() == QStringLiteral("slide-1"));
 }
