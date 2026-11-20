@@ -46,3 +46,19 @@ TEST_CASE("Backspace at the following text start merges the Reflow slides") {
     REQUIRE(dialog.editor()->visible_break_count() == 0);
     REQUIRE(dialog.reflow_document().to_slides().size() == 1);
 }
+
+TEST_CASE("Reflow editor validates and materializes a reusable Song draft") {
+    ensure_qapplication();
+    ReflowEditorDialog dialog;
+    dialog.load_song(shekinah::domain::SongId{"song-a"});
+    dialog.set_title(QStringLiteral("Goodness"));
+    dialog.set_text("You are good\nAll the time");
+
+    const auto draft = dialog.draft_song();
+
+    REQUIRE(draft);
+    REQUIRE(draft->id == shekinah::domain::SongId{"song-a"});
+    REQUIRE(draft->title == "Goodness");
+    REQUIRE(draft->slides.size() == 1);
+    REQUIRE_FALSE(ReflowEditorDialog{}.draft_song());
+}
