@@ -77,6 +77,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     library_dock_->set_import_song_handler([this] { import_song_text(); });
     library_dock_->set_new_song_handler([this] { create_song(); });
     library_dock_->set_import_sermon_handler([this] { import_sermon_deck(); });
+    library_dock_->set_new_sermon_handler([this] { import_sermon_deck(); });
     library_dock_->set_add_content_handler([this](domain::ContentRef content) {
         if (!repository_) {
             return;
