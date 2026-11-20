@@ -20,3 +20,4 @@ target_link_libraries(shekinah_domain_tests PRIVATE shekinah_domain Catch2::Catc
 shekinah_register_test(shekinah_domain_tests domain)
 
 target_sources(shekinah_domain_tests PRIVATE domain/content_model_test.cpp)
+target_sources(shekinah_domain_tests PRIVATE domain/result_test.cpp)
