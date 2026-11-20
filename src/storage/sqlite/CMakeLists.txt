@@ -2,6 +2,7 @@ add_library(shekinah_storage STATIC
     asset_importer.cpp
     content_repository.cpp
     project_store.cpp
+    sermon_deck_importer.cpp
 )
 
 target_include_directories(shekinah_storage

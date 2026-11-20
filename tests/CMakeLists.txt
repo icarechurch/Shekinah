@@ -26,6 +26,7 @@ add_executable(shekinah_storage_tests
     storage/content_repository_test.cpp
     storage/project_store_test.cpp
     storage/asset_importer_test.cpp
+    storage/sermon_deck_importer_test.cpp
 )
 target_include_directories(shekinah_storage_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/support)
 target_link_libraries(shekinah_storage_tests PRIVATE shekinah_storage Catch2::Catch2WithMain)
