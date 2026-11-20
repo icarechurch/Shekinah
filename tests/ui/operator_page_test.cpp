@@ -4,8 +4,10 @@
 
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
+#include "shekinah/ui/service_order_widget.hpp"
 
 using namespace shekinah::ui;
+using namespace shekinah::domain;
 
 namespace {
 
@@ -37,4 +39,9 @@ TEST_CASE("operator page exposes Service Order, Cue Grid, and Program Status") {
     REQUIRE(page.service_order_widget() != nullptr);
     REQUIRE(page.cue_grid() != nullptr);
     REQUIRE(page.program_status() != nullptr);
+    page.set_service_order({ServiceOrderView{
+        ServiceOrderItem{ServiceOrderItemId{"item-1"}, ContentRef::song("song-a"), 0},
+        "Song A",
+    }});
+    REQUIRE(page.service_order_widget()->count() == 1);
 }

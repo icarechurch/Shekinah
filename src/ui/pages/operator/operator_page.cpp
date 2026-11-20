@@ -3,9 +3,9 @@
 #include "shekinah/ui/cue_grid_widget.hpp"
 #include "shekinah/ui/inspector_dialog.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
+#include "shekinah/ui/service_order_widget.hpp"
 
 #include <QAction>
-#include <QListWidget>
 #include <QMenu>
 #include <QSplitter>
 #include <QVBoxLayout>
@@ -19,10 +19,8 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
 
     auto* workspace = new QSplitter{Qt::Horizontal, this};
     workspace->setObjectName(QStringLiteral("operator-workspace"));
-    service_order_ = new QListWidget{workspace};
-    service_order_->setObjectName(QStringLiteral("service-order"));
+    service_order_ = new ServiceOrderWidget{workspace};
     service_order_->setMinimumWidth(220);
-    service_order_->addItem(QStringLiteral("Service Order"));
     cue_grid_ = new CueGridWidget{workspace};
     cue_grid_->setObjectName(QStringLiteral("cue-grid"));
     cue_grid_->set_context_handler([this](domain::CueId cue, QPoint position) {
@@ -39,6 +37,10 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     program_status_ = new ProgramStatusWidget{this};
     layout->addWidget(program_status_, 0);
     inspector_ = new InspectorDialog{this};
+}
+
+void OperatorPage::set_service_order(std::vector<ServiceOrderView> items) {
+    service_order_->set_items(std::move(items));
 }
 
 QMenu* OperatorPage::create_context_menu(const domain::CueId& cue) {
