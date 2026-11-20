@@ -4,6 +4,8 @@
 
 #include <QDockWidget>
 
+#include <functional>
+
 class QListWidget;
 class QTabWidget;
 class QLineEdit;
@@ -23,6 +25,11 @@ public:
     void add_song(domain::Song song);
     void add_sermon(domain::SermonDeck deck);
     void set_search_text(const QString& text);
+    void set_new_song_handler(std::function<void()> handler) { new_song_handler_ = std::move(handler); }
+    void set_import_song_handler(std::function<void()> handler) { import_song_handler_ = std::move(handler); }
+    void set_new_sermon_handler(std::function<void()> handler) { new_sermon_handler_ = std::move(handler); }
+    void set_import_sermon_handler(std::function<void()> handler) { import_sermon_handler_ = std::move(handler); }
+    void set_import_asset_handler(std::function<void()> handler) { import_asset_handler_ = std::move(handler); }
 
     [[nodiscard]] LibraryTab current_tab() const noexcept { return current_tab_; }
     [[nodiscard]] int visible_asset_count() const noexcept;
@@ -38,6 +45,11 @@ private:
     QListWidget* assets_{nullptr};
     QListWidget* songs_{nullptr};
     QListWidget* sermons_{nullptr};
+    std::function<void()> new_song_handler_;
+    std::function<void()> import_song_handler_;
+    std::function<void()> new_sermon_handler_;
+    std::function<void()> import_sermon_handler_;
+    std::function<void()> import_asset_handler_;
 };
 
 }  // namespace shekinah::ui

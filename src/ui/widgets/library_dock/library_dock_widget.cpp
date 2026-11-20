@@ -2,6 +2,7 @@
 
 #include <QListWidget>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QTabWidget>
 #include <QVBoxLayout>
 
@@ -21,6 +22,41 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     search_->setObjectName(QStringLiteral("library-search"));
     search_->setPlaceholderText(QStringLiteral("Search Assets, Songs, or Sermons"));
     container_layout->addWidget(search_);
+    auto* actions = new QWidget{container};
+    auto* actions_layout = new QHBoxLayout(actions);
+    actions_layout->setContentsMargins(0, 0, 0, 0);
+    const auto add_action = [&](const QString& label, const QString& object_name, auto handler) {
+        auto* button = new QPushButton{label, actions};
+        button->setObjectName(object_name);
+        QObject::connect(button, &QPushButton::clicked, this, handler);
+        actions_layout->addWidget(button);
+    };
+    add_action(QStringLiteral("New Song"), QStringLiteral("new-song"), [this] {
+        if (new_song_handler_) {
+            new_song_handler_();
+        }
+    });
+    add_action(QStringLiteral("Import Song Text"), QStringLiteral("import-song-text"), [this] {
+        if (import_song_handler_) {
+            import_song_handler_();
+        }
+    });
+    add_action(QStringLiteral("New Sermon"), QStringLiteral("new-sermon"), [this] {
+        if (new_sermon_handler_) {
+            new_sermon_handler_();
+        }
+    });
+    add_action(QStringLiteral("Import Sermon Deck"), QStringLiteral("import-sermon-deck"), [this] {
+        if (import_sermon_handler_) {
+            import_sermon_handler_();
+        }
+    });
+    add_action(QStringLiteral("Import Asset"), QStringLiteral("import-asset"), [this] {
+        if (import_asset_handler_) {
+            import_asset_handler_();
+        }
+    });
+    container_layout->addWidget(actions);
     tabs_ = new QTabWidget{container};
     assets_ = new QListWidget{tabs_};
     songs_ = new QListWidget{tabs_};
