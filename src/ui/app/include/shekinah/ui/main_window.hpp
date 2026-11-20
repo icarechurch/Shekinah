@@ -56,6 +56,7 @@ private:
     void refresh_service_order();
     void refresh_cues();
     void update_program_status();
+    void present_live_media();
     void import_asset();
     void import_song_text();
     void import_sermon_deck();

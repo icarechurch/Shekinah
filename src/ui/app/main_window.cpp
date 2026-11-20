@@ -17,6 +17,7 @@
 #include <QMenu>
 #include <QMenuBar>
 
+#include <algorithm>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -257,6 +258,56 @@ void ShekinahWindow::update_program_status() {
     operator_page_->program_status()->set_program(presentation_.program());
     if (audience_output_) {
         audience_output_->present(presentation_.program());
+        present_live_media();
+    }
+}
+
+void ShekinahWindow::present_live_media() {
+    if (!audience_output_ || !repository_) {
+        return;
+    }
+    const auto& program = presentation_.program();
+    if (program.mode != domain::ProgramMode::cue || !program.live_cue.has_value()) {
+        audience_output_->clear_slide_image();
+        audience_output_->clear_loop_video();
+        return;
+    }
+
+    std::optional<domain::AssetId> asset_id;
+    const auto& cue = *program.live_cue;
+    if (cue.content.kind == domain::ContentKind::song) {
+        const auto background = presentation_.resolve_background(cue.content, cue.cue);
+        if (background && background->has_value()) {
+            asset_id = background->value().asset;
+        }
+    } else {
+        const auto deck = repository_->load_deck(std::get<domain::SermonId>(cue.content.id));
+        if (deck) {
+            const auto slide = std::find_if(deck->slides.begin(), deck->slides.end(), [&](const auto& candidate) {
+                return candidate.id == cue.cue;
+            });
+            if (slide != deck->slides.end()) {
+                asset_id = slide->image;
+            }
+        }
+    }
+
+    if (!asset_id.has_value()) {
+        audience_output_->clear_slide_image();
+        audience_output_->clear_loop_video();
+        return;
+    }
+    const auto asset = repository_->load_asset(*asset_id);
+    if (!asset) {
+        return;
+    }
+    const auto path = store_->root() / asset->relative_path;
+    if (asset->kind == domain::AssetKind::image) {
+        audience_output_->clear_loop_video();
+        audience_output_->load_slide_image(path);
+    } else {
+        audience_output_->clear_slide_image();
+        audience_output_->load_loop_video(path);
     }
 }
 

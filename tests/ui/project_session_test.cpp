@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QImage>
 #include <QLabel>
 #include <QTest>
 
@@ -177,4 +178,30 @@ TEST_CASE("a live cue is mirrored to the Audience Output state") {
 
     REQUIRE(output->program().mode == shekinah::domain::ProgramMode::cue);
     REQUIRE(output->program().live_cue->cue == shekinah::domain::CueId{"slide-0"});
+}
+
+TEST_CASE("a live sermon cue loads its imported PNG into Audience Output") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "Slide 1.png";
+    QImage image{1600, 900, QImage::Format_RGB32};
+    image.fill(Qt::blue);
+    REQUIRE(image.save(QString::fromStdString(source.string()), "PNG"));
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto sermon = window.import_sermon_files({source}, "Sunday Message");
+    REQUIRE(sermon);
+    window.library_dock()->add_sermon(*sermon);
+    window.library_dock()->show_sermons();
+    window.library_dock()->activate_sermon_row(0);
+    auto* output = window.audience_output();
+    window.show();
+    QTest::qWait(20);
+
+    auto* cue = window.operator_page()->cue_grid()->findChild<QWidget*>(QStringLiteral("cue-slide-0"));
+    REQUIRE(cue != nullptr);
+    QTest::mouseClick(cue, Qt::LeftButton, Qt::NoModifier, cue->rect().center());
+
+    REQUIRE(output->slide_image_loaded());
 }
