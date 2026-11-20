@@ -5,6 +5,7 @@
 #include "shekinah/storage/project_store.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace shekinah::storage {
@@ -27,6 +28,8 @@ public:
     domain::Result<domain::ServiceOrderItem> append_to_order(
         const domain::ServiceOrderId& order_id, domain::ContentRef content);
     domain::Status remove_from_order(const domain::ServiceOrderItemId& item_id);
+    domain::Status move_in_order(const domain::ServiceOrderItemId& item_id,
+                                 std::int64_t target_ordinal);
     domain::Result<std::vector<domain::ServiceOrderItem>> load_order(
         const domain::ServiceOrderId& order_id) const;
     domain::Result<std::size_t> song_count() const;

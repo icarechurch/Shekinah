@@ -132,3 +132,42 @@ TEST_CASE("reusable content cannot be archived while a service order references 
     REQUIRE(repository.archive_song(SongId{"song-a"}));
     REQUIRE_FALSE(repository.load_song(SongId{"song-a"}));
 }
+
+TEST_CASE("SQLite content repository moves a service item and rewrites contiguous ordinals") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    SqliteContentRepository repository{*store};
+    REQUIRE(repository.ensure_service_order(ServiceOrderId{"order-a"}, "Sunday"));
+    REQUIRE(repository.save_song(Song{SongId{"song-a"}, "Song A", std::nullopt, {}}));
+    REQUIRE(repository.save_song(Song{SongId{"song-b"}, "Song B", std::nullopt, {}}));
+    REQUIRE(repository.save_song(Song{SongId{"song-c"}, "Song C", std::nullopt, {}}));
+    const auto first = repository.append_to_order(ServiceOrderId{"order-a"}, ContentRef::song("song-a"));
+    const auto second = repository.append_to_order(ServiceOrderId{"order-a"}, ContentRef::song("song-b"));
+    const auto third = repository.append_to_order(ServiceOrderId{"order-a"}, ContentRef::song("song-c"));
+    REQUIRE(first);
+    REQUIRE(second);
+    REQUIRE(third);
+
+    REQUIRE(repository.move_in_order(third->id, 0));
+
+    const auto order = repository.load_order(ServiceOrderId{"order-a"});
+    REQUIRE(order);
+    REQUIRE(order->size() == 3);
+    REQUIRE(order->at(0).content == ContentRef::song("song-c"));
+    REQUIRE(order->at(1).content == ContentRef::song("song-a"));
+    REQUIRE(order->at(2).content == ContentRef::song("song-b"));
+    REQUIRE(order->at(0).ordinal == 0);
+    REQUIRE(order->at(1).ordinal == 1);
+    REQUIRE(order->at(2).ordinal == 2);
+}
+
+TEST_CASE("SQLite content repository rejects an invalid service item move") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    SqliteContentRepository repository{*store};
+    REQUIRE(repository.ensure_service_order(ServiceOrderId{"order-a"}, "Sunday"));
+    REQUIRE_FALSE(repository.move_in_order(ServiceOrderItemId{"missing"}, 0));
+    REQUIRE_FALSE(repository.move_in_order(ServiceOrderItemId{"missing"}, -1));
+}
