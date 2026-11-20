@@ -12,6 +12,7 @@ class PresentationService {
 public:
     void register_song(domain::Song song);
     void register_sermon(domain::SermonDeck deck);
+    void reset() noexcept;
 
     domain::Status set_service_order(std::vector<domain::ServiceOrderItem> items);
     domain::Status select_service_item(const domain::ServiceOrderItemId& item_id);

@@ -85,3 +85,20 @@ TEST_CASE("clear and black update Program without introducing a preview state") 
     service.black();
     REQUIRE(service.program().mode == ProgramMode::black);
 }
+
+TEST_CASE("reset clears the presentation session boundary") {
+    PresentationService service;
+    service.register_song(make_song("song-a"));
+    ServiceOrderService order{ServiceOrderId{"sunday"}};
+    const auto item = order.append(ContentRef::song("song-a"));
+    REQUIRE(item);
+    REQUIRE(service.set_service_order(order.items()));
+    REQUIRE(service.take_live(item->id, CueId{"verse-1"}));
+
+    service.reset();
+
+    REQUIRE(service.program().mode == ProgramMode::clear);
+    REQUIRE_FALSE(service.program().live_cue.has_value());
+    REQUIRE_FALSE(service.selected_item().has_value());
+    REQUIRE_FALSE(service.take_live(item->id, CueId{"verse-1"}));
+}
