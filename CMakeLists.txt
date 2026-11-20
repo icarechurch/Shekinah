@@ -20,7 +20,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 6.7 REQUIRED COMPONENTS Core Gui Widgets Multimedia Test)
+find_package(Qt6 6.7 REQUIRED COMPONENTS Core Gui Widgets Multimedia MultimediaWidgets Test)
 find_package(SQLite3 REQUIRED)
 find_package(OpenSSL REQUIRED COMPONENTS Crypto)
 find_package(Catch2 3 CONFIG REQUIRED)

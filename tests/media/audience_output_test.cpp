@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QScreen>
+#include <QTemporaryFile>
 
 #include "shekinah/media/audience_output.hpp"
 
@@ -57,4 +58,26 @@ TEST_CASE("audience output exposes one video pause control") {
     REQUIRE(output.video_paused());
     output.set_video_paused(false);
     REQUIRE_FALSE(output.video_paused());
+}
+
+TEST_CASE("audience output loads one loop video and releases it on clear") {
+    ensure_qapplication();
+    QTemporaryFile temporary;
+    REQUIRE(temporary.open());
+    temporary.write("not-a-real-video");
+    temporary.flush();
+
+    AudienceOutput output;
+    REQUIRE(output.load_loop_video(temporary.fileName().toStdString()));
+    REQUIRE(output.loop_video_loaded());
+    output.clear_loop_video();
+    REQUIRE_FALSE(output.loop_video_loaded());
+}
+
+TEST_CASE("audience output rejects a missing loop-video path") {
+    ensure_qapplication();
+    AudienceOutput output;
+    const auto result = output.load_loop_video("C:/does-not-exist/shekinah.mp4");
+    REQUIRE_FALSE(result);
+    REQUIRE(result.error().code == ErrorCode::io_failure);
 }

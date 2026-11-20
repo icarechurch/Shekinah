@@ -10,7 +10,7 @@ target_include_directories(shekinah_media
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(shekinah_media PUBLIC shekinah_domain Qt6::Widgets)
+target_link_libraries(shekinah_media PUBLIC shekinah_domain Qt6::Widgets Qt6::Multimedia Qt6::MultimediaWidgets)
 if (WIN32)
     target_link_libraries(shekinah_media PUBLIC psapi)
 endif()
