@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QPushButton>
 #include <QTest>
 
 #include "shekinah/ui/cue_grid_widget.hpp"
@@ -47,4 +48,14 @@ TEST_CASE("left clicking a cue dispatches the cue without changing grid ownershi
     REQUIRE(target != nullptr);
     QTest::mouseClick(target, Qt::LeftButton, Qt::NoModifier, target->rect().center());
     REQUIRE(requested.value == "chorus-1");
+}
+
+TEST_CASE("cue cards show section and lyric summary text") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.set_cues({CueView{CueId{"verse-1"}, "Verse 1", "You are good"}});
+    auto* button = grid.findChild<QPushButton*>(QStringLiteral("cue-verse-1"));
+
+    REQUIRE(button != nullptr);
+    REQUIRE(button->text() == QStringLiteral("Verse 1\nYou are good"));
 }

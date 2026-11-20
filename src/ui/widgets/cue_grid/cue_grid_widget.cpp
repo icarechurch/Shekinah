@@ -19,7 +19,8 @@ public:
         setMinimumSize(120, 92);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         setCursor(Qt::PointingHandCursor);
-        setText(cue.section.isEmpty() ? QString::fromStdString(cue.id.value) : cue.section);
+        const auto heading = cue.section.isEmpty() ? QString::fromStdString(cue.id.value) : cue.section;
+        setText(cue.summary.isEmpty() ? heading : heading + QStringLiteral("\n") + cue.summary);
         setToolTip(cue.summary);
     }
 
