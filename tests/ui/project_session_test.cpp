@@ -232,3 +232,42 @@ TEST_CASE("New Song saves a Reflow draft into the reusable Songs library") {
     window.library_dock()->show_songs();
     REQUIRE(window.library_dock()->visible_content_count() == 1);
 }
+
+TEST_CASE("global Program controls navigate, clear, and black the live output") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "goodness.txt";
+    std::ofstream{source} << "# Goodness\n[Verse]\nYou are good\n\n[Chorus]\nAll the time\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto song = window.import_song_file(source);
+    REQUIRE(song);
+    window.library_dock()->add_song(*song);
+    window.library_dock()->show_songs();
+    window.library_dock()->activate_song_row(0);
+    auto* output = window.audience_output();
+    window.show();
+    QTest::qWait(20);
+
+    auto* first_cue = window.operator_page()->cue_grid()->findChild<QWidget*>(QStringLiteral("cue-slide-0"));
+    REQUIRE(first_cue != nullptr);
+    QTest::mouseClick(first_cue, Qt::LeftButton, Qt::NoModifier, first_cue->rect().center());
+    auto* next = window.operator_page()->program_status()->findChild<QPushButton*>(QStringLiteral("next"));
+    auto* previous = window.operator_page()->program_status()->findChild<QPushButton*>(QStringLiteral("previous"));
+    auto* clear = window.operator_page()->program_status()->findChild<QPushButton*>(QStringLiteral("clear"));
+    auto* black = window.operator_page()->program_status()->findChild<QPushButton*>(QStringLiteral("black"));
+    REQUIRE(next != nullptr);
+    REQUIRE(previous != nullptr);
+    REQUIRE(clear != nullptr);
+    REQUIRE(black != nullptr);
+
+    QTest::mouseClick(next, Qt::LeftButton);
+    REQUIRE(output->program().live_cue->cue == shekinah::domain::CueId{"slide-1"});
+    QTest::mouseClick(previous, Qt::LeftButton);
+    REQUIRE(output->program().live_cue->cue == shekinah::domain::CueId{"slide-0"});
+    QTest::mouseClick(black, Qt::LeftButton);
+    REQUIRE(output->program().mode == shekinah::domain::ProgramMode::black);
+    QTest::mouseClick(clear, Qt::LeftButton);
+    REQUIRE(output->program().mode == shekinah::domain::ProgramMode::clear);
+}
