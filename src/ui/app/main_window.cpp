@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_text_importer.hpp"
+#include "shekinah/media/audience_output.hpp"
 #include "shekinah/storage/asset_importer.hpp"
 #include "shekinah/storage/content_repository.hpp"
 #include "shekinah/storage/project_store.hpp"
@@ -13,6 +14,8 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
 #include <QFileDialog>
+#include <QMenu>
+#include <QMenuBar>
 
 #include <fstream>
 #include <sstream>
@@ -33,6 +36,13 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     library_dock_ = new LibraryDockWidget{this};
     addDockWidget(Qt::BottomDockWidgetArea, library_dock_);
 
+    auto* window_menu = menuBar()->addMenu(QStringLiteral("Window"));
+    auto* audience_action = window_menu->addAction(QStringLiteral("Show Audience Output"));
+    audience_action->setObjectName(QStringLiteral("show-audience-output"));
+    QObject::connect(audience_action, &QAction::triggered, this, [this] {
+        audience_output()->show_movable();
+    });
+
     library_dock_->set_import_asset_handler([this] { import_asset(); });
     library_dock_->set_import_song_handler([this] { import_song_text(); });
     library_dock_->set_new_song_handler([this] { create_song(); });
@@ -50,6 +60,13 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 ShekinahWindow::~ShekinahWindow() = default;
+
+media::AudienceOutput* ShekinahWindow::audience_output() {
+    if (!audience_output_) {
+        audience_output_ = std::make_unique<media::AudienceOutput>();
+    }
+    return audience_output_.get();
+}
 
 void ShekinahWindow::configure_operator() {
     operator_page_->set_service_order_selection_handler([this](domain::ServiceOrderItemId item_id) {
@@ -238,6 +255,9 @@ void ShekinahWindow::refresh_cues() {
 
 void ShekinahWindow::update_program_status() {
     operator_page_->program_status()->set_program(presentation_.program());
+    if (audience_output_) {
+        audience_output_->present(presentation_.program());
+    }
 }
 
 void ShekinahWindow::import_asset() {

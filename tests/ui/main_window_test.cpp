@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QAction>
 
 #include "shekinah/ui/main_window.hpp"
 
@@ -24,4 +25,5 @@ TEST_CASE("main window composes the operator page and bottom Library dock") {
     REQUIRE(window.windowTitle() == QStringLiteral("Shekinah"));
     REQUIRE(window.centralWidget()->objectName() == QStringLiteral("operator-page"));
     REQUIRE(window.findChild<QWidget*>(QStringLiteral("library-dock")) != nullptr);
+    REQUIRE(window.findChild<QAction*>(QStringLiteral("show-audience-output")) != nullptr);
 }

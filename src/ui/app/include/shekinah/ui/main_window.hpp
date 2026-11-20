@@ -16,6 +16,10 @@ class ProjectStore;
 class SqliteContentRepository;
 }
 
+namespace shekinah::media {
+class AudienceOutput;
+}
+
 namespace shekinah::ui {
 
 class LibraryDockWidget;
@@ -30,6 +34,7 @@ public:
     domain::Result<domain::Song> import_song_file(const std::filesystem::path& source);
     domain::Result<domain::SermonDeck> import_sermon_files(
         std::vector<std::filesystem::path> sources, std::string title);
+    media::AudienceOutput* audience_output();
     [[nodiscard]] bool project_open() const noexcept { return store_ != nullptr; }
     [[nodiscard]] const std::filesystem::path& project_root() const noexcept { return project_root_; }
 
@@ -42,6 +47,7 @@ private:
     std::filesystem::path project_root_;
     std::unique_ptr<storage::ProjectStore> store_;
     std::unique_ptr<storage::SqliteContentRepository> repository_;
+    std::unique_ptr<media::AudienceOutput> audience_output_;
     int next_content_id_{1};
     application::PresentationService presentation_;
 
