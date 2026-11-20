@@ -36,3 +36,10 @@ jobs:
         run: cmake --build --preset windows-ucrt64-debug --parallel 2
       - name: Test
         run: ctest --test-dir build/windows-ucrt64-debug --output-on-failure
+      - name: Run N4000 benchmark
+        run: ./build/windows-ucrt64-debug/shekinah_n4000_bench.exe --json shekinah-n4000.json
+      - name: Upload N4000 benchmark report
+        uses: actions/upload-artifact@v4
+        with:
+          name: shekinah-n4000-benchmark
+          path: shekinah-n4000.json
