@@ -1,6 +1,7 @@
 #include "shekinah/media/audience_output.hpp"
 
 #include <QGuiApplication>
+#include <QImageReader>
 #include <QMediaPlayer>
 #include <QPainter>
 #include <QResizeEvent>
@@ -62,6 +63,32 @@ void AudienceOutput::set_video_paused(bool paused) noexcept {
     }
 }
 
+domain::Status AudienceOutput::load_slide_image(const std::filesystem::path& path) {
+    if (!std::filesystem::is_regular_file(path)) {
+        return domain::Status::fail({domain::ErrorCode::io_failure, "slide image path is not a file"});
+    }
+    QImageReader reader{QString::fromStdString(path.string())};
+    reader.setAutoTransform(true);
+    const auto source_size = reader.size();
+    if (source_size.isValid() && (source_size.width() > 1920 || source_size.height() > 1080)) {
+        reader.setScaledSize(source_size.scaled(1920, 1080, Qt::KeepAspectRatio));
+    }
+    const auto image = reader.read();
+    if (image.isNull()) {
+        return domain::Status::fail({domain::ErrorCode::io_failure, "unable to decode slide image"});
+    }
+    slide_image_ = image;
+    slide_image_loaded_ = true;
+    update();
+    return domain::success();
+}
+
+void AudienceOutput::clear_slide_image() noexcept {
+    slide_image_ = QImage{};
+    slide_image_loaded_ = false;
+    update();
+}
+
 domain::Status AudienceOutput::load_loop_video(const std::filesystem::path& path) {
     if (!std::filesystem::is_regular_file(path)) {
         return domain::Status::fail({domain::ErrorCode::io_failure, "loop-video path is not a file"});
@@ -97,6 +124,14 @@ void AudienceOutput::paintEvent(QPaintEvent* event) {
                                   ? QColor{QStringLiteral("#101318")}
                                   : QColor{QStringLiteral("#182337")};
     painter.fillRect(rect(), background);
+    if (program_.mode == domain::ProgramMode::cue && slide_image_loaded_) {
+        const auto target = slide_image_.size().scaled(rect().size(), Qt::KeepAspectRatio);
+        const auto destination = QRect{(width() - target.width()) / 2,
+                                       (height() - target.height()) / 2,
+                                       target.width(), target.height()};
+        painter.drawImage(destination, slide_image_);
+        return;
+    }
     painter.setPen(Qt::white);
     painter.setFont(QFont{QStringLiteral("Segoe UI"), 28});
     const QString text = program_.mode == domain::ProgramMode::clear

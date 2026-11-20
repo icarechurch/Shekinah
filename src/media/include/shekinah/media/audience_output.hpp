@@ -4,6 +4,7 @@
 #include "shekinah/domain/result.hpp"
 
 #include <QWidget>
+#include <QImage>
 
 #include <filesystem>
 class QScreen;
@@ -22,12 +23,15 @@ public:
     void show_movable();
     void present(const domain::ProgramState& program);
     void set_video_paused(bool paused) noexcept;
+    domain::Status load_slide_image(const std::filesystem::path& path);
+    void clear_slide_image() noexcept;
     domain::Status load_loop_video(const std::filesystem::path& path);
     void clear_loop_video();
 
     [[nodiscard]] OutputMode mode() const noexcept { return mode_; }
     [[nodiscard]] const domain::ProgramState& program() const noexcept { return program_; }
     [[nodiscard]] bool video_paused() const noexcept { return video_paused_; }
+    [[nodiscard]] bool slide_image_loaded() const noexcept { return slide_image_loaded_; }
     [[nodiscard]] bool loop_video_loaded() const noexcept { return loop_video_loaded_; }
 
 protected:
@@ -38,7 +42,9 @@ private:
     OutputMode mode_{OutputMode::hidden};
     domain::ProgramState program_{};
     bool video_paused_{false};
+    bool slide_image_loaded_{false};
     bool loop_video_loaded_{false};
+    QImage slide_image_;
     QMediaPlayer* player_{nullptr};
     QVideoWidget* video_widget_{nullptr};
 };

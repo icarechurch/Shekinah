@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QImage>
 #include <QScreen>
 #include <QTemporaryFile>
 
@@ -58,6 +59,21 @@ TEST_CASE("audience output exposes one video pause control") {
     REQUIRE(output.video_paused());
     output.set_video_paused(false);
     REQUIRE_FALSE(output.video_paused());
+}
+
+TEST_CASE("audience output decodes one bounded slide image and releases it") {
+    ensure_qapplication();
+    QTemporaryFile temporary;
+    REQUIRE(temporary.open());
+    QImage image{4000, 2000, QImage::Format_RGB32};
+    image.fill(Qt::red);
+    REQUIRE(image.save(temporary.fileName(), "PNG"));
+
+    AudienceOutput output;
+    REQUIRE(output.load_slide_image(temporary.fileName().toStdString()));
+    REQUIRE(output.slide_image_loaded());
+    output.clear_slide_image();
+    REQUIRE_FALSE(output.slide_image_loaded());
 }
 
 TEST_CASE("audience output loads one loop video and releases it on clear") {
