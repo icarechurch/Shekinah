@@ -8,6 +8,7 @@
 #include <openssl/evp.h>
 #include <sstream>
 #include <string_view>
+#include <utility>
 
 namespace shekinah::storage {
 
@@ -106,6 +107,13 @@ domain::Result<domain::AssetRecord> AssetImporter::import_file(
     }
 
     const auto id = domain::AssetId{"asset-" + hash.value()};
+    domain::AssetRecord record{
+        id,
+        classification.value().first,
+        hash.value(),
+        relative.string(),
+        static_cast<std::uint64_t>(std::filesystem::file_size(source)),
+    };
     const auto status = store_.transaction([&](sqlite3* db) {
         sqlite3_stmt* lookup = nullptr;
         constexpr char lookup_sql[] = "SELECT id, kind, relative_path FROM assets WHERE sha256=?1 LIMIT 1;";
@@ -114,8 +122,6 @@ domain::Result<domain::AssetRecord> AssetImporter::import_file(
         }
         sqlite3_bind_text(lookup, 1, hash->c_str(), -1, SQLITE_TRANSIENT);
         const auto found = sqlite3_step(lookup) == SQLITE_ROW;
-        domain::AssetRecord record{id, classification.value().first, hash.value(), relative.string(),
-                                   static_cast<std::uint64_t>(std::filesystem::file_size(source))};
         if (found) {
             const auto* stored_id = reinterpret_cast<const char*>(sqlite3_column_text(lookup, 0));
             const auto* stored_kind = reinterpret_cast<const char*>(sqlite3_column_text(lookup, 1));
@@ -151,9 +157,7 @@ domain::Result<domain::AssetRecord> AssetImporter::import_file(
         return domain::Result<domain::AssetRecord>::fail(status.error());
     }
 
-    return domain::Result<domain::AssetRecord>::ok(
-        {id, classification.value().first, hash.value(), relative.string(),
-         static_cast<std::uint64_t>(std::filesystem::file_size(source))});
+    return domain::Result<domain::AssetRecord>::ok(std::move(record));
 }
 
 }  // namespace shekinah::storage

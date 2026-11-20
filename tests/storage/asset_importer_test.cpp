@@ -42,3 +42,23 @@ TEST_CASE("asset importer rejects unsupported extensions") {
     REQUIRE_FALSE(result);
     REQUIRE(result.error().code == ErrorCode::unsupported_media);
 }
+
+TEST_CASE("deduplicated imports return the canonical stored path") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    const auto first_path = project.root() / "first.PNG";
+    const auto second_path = project.root() / "second.jpg";
+    std::ofstream(first_path, std::ios::binary) << "same-bytes";
+    std::ofstream(second_path, std::ios::binary) << "same-bytes";
+
+    AssetImporter importer{*store};
+    const auto first = importer.import_file(first_path);
+    const auto second = importer.import_file(second_path);
+
+    REQUIRE(first);
+    REQUIRE(second);
+    REQUIRE(second->id == first->id);
+    REQUIRE(second->relative_path == first->relative_path);
+    REQUIRE(std::filesystem::exists(project.root() / "Sunday" / second->relative_path));
+}
