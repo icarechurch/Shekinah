@@ -35,6 +35,16 @@ using ServiceOrderId = StrongId<ServiceOrderTag>;
 using ServiceOrderItemId = StrongId<ServiceOrderItemTag>;
 using CueId = StrongId<CueTag>;
 
+enum class AssetKind { image, video };
+
+struct AssetRecord {
+    AssetId id;
+    AssetKind kind;
+    std::string sha256;
+    std::string relative_path;
+    std::uint64_t size_bytes{0};
+};
+
 enum class ContentKind { song, sermon };
 
 struct ContentRef {
