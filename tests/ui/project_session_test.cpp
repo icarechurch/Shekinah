@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "test_project.hpp"
+#include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/main_window.hpp"
 
 namespace {
@@ -75,4 +76,21 @@ TEST_CASE("main window imports a reusable PNG sermon deck through the project se
     REQUIRE(imported->title == "Sunday Message");
     REQUIRE(imported->slides.size() == 2);
     REQUIRE(!imported->id.empty());
+}
+
+TEST_CASE("opening a project restores reusable content in the Library") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "goodness.txt";
+    std::ofstream{source} << "# Goodness\n[Verse]\nYou are good\n";
+
+    shekinah::ui::ShekinahWindow first_window;
+    REQUIRE(first_window.open_project(project.root() / "Sunday"));
+    REQUIRE(first_window.import_song_file(source));
+
+    shekinah::ui::ShekinahWindow reopened_window;
+    REQUIRE(reopened_window.open_project(project.root() / "Sunday"));
+    reopened_window.library_dock()->show_songs();
+
+    REQUIRE(reopened_window.library_dock()->visible_content_count() == 1);
 }

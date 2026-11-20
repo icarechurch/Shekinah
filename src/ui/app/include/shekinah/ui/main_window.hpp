@@ -43,6 +43,7 @@ private:
     std::unique_ptr<storage::SqliteContentRepository> repository_;
     int next_content_id_{1};
 
+    void refresh_library();
     void refresh_service_order();
     void import_asset();
     void import_song_text();

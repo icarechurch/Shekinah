@@ -48,6 +48,10 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
 ShekinahWindow::~ShekinahWindow() = default;
 
 domain::Status ShekinahWindow::open_project(const std::filesystem::path& root) {
+    repository_.reset();
+    store_.reset();
+    project_root_.clear();
+
     auto opened = storage::ProjectStore::create_or_open(root);
     if (!opened) {
         return domain::Status::fail(opened.error());
@@ -66,8 +70,35 @@ domain::Status ShekinahWindow::open_project(const std::filesystem::path& root) {
         project_root_.clear();
         return order;
     }
+    refresh_library();
     refresh_service_order();
     return domain::success();
+}
+
+void ShekinahWindow::refresh_library() {
+    library_dock_->clear_contents();
+    if (!repository_) {
+        return;
+    }
+
+    const auto assets = repository_->list_assets();
+    if (assets) {
+        for (const auto& asset : *assets) {
+            library_dock_->add_asset(asset);
+        }
+    }
+    const auto songs = repository_->list_songs();
+    if (songs) {
+        for (const auto& song : *songs) {
+            library_dock_->add_song(song);
+        }
+    }
+    const auto sermons = repository_->list_decks();
+    if (sermons) {
+        for (const auto& sermon : *sermons) {
+            library_dock_->add_sermon(sermon);
+        }
+    }
 }
 
 void ShekinahWindow::refresh_service_order() {
