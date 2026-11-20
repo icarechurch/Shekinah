@@ -39,6 +39,12 @@ add_executable(shekinah_media_tests
 target_link_libraries(shekinah_media_tests PRIVATE shekinah_media Qt6::Widgets Catch2::Catch2WithMain)
 shekinah_register_test(shekinah_media_tests media)
 
+add_executable(shekinah_ui_tests
+    ui/cue_grid_test.cpp
+)
+target_link_libraries(shekinah_ui_tests PRIVATE shekinah_ui Qt6::Test Catch2::Catch2WithMain)
+shekinah_register_test(shekinah_ui_tests ui)
+
 add_executable(shekinah_application_tests
     application/presentation_service_test.cpp
     application/service_order_service_test.cpp
