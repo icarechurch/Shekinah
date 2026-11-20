@@ -26,6 +26,7 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-qt6-base
             mingw-w64-ucrt-x86_64-qt6-multimedia
+            mingw-w64-ucrt-x86_64-qt6-multimedia-widgets
             mingw-w64-ucrt-x86_64-sqlite3
             mingw-w64-ucrt-x86_64-catch
             mingw-w64-ucrt-x86_64-nlohmann-json
