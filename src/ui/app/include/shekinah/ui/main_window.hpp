@@ -42,6 +42,7 @@ public:
     domain::Result<domain::Song> import_song_file(const std::filesystem::path& source);
     domain::Result<domain::SermonDeck> import_sermon_files(
         std::vector<std::filesystem::path> sources, std::string title);
+    domain::Status set_slide_background(const domain::CueId& cue, const domain::AssetId& asset);
     media::AudienceOutput* audience_output();
     void sample_memory_usage(std::size_t working_set_bytes);
     [[nodiscard]] std::size_t last_working_set_bytes() const noexcept;
