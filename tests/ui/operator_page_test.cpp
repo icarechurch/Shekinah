@@ -58,10 +58,13 @@ TEST_CASE("operator workspace keeps the Presentation cue surface visible on the 
 
     auto* workspace = page.findChild<QSplitter*>(QStringLiteral("operator-workspace"));
     REQUIRE(workspace != nullptr);
-    REQUIRE(workspace->count() == 2);
+    REQUIRE(workspace->count() == 3);
     REQUIRE(page.service_order_widget()->isVisible());
     REQUIRE(page.cue_grid()->isVisible());
+    REQUIRE(page.program_status()->isVisible());
     REQUIRE(page.cue_grid()->width() > 0);
+    REQUIRE(page.program_status()->width() > 0);
+    REQUIRE(workspace->widget(2) == page.program_status());
     REQUIRE(page.cue_grid()->findChild<QWidget*>(QStringLiteral("presentation-empty-state")) != nullptr);
 }
 

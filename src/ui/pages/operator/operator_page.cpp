@@ -36,12 +36,18 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     });
     workspace->addWidget(service_order_);
     workspace->addWidget(cue_grid_);
+    program_status_ = new ProgramStatusWidget{workspace};
+    program_status_->setMinimumWidth(260);
+    program_status_->setMaximumWidth(340);
+    workspace->addWidget(program_status_);
+    workspace->setCollapsible(0, false);
+    workspace->setCollapsible(1, false);
+    workspace->setCollapsible(2, false);
     workspace->setStretchFactor(0, 0);
     workspace->setStretchFactor(1, 1);
+    workspace->setStretchFactor(2, 0);
+    workspace->setSizes({220, 760, 280});
     layout->addWidget(workspace, 1);
-
-    program_status_ = new ProgramStatusWidget{this};
-    layout->addWidget(program_status_, 0);
     inspector_ = new InspectorDialog{this};
 }
 

@@ -1,6 +1,8 @@
 #include "shekinah/ui/program_status_widget.hpp"
 
 #include <QLabel>
+#include <QFrame>
+#include <QHBoxLayout>
 #include <QPushButton>
 #include <QVBoxLayout>
 
@@ -26,13 +28,45 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 8, 8, 8);
 
+    auto* heading = new QLabel{QStringLiteral("PROGRAM STATUS"), this};
+    heading->setObjectName(QStringLiteral("program-status-title"));
+    heading->setStyleSheet(QStringLiteral("font-size: 12px; font-weight: 600; letter-spacing: 1px;"));
+    layout->addWidget(heading);
+
+    auto* preview = new QFrame{this};
+    preview->setObjectName(QStringLiteral("program-preview"));
+    preview->setMinimumHeight(112);
+    preview->setStyleSheet(QStringLiteral(
+        "QFrame#program-preview { background: #000000; border-radius: 6px; }"
+        "QLabel#program-title { color: #ffffff; font-size: 15px; }"
+        "QLabel#program-mode { color: #22e58a; font-size: 11px; font-weight: 600; }"
+        "QLabel#program-cue { color: #22e58a; font-size: 11px; }"));
+    auto* preview_layout = new QVBoxLayout{preview};
+    preview_layout->setContentsMargins(10, 10, 10, 10);
+    preview_layout->setAlignment(Qt::AlignCenter);
+    program_title_ = new QLabel{QStringLiteral("No cue live"), preview};
+    program_title_->setObjectName(QStringLiteral("program-title"));
+    program_title_->setAlignment(Qt::AlignCenter);
+    program_title_->setWordWrap(true);
+    preview_layout->addWidget(program_title_);
+
     mode_label_ = new QLabel{QStringLiteral("CLEAR"), this};
     mode_label_->setObjectName(QStringLiteral("program-mode"));
     mode_label_->setProperty("role", QStringLiteral("status"));
+    mode_label_->setAlignment(Qt::AlignCenter);
     cue_label_ = new QLabel{QStringLiteral("No cue live"), this};
     cue_label_->setObjectName(QStringLiteral("program-cue"));
-    layout->addWidget(mode_label_);
-    layout->addWidget(cue_label_);
+    cue_label_->setAlignment(Qt::AlignCenter);
+    preview_layout->addWidget(mode_label_);
+    preview_layout->addWidget(cue_label_);
+    layout->addWidget(preview);
+
+    auto* output_target = new QLabel{QStringLiteral("Output: Monitor 2"), this};
+    output_target->setObjectName(QStringLiteral("output-target"));
+    auto* audience_mode = new QLabel{QStringLiteral("Audience full-screen"), this};
+    audience_mode->setObjectName(QStringLiteral("audience-mode"));
+    layout->addWidget(output_target);
+    layout->addWidget(audience_mode);
 
     global_controls_ = new QWidget{this};
     global_controls_->setObjectName(QStringLiteral("global-controls"));
@@ -67,11 +101,19 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     layout->addWidget(global_controls_);
 }
 
+void ProgramStatusWidget::set_program_title(QString title) {
+    const auto trimmed = title.trimmed();
+    program_title_->setText(trimmed.isEmpty() ? QStringLiteral("No cue live") : trimmed);
+}
+
 void ProgramStatusWidget::set_program(const domain::ProgramState& program) {
     mode_label_->setText(mode_text(program.mode));
     cue_label_->setText(program.live_cue.has_value()
                             ? QString::fromStdString(program.live_cue->cue.value)
                             : QStringLiteral("No cue live"));
+    if (!program.live_cue.has_value()) {
+        set_program_title({});
+    }
 }
 
 bool ProgramStatusWidget::global_controls_below_status() const noexcept {

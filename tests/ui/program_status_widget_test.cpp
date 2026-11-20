@@ -55,3 +55,17 @@ TEST_CASE("Program Status renders the live cue label") {
     REQUIRE(widget.findChild<QLabel*>(QStringLiteral("program-mode"))->text() == QStringLiteral("LIVE"));
     REQUIRE(widget.findChild<QLabel*>(QStringLiteral("program-cue"))->text() == QStringLiteral("bridge-1"));
 }
+
+TEST_CASE("Program Status exposes the right-side output panel") {
+    ensure_qapplication();
+    ProgramStatusWidget widget;
+
+    REQUIRE(widget.findChild<QLabel*>(QStringLiteral("program-status-title"))->text() ==
+            QStringLiteral("PROGRAM STATUS"));
+    REQUIRE(widget.findChild<QWidget*>(QStringLiteral("program-preview")) != nullptr);
+    REQUIRE(widget.findChild<QLabel*>(QStringLiteral("output-target"))->text() ==
+            QStringLiteral("Output: Monitor 2"));
+    REQUIRE(widget.findChild<QLabel*>(QStringLiteral("audience-mode"))->text() ==
+            QStringLiteral("Audience full-screen"));
+    REQUIRE(widget.findChild<QWidget*>(QStringLiteral("global-controls")) != nullptr);
+}

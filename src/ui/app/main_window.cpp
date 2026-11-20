@@ -410,7 +410,25 @@ void ShekinahWindow::refresh_cues() {
 }
 
 void ShekinahWindow::update_program_status() {
-    operator_page_->program_status()->set_program(presentation_.program());
+    const auto program = presentation_.program();
+    QString title;
+    if (repository_ && program.live_cue.has_value()) {
+        if (program.live_cue->content.kind == domain::ContentKind::song) {
+            const auto song = repository_->load_song(
+                std::get<domain::SongId>(program.live_cue->content.id));
+            if (song) {
+                title = QString::fromStdString(song->title);
+            }
+        } else {
+            const auto sermon = repository_->load_deck(
+                std::get<domain::SermonId>(program.live_cue->content.id));
+            if (sermon) {
+                title = QString::fromStdString(sermon->title);
+            }
+        }
+    }
+    operator_page_->program_status()->set_program_title(std::move(title));
+    operator_page_->program_status()->set_program(program);
     if (audience_output_) {
         audience_output_->present(presentation_.program());
         present_live_media();
