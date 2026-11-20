@@ -147,14 +147,15 @@ TEST_CASE("service-order selection rebuilds cues and clicking a cue changes Prog
     window.show();
     QTest::qWait(20);
 
-    auto* chorus = window.operator_page()->cue_grid()->findChild<QWidget*>(QStringLiteral("cue-slide-1"));
+    auto* chorus = window.operator_page()->cue_grid()->findChild<QWidget*>(
+        QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[1].id.value)));
     REQUIRE(chorus != nullptr);
     QTest::mouseClick(chorus, Qt::LeftButton, Qt::NoModifier, chorus->rect().center());
 
     const auto* program_cue = window.operator_page()->program_status()->findChild<QLabel*>(
         QStringLiteral("program-cue"));
     REQUIRE(program_cue != nullptr);
-    REQUIRE(program_cue->text() == QStringLiteral("slide-1"));
+    REQUIRE(program_cue->text() == QString::fromStdString(song->slides[1].id.value));
 }
 
 TEST_CASE("a live cue is mirrored to the Audience Output state") {
@@ -175,12 +176,13 @@ TEST_CASE("a live cue is mirrored to the Audience Output state") {
     window.show();
     QTest::qWait(20);
 
-    auto* cue = window.operator_page()->cue_grid()->findChild<QWidget*>(QStringLiteral("cue-slide-0"));
+    auto* cue = window.operator_page()->cue_grid()->findChild<QWidget*>(
+        QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[0].id.value)));
     REQUIRE(cue != nullptr);
     QTest::mouseClick(cue, Qt::LeftButton, Qt::NoModifier, cue->rect().center());
 
     REQUIRE(output->program().mode == shekinah::domain::ProgramMode::cue);
-    REQUIRE(output->program().live_cue->cue == shekinah::domain::CueId{"slide-0"});
+    REQUIRE(output->program().live_cue->cue == song->slides[0].id);
 }
 
 TEST_CASE("a live sermon cue loads its imported PNG into Audience Output") {
@@ -250,7 +252,8 @@ TEST_CASE("global Program controls navigate, clear, and black the live output") 
     window.show();
     QTest::qWait(20);
 
-    auto* first_cue = window.operator_page()->cue_grid()->findChild<QWidget*>(QStringLiteral("cue-slide-0"));
+    auto* first_cue = window.operator_page()->cue_grid()->findChild<QWidget*>(
+        QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[0].id.value)));
     REQUIRE(first_cue != nullptr);
     QTest::mouseClick(first_cue, Qt::LeftButton, Qt::NoModifier, first_cue->rect().center());
     auto* next = window.operator_page()->program_status()->findChild<QPushButton*>(QStringLiteral("next"));
@@ -263,11 +266,31 @@ TEST_CASE("global Program controls navigate, clear, and black the live output") 
     REQUIRE(black != nullptr);
 
     QTest::mouseClick(next, Qt::LeftButton);
-    REQUIRE(output->program().live_cue->cue == shekinah::domain::CueId{"slide-1"});
+    REQUIRE(output->program().live_cue->cue == song->slides[1].id);
     QTest::mouseClick(previous, Qt::LeftButton);
-    REQUIRE(output->program().live_cue->cue == shekinah::domain::CueId{"slide-0"});
+    REQUIRE(output->program().live_cue->cue == song->slides[0].id);
     QTest::mouseClick(black, Qt::LeftButton);
     REQUIRE(output->program().mode == shekinah::domain::ProgramMode::black);
     QTest::mouseClick(clear, Qt::LeftButton);
     REQUIRE(output->program().mode == shekinah::domain::ProgramMode::clear);
+}
+
+TEST_CASE("generated reusable content ids remain unique after project reopen") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "goodness.txt";
+    std::ofstream{source} << "# Goodness\n[Verse]\nYou are good\n";
+
+    shekinah::ui::ShekinahWindow first_window;
+    REQUIRE(first_window.open_project(project.root() / "Sunday"));
+    const auto first = first_window.import_song_file(source);
+    REQUIRE(first);
+
+    shekinah::ui::ShekinahWindow reopened_window;
+    REQUIRE(reopened_window.open_project(project.root() / "Sunday"));
+    const auto second = reopened_window.import_song_file(source);
+
+    REQUIRE(second);
+    REQUIRE(first->id != second->id);
+    REQUIRE(first->title == second->title);
 }

@@ -25,6 +25,16 @@
 #include <vector>
 
 namespace shekinah::ui {
+namespace {
+
+void normalize_song_cue_ids(domain::Song& song) {
+    for (std::size_t index = 0; index != song.slides.size(); ++index) {
+        song.slides[index].id = domain::CueId{
+            song.id.value + "-slide-" + std::to_string(index)};
+    }
+}
+
+}  // namespace
 
 ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     setObjectName(QStringLiteral("shekinah-window"));
@@ -367,7 +377,8 @@ domain::Result<domain::Song> ShekinahWindow::import_song_file(
         return domain::Result<domain::Song>::fail(parsed.error());
     }
     auto song = parsed.value();
-    song.id = domain::SongId{"song-" + std::to_string(next_content_id_++)};
+    song.id = domain::SongId{allocate_song_id()};
+    normalize_song_cue_ids(song);
     const auto saved = repository_->save_song(song);
     if (!saved) {
         return domain::Result<domain::Song>::fail(saved.error());
@@ -402,8 +413,26 @@ domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
             {domain::ErrorCode::storage_failure, "Open a project before importing sermons"});
     }
     return storage::SermonDeckImporter{*store_}.import_pngs(
-        domain::SermonId{"sermon-" + std::to_string(next_content_id_++)}, std::move(title),
+        domain::SermonId{allocate_sermon_id()}, std::move(title),
         std::move(sources));
+}
+
+std::string ShekinahWindow::allocate_song_id() {
+    for (;;) {
+        const auto candidate = "song-" + std::to_string(next_content_id_++);
+        if (!repository_ || !repository_->load_song(domain::SongId{candidate})) {
+            return candidate;
+        }
+    }
+}
+
+std::string ShekinahWindow::allocate_sermon_id() {
+    for (;;) {
+        const auto candidate = "sermon-" + std::to_string(next_content_id_++);
+        if (!repository_ || !repository_->load_deck(domain::SermonId{candidate})) {
+            return candidate;
+        }
+    }
 }
 
 void ShekinahWindow::create_song() {
@@ -412,14 +441,16 @@ void ShekinahWindow::create_song() {
     }
     auto* editor = new ReflowEditorDialog{this};
     editor->setAttribute(Qt::WA_DeleteOnClose);
-    editor->load_song(domain::SongId{"song-" + std::to_string(next_content_id_++)});
+    editor->load_song(domain::SongId{allocate_song_id()});
     editor->set_title(QStringLiteral("Untitled Song"));
     QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
         const auto draft = editor->draft_song();
         if (!draft || !repository_) {
             return;
         }
-        const auto saved = repository_->save_song(*draft);
+        auto song = *draft;
+        normalize_song_cue_ids(song);
+        const auto saved = repository_->save_song(song);
         if (saved) {
             library_dock_->add_song(*saved);
         }
