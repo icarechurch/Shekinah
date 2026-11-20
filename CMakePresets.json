@@ -1,0 +1,42 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 28,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "windows-ucrt64-debug",
+      "displayName": "Windows UCRT64 Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/windows-ucrt64-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "C:/msys64/ucrt64/bin/g++.exe",
+        "CMAKE_PREFIX_PATH": "C:/msys64/ucrt64"
+      }
+    },
+    {
+      "name": "windows-ucrt64-release",
+      "displayName": "Windows UCRT64 Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/windows-ucrt64-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "C:/msys64/ucrt64/bin/g++.exe",
+        "CMAKE_PREFIX_PATH": "C:/msys64/ucrt64"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-ucrt64-debug",
+      "configurePreset": "windows-ucrt64-debug"
+    },
+    {
+      "name": "windows-ucrt64-release",
+      "configurePreset": "windows-ucrt64-release"
+    }
+  ]
+}
