@@ -43,3 +43,16 @@ TEST_CASE("library exposes explicit authoring and import actions") {
     REQUIRE(import_sermon == 1);
     REQUIRE(import_asset == 1);
 }
+
+TEST_CASE("library exposes an edit boundary for reusable Songs") {
+    ensure_qapplication();
+    shekinah::ui::LibraryDockWidget dock;
+    dock.add_song(shekinah::domain::Song{
+        shekinah::domain::SongId{"song-a"}, "Goodness", std::nullopt, {}});
+    shekinah::domain::SongId edited;
+    dock.set_edit_song_handler([&](shekinah::domain::SongId id) { edited = std::move(id); });
+
+    dock.edit_song_row(0);
+
+    REQUIRE(edited == shekinah::domain::SongId{"song-a"});
+}

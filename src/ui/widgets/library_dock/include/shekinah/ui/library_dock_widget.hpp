@@ -34,7 +34,11 @@ public:
     void set_add_content_handler(std::function<void(domain::ContentRef)> handler) {
         add_content_handler_ = std::move(handler);
     }
+    void set_edit_song_handler(std::function<void(domain::SongId)> handler) {
+        edit_song_handler_ = std::move(handler);
+    }
     void activate_song_row(int row);
+    void edit_song_row(int row);
     void activate_sermon_row(int row);
 
     [[nodiscard]] LibraryTab current_tab() const noexcept { return current_tab_; }
@@ -57,6 +61,7 @@ private:
     std::function<void()> import_sermon_handler_;
     std::function<void()> import_asset_handler_;
     std::function<void(domain::ContentRef)> add_content_handler_;
+    std::function<void(domain::SongId)> edit_song_handler_;
 };
 
 }  // namespace shekinah::ui

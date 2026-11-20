@@ -2,6 +2,7 @@
 
 #include <QListWidget>
 #include <QLineEdit>
+#include <QMenu>
 #include <QPushButton>
 #include <QTabWidget>
 #include <QVBoxLayout>
@@ -69,6 +70,21 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     assets_->setObjectName(QStringLiteral("assets-list"));
     songs_->setObjectName(QStringLiteral("songs-list"));
     sermons_->setObjectName(QStringLiteral("sermons-list"));
+    songs_->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(songs_, &QListWidget::customContextMenuRequested, this, [this](const QPoint& position) {
+        auto* item = songs_->itemAt(position);
+        if (item == nullptr || !edit_song_handler_) {
+            return;
+        }
+        QMenu menu{this};
+        auto* edit = menu.addAction(QStringLiteral("Edit Song"));
+        QObject::connect(edit, &QAction::triggered, this, [this, item] {
+            if (edit_song_handler_) {
+                edit_song_handler_(domain::SongId{item->data(kContentIdRole).toString().toStdString()});
+            }
+        });
+        menu.exec(songs_->viewport()->mapToGlobal(position));
+    });
     QObject::connect(songs_, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
         if (item != nullptr && add_content_handler_) {
             add_content_handler_(domain::ContentRef::song(item->data(kContentIdRole).toString().toStdString()));
@@ -126,6 +142,15 @@ void LibraryDockWidget::activate_song_row(int row) {
         const auto* item = songs_->item(row);
         if (add_content_handler_ && item != nullptr) {
             add_content_handler_(domain::ContentRef::song(item->data(kContentIdRole).toString().toStdString()));
+        }
+    }
+}
+
+void LibraryDockWidget::edit_song_row(int row) {
+    if (row >= 0 && row < songs_->count()) {
+        const auto* item = songs_->item(row);
+        if (edit_song_handler_ && item != nullptr) {
+            edit_song_handler_(domain::SongId{item->data(kContentIdRole).toString().toStdString()});
         }
     }
 }
