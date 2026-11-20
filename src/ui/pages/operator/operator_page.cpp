@@ -43,6 +43,31 @@ void OperatorPage::set_service_order(std::vector<ServiceOrderView> items) {
     service_order_->set_items(std::move(items));
 }
 
+void OperatorPage::set_service_order_selection_handler(
+    std::function<void(domain::ServiceOrderItemId)> handler) {
+    service_order_->set_selection_handler(std::move(handler));
+}
+
+void OperatorPage::set_take_live_handler(std::function<void(domain::CueId)> handler) {
+    cue_grid_->set_take_live_handler(std::move(handler));
+}
+
+void OperatorPage::set_previous_handler(std::function<void()> handler) {
+    program_status_->set_previous_handler(std::move(handler));
+}
+
+void OperatorPage::set_next_handler(std::function<void()> handler) {
+    program_status_->set_next_handler(std::move(handler));
+}
+
+void OperatorPage::set_clear_handler(std::function<void()> handler) {
+    program_status_->set_clear_handler(std::move(handler));
+}
+
+void OperatorPage::set_black_handler(std::function<void()> handler) {
+    program_status_->set_black_handler(std::move(handler));
+}
+
 QMenu* OperatorPage::create_context_menu(const domain::CueId& cue) {
     auto* menu = new QMenu{this};
     auto* inspector = menu->addAction(QStringLiteral("Open Inspector"));
