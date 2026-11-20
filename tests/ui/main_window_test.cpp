@@ -27,3 +27,15 @@ TEST_CASE("main window composes the operator page and bottom Library dock") {
     REQUIRE(window.findChild<QWidget*>(QStringLiteral("library-dock")) != nullptr);
     REQUIRE(window.findChild<QAction*>(QStringLiteral("show-audience-output")) != nullptr);
 }
+
+TEST_CASE("main window applies the bounded live-media admission thresholds") {
+    ensure_qapplication();
+    ShekinahWindow window;
+
+    window.sample_memory_usage(270'000'000);
+    REQUIRE(window.last_working_set_bytes() == 270'000'000);
+    REQUIRE_FALSE(window.live_media_admitted());
+
+    window.sample_memory_usage(100'000'000);
+    REQUIRE(window.live_media_admitted());
+}

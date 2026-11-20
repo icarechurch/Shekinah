@@ -1,7 +1,9 @@
 #include "shekinah/ui/main_window.hpp"
 
+#include "shekinah/application/resource_governor.hpp"
 #include "shekinah/application/song_text_importer.hpp"
 #include "shekinah/media/audience_output.hpp"
+#include "shekinah/media/memory_diagnostics.hpp"
 #include "shekinah/storage/asset_importer.hpp"
 #include "shekinah/storage/content_repository.hpp"
 #include "shekinah/storage/project_store.hpp"
@@ -16,6 +18,7 @@
 #include <QFileDialog>
 #include <QMenu>
 #include <QMenuBar>
+#include <QTimer>
 
 #include <algorithm>
 #include <fstream>
@@ -26,6 +29,13 @@
 
 namespace shekinah::ui {
 namespace {
+
+class WindowResourcePools final : public application::ResourcePools {
+public:
+    void purge_non_live_caches() override {}
+    void cancel_queued_work() override {}
+    void release_non_active_media() override {}
+};
 
 void normalize_song_cue_ids(domain::Song& song) {
     for (std::size_t index = 0; index != song.slides.size(); ++index) {
@@ -40,6 +50,15 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     setObjectName(QStringLiteral("shekinah-window"));
     setWindowTitle(QStringLiteral("Shekinah"));
     resize(1280, 720);
+
+    resource_pools_ = std::make_unique<WindowResourcePools>();
+    resource_governor_ = std::make_unique<application::ResourceGovernor>(*resource_pools_);
+    resource_timer_ = new QTimer{this};
+    resource_timer_->setInterval(1000);
+    QObject::connect(resource_timer_, &QTimer::timeout, this, [this] {
+        sample_memory_usage(media::MemoryDiagnostics::working_set_bytes());
+    });
+    resource_timer_->start();
 
     operator_page_ = new OperatorPage{this};
     setCentralWidget(operator_page_);
@@ -77,6 +96,20 @@ media::AudienceOutput* ShekinahWindow::audience_output() {
         audience_output_ = std::make_unique<media::AudienceOutput>();
     }
     return audience_output_.get();
+}
+
+void ShekinahWindow::sample_memory_usage(std::size_t working_set_bytes) {
+    if (resource_governor_) {
+        resource_governor_->on_working_set_sample(working_set_bytes);
+    }
+}
+
+std::size_t ShekinahWindow::last_working_set_bytes() const noexcept {
+    return resource_governor_ == nullptr ? 0 : resource_governor_->last_sample_bytes();
+}
+
+bool ShekinahWindow::live_media_admitted() const noexcept {
+    return resource_governor_ == nullptr || resource_governor_->may_load_live_media();
 }
 
 void ShekinahWindow::configure_operator() {
@@ -316,6 +349,9 @@ void ShekinahWindow::present_live_media() {
         audience_output_->clear_loop_video();
         audience_output_->load_slide_image(path);
     } else {
+        if (!live_media_admitted()) {
+            return;
+        }
         audience_output_->clear_slide_image();
         audience_output_->load_loop_video(path);
     }
