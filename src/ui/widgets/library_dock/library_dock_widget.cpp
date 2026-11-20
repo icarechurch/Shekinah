@@ -47,6 +47,11 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
             import_song_handler_();
         }
     });
+    add_action(QStringLiteral("Edit Song"), QStringLiteral("edit-song"), [this] {
+        if (edit_song_handler_) {
+            edit_song_row(songs_->currentRow());
+        }
+    });
     add_action(QStringLiteral("New Sermon"), QStringLiteral("new-sermon"), [this] {
         if (new_sermon_handler_) {
             new_sermon_handler_();

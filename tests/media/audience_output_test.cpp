@@ -52,6 +52,18 @@ TEST_CASE("audience output distinguishes clear, black, and live cue states") {
     REQUIRE(output.program().mode == ProgramMode::black);
 }
 
+TEST_CASE("audience output stores and clears live lyric text") {
+    ensure_qapplication();
+    AudienceOutput output;
+    output.set_live_text(QStringLiteral("You are good\nAll the time"));
+
+    REQUIRE(output.live_text() == QStringLiteral("You are good\nAll the time"));
+
+    output.present(ProgramState{ProgramMode::clear, std::nullopt});
+
+    REQUIRE(output.live_text().isEmpty());
+}
+
 TEST_CASE("audience output exposes one video pause control") {
     ensure_qapplication();
     AudienceOutput output;

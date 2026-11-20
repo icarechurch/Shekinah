@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QListWidget>
 #include <QPushButton>
 
 #include "shekinah/ui/library_dock_widget.hpp"
@@ -53,6 +54,23 @@ TEST_CASE("library exposes an edit boundary for reusable Songs") {
     dock.set_edit_song_handler([&](shekinah::domain::SongId id) { edited = std::move(id); });
 
     dock.edit_song_row(0);
+
+    REQUIRE(edited == shekinah::domain::SongId{"song-a"});
+}
+
+TEST_CASE("library exposes a visible Edit Song action") {
+    ensure_qapplication();
+    shekinah::ui::LibraryDockWidget dock;
+    dock.add_song(shekinah::domain::Song{
+        shekinah::domain::SongId{"song-a"}, "Goodness", std::nullopt, {}});
+    shekinah::domain::SongId edited;
+    dock.set_edit_song_handler([&](shekinah::domain::SongId id) { edited = std::move(id); });
+    dock.show_songs();
+    dock.findChild<QListWidget*>(QStringLiteral("songs-list"))->setCurrentRow(0);
+
+    auto* edit = dock.findChild<QPushButton*>(QStringLiteral("edit-song"));
+    REQUIRE(edit != nullptr);
+    edit->click();
 
     REQUIRE(edited == shekinah::domain::SongId{"song-a"});
 }

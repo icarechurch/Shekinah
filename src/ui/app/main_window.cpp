@@ -46,6 +46,24 @@ void normalize_song_cue_ids(domain::Song& song) {
     }
 }
 
+application::SongReflowDocument reflow_document_for_song(const domain::Song& song) {
+    std::string text;
+    std::vector<application::SlideBreak> breaks;
+    for (std::size_t index = 0; index != song.slides.size(); ++index) {
+        if (index != 0) {
+            breaks.push_back(application::SlideBreak{text.size(), song.slides[index].section});
+            text.push_back('\n');
+        }
+        for (std::size_t line = 0; line != song.slides[index].lines.size(); ++line) {
+            if (line != 0) {
+                text.push_back('\n');
+            }
+            text += song.slides[index].lines[line];
+        }
+    }
+    return application::SongReflowDocument{std::move(text), std::move(breaks)};
+}
+
 }  // namespace
 
 ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
@@ -81,6 +99,13 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     library_dock_->set_import_sermon_handler([this] { import_sermon_deck(); });
     library_dock_->set_new_sermon_handler([this] { import_sermon_deck(); });
     library_dock_->set_edit_song_handler([this](domain::SongId id) { edit_song(id); });
+    operator_page_->set_authoring_handlers(
+        [this] { create_song(); },
+        [this] { import_song_text(); },
+        [this] { import_sermon_deck(); },
+        [this] { import_asset(); });
+    library_dock_->setMinimumHeight(190);
+    library_dock_->show();
     library_dock_->set_add_content_handler([this](domain::ContentRef content) {
         if (!repository_) {
             return;
@@ -322,6 +347,7 @@ void ShekinahWindow::present_live_media() {
     }
     const auto& program = presentation_.program();
     if (program.mode != domain::ProgramMode::cue || !program.live_cue.has_value()) {
+        audience_output_->set_live_text({});
         audience_output_->clear_slide_image();
         audience_output_->clear_loop_video();
         return;
@@ -330,11 +356,32 @@ void ShekinahWindow::present_live_media() {
     std::optional<domain::AssetId> asset_id;
     const auto& cue = *program.live_cue;
     if (cue.content.kind == domain::ContentKind::song) {
+        const auto song = repository_->load_song(std::get<domain::SongId>(cue.content.id));
+        if (song) {
+            const auto slide = std::find_if(song->slides.begin(), song->slides.end(), [&](const auto& candidate) {
+                return candidate.id == cue.cue;
+            });
+            if (slide != song->slides.end()) {
+                std::ostringstream lyric_text;
+                for (std::size_t index = 0; index != slide->lines.size(); ++index) {
+                    if (index != 0) {
+                        lyric_text << '\n';
+                    }
+                    lyric_text << slide->lines[index];
+                }
+                audience_output_->set_live_text(QString::fromStdString(lyric_text.str()));
+            } else {
+                audience_output_->set_live_text({});
+            }
+        } else {
+            audience_output_->set_live_text({});
+        }
         const auto background = presentation_.resolve_background(cue.content, cue.cue);
         if (background && background->has_value()) {
             asset_id = background->value().asset;
         }
     } else {
+        audience_output_->set_live_text({});
         const auto deck = repository_->load_deck(std::get<domain::SermonId>(cue.content.id));
         if (deck) {
             const auto slide = std::find_if(deck->slides.begin(), deck->slides.end(), [&](const auto& candidate) {
@@ -427,10 +474,37 @@ void ShekinahWindow::import_song_text() {
     if (path.isEmpty()) {
         return;
     }
-    const auto imported = import_song_file(path.toStdString());
-    if (imported) {
-        library_dock_->add_song(*imported);
+    std::ifstream input(path.toStdString(), std::ios::binary);
+    if (!input) {
+        return;
     }
+    const std::string text{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
+    const auto parsed = application::SongTextImporter::parse(text);
+    if (!parsed) {
+        return;
+    }
+    auto imported = parsed.value();
+    imported.id = domain::SongId{allocate_song_id()};
+    normalize_song_cue_ids(imported);
+
+    auto* editor = new ReflowEditorDialog{this};
+    editor->setAttribute(Qt::WA_DeleteOnClose);
+    editor->load_song(imported.id);
+    editor->set_title(QString::fromStdString(imported.title));
+    editor->set_reflow_document(reflow_document_for_song(imported));
+    QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
+        const auto draft = editor->draft_song();
+        if (!draft || !repository_) {
+            return;
+        }
+        auto song = *draft;
+        normalize_song_cue_ids(song);
+        const auto saved = repository_->save_song(song);
+        if (saved) {
+            library_dock_->add_song(*saved);
+        }
+    });
+    editor->show();
 }
 
 domain::Result<domain::Song> ShekinahWindow::import_song_file(

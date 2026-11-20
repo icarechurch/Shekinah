@@ -6,6 +6,7 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
 #include <QAction>
+#include <QLabel>
 #include <QMenu>
 #include <QSplitter>
 #include <QVBoxLayout>
@@ -16,6 +17,11 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     setObjectName(QStringLiteral("operator-page"));
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 8, 8, 8);
+
+    auto* presentation_section = new QLabel{QStringLiteral("Presentation"), this};
+    presentation_section->setObjectName(QStringLiteral("presentation-section"));
+    presentation_section->setStyleSheet(QStringLiteral("font-size: 20px; font-weight: 600;"));
+    layout->addWidget(presentation_section);
 
     auto* workspace = new QSplitter{Qt::Horizontal, this};
     workspace->setObjectName(QStringLiteral("operator-workspace"));
@@ -51,6 +57,14 @@ void OperatorPage::set_service_order_selection_handler(
 void OperatorPage::set_service_order_move_handler(
     std::function<void(domain::ServiceOrderItemId, std::int64_t)> handler) {
     service_order_->set_move_handler(std::move(handler));
+}
+
+void OperatorPage::set_authoring_handlers(std::function<void()> new_song,
+                                          std::function<void()> import_song,
+                                          std::function<void()> import_sermon,
+                                          std::function<void()> import_asset) {
+    cue_grid_->set_authoring_handlers(
+        std::move(new_song), std::move(import_song), std::move(import_sermon), std::move(import_asset));
 }
 
 void OperatorPage::set_take_live_handler(std::function<void(domain::CueId)> handler) {

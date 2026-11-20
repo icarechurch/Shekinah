@@ -59,3 +59,29 @@ TEST_CASE("cue cards show section and lyric summary text") {
     REQUIRE(button != nullptr);
     REQUIRE(button->text() == QStringLiteral("Verse 1\nYou are good"));
 }
+
+TEST_CASE("empty Presentation view exposes authoring actions") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    int new_song = 0;
+    int import_song = 0;
+    int import_sermon = 0;
+    int import_asset = 0;
+    grid.set_authoring_handlers(
+        [&] { ++new_song; },
+        [&] { ++import_song; },
+        [&] { ++import_sermon; },
+        [&] { ++import_asset; });
+    grid.show();
+
+    REQUIRE(grid.findChild<QWidget*>(QStringLiteral("presentation-empty-state")) != nullptr);
+    grid.findChild<QPushButton*>(QStringLiteral("presentation-new-song"))->click();
+    grid.findChild<QPushButton*>(QStringLiteral("presentation-import-song"))->click();
+    grid.findChild<QPushButton*>(QStringLiteral("presentation-import-sermon"))->click();
+    grid.findChild<QPushButton*>(QStringLiteral("presentation-import-asset"))->click();
+
+    REQUIRE(new_song == 1);
+    REQUIRE(import_song == 1);
+    REQUIRE(import_sermon == 1);
+    REQUIRE(import_asset == 1);
+}

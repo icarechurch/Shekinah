@@ -2,12 +2,16 @@
 
 #include <QGuiApplication>
 #include <QImageReader>
+#include <QLabel>
 #include <QMediaPlayer>
 #include <QPainter>
 #include <QResizeEvent>
 #include <QScreen>
 #include <QUrl>
 #include <QVideoWidget>
+
+#include <algorithm>
+#include <utility>
 
 namespace shekinah::media {
 
@@ -20,6 +24,14 @@ AudienceOutput::AudienceOutput(QWidget* parent) : QWidget(parent) {
     video_widget_ = new QVideoWidget{this};
     video_widget_->setVisible(false);
     player_->setVideoOutput(video_widget_);
+    lyric_overlay_ = new QLabel{this};
+    lyric_overlay_->setAlignment(Qt::AlignCenter);
+    lyric_overlay_->setWordWrap(true);
+    lyric_overlay_->setStyleSheet(
+        QStringLiteral("QLabel { color: white; background: rgba(0, 0, 0, 150); "
+                       "padding: 18px; font: 28px 'Segoe UI'; }"));
+    lyric_overlay_->setVisible(false);
+    lyric_overlay_->raise();
 }
 
 void AudienceOutput::show_fullscreen(QScreen* screen) {
@@ -45,8 +57,25 @@ void AudienceOutput::present(const domain::ProgramState& program) {
     program_ = program;
     if (program_.mode != domain::ProgramMode::cue) {
         video_widget_->setVisible(false);
+        live_text_.clear();
+        lyric_overlay_->setVisible(false);
     } else if (loop_video_loaded_) {
         video_widget_->setVisible(true);
+    }
+    if (program_.mode == domain::ProgramMode::cue && !live_text_.isEmpty()) {
+        lyric_overlay_->setVisible(true);
+        lyric_overlay_->raise();
+    }
+    update();
+}
+
+void AudienceOutput::set_live_text(QString text) {
+    live_text_ = std::move(text);
+    const bool visible = program_.mode == domain::ProgramMode::cue && !live_text_.isEmpty();
+    lyric_overlay_->setText(live_text_);
+    lyric_overlay_->setVisible(visible);
+    if (visible) {
+        lyric_overlay_->raise();
     }
     update();
 }
@@ -130,6 +159,8 @@ void AudienceOutput::paintEvent(QPaintEvent* event) {
                                        (height() - target.height()) / 2,
                                        target.width(), target.height()};
         painter.drawImage(destination, slide_image_);
+    }
+    if (program_.mode == domain::ProgramMode::cue && !live_text_.isEmpty()) {
         return;
     }
     painter.setPen(Qt::white);
@@ -146,6 +177,11 @@ void AudienceOutput::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
     if (video_widget_ != nullptr) {
         video_widget_->setGeometry(rect());
+    }
+    if (lyric_overlay_ != nullptr) {
+        const int overlay_height = std::max(120, height() / 3);
+        lyric_overlay_->setGeometry(0, height() - overlay_height, width(), overlay_height);
+        lyric_overlay_->raise();
     }
 }
 

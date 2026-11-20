@@ -42,7 +42,53 @@ private:
 CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_(new QWidget(this)) {
     auto* outer = new QVBoxLayout(this);
     outer->setContentsMargins(0, 0, 0, 0);
+    empty_state_ = new QWidget{this};
+    empty_state_->setObjectName(QStringLiteral("presentation-empty-state"));
+    auto* empty_layout = new QVBoxLayout{empty_state_};
+    empty_layout->setContentsMargins(32, 32, 32, 32);
+    auto* title = new QLabel{QStringLiteral("Presentation"), empty_state_};
+    title->setObjectName(QStringLiteral("presentation-title"));
+    title->setAlignment(Qt::AlignCenter);
+    title->setStyleSheet(QStringLiteral("font-size: 24px; font-weight: 600;"));
+    auto* message = new QLabel{
+        QStringLiteral("Add a Song or Sermon to the Service Order, or create content to begin."),
+        empty_state_};
+    message->setAlignment(Qt::AlignCenter);
+    message->setWordWrap(true);
+    empty_layout->addStretch(1);
+    empty_layout->addWidget(title);
+    empty_layout->addWidget(message);
+    const auto add_action = [&](const QString& label, const QString& name, auto handler) {
+        auto* button = new QPushButton{label, empty_state_};
+        button->setObjectName(name);
+        button->setMinimumHeight(38);
+        QObject::connect(button, &QPushButton::clicked, this, handler);
+        empty_layout->addWidget(button);
+    };
+    add_action(QStringLiteral("New Song"), QStringLiteral("presentation-new-song"), [this] {
+        if (new_song_handler_) {
+            new_song_handler_();
+        }
+    });
+    add_action(QStringLiteral("Import Song Lyrics"), QStringLiteral("presentation-import-song"), [this] {
+        if (import_song_handler_) {
+            import_song_handler_();
+        }
+    });
+    add_action(QStringLiteral("Import Sermon Deck"), QStringLiteral("presentation-import-sermon"), [this] {
+        if (import_sermon_handler_) {
+            import_sermon_handler_();
+        }
+    });
+    add_action(QStringLiteral("Import Asset"), QStringLiteral("presentation-import-asset"), [this] {
+        if (import_asset_handler_) {
+            import_asset_handler_();
+        }
+    });
+    empty_layout->addStretch(1);
+    outer->addWidget(empty_state_);
     outer->addWidget(grid_container_);
+    grid_container_->setVisible(false);
     setMinimumWidth(240);
 }
 
@@ -67,7 +113,20 @@ int CueGridWidget::column_count_for_geometry(int viewport_width, int screen_widt
 
 void CueGridWidget::set_cues(std::vector<CueView> cues) {
     cues_ = std::move(cues);
+    const bool empty = cues_.empty();
+    empty_state_->setVisible(empty);
+    grid_container_->setVisible(!empty);
     rebuild_layout();
+}
+
+void CueGridWidget::set_authoring_handlers(std::function<void()> new_song,
+                                           std::function<void()> import_song,
+                                           std::function<void()> import_sermon,
+                                           std::function<void()> import_asset) {
+    new_song_handler_ = std::move(new_song);
+    import_song_handler_ = std::move(import_song);
+    import_sermon_handler_ = std::move(import_sermon);
+    import_asset_handler_ = std::move(import_asset);
 }
 
 QRect CueGridWidget::visual_rect(const domain::CueId& cue) const {
