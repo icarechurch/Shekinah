@@ -2,6 +2,7 @@
 
 #include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
+#include "shekinah/application/song_reflow.hpp"
 #include "shekinah/storage/project_store.hpp"
 
 #include <cstddef>
@@ -16,6 +17,7 @@ public:
 
     domain::Result<domain::Song> save_song(const domain::Song& song);
     domain::Result<domain::Song> load_song(const domain::SongId& id) const;
+    domain::Result<application::SongReflowDocument> load_song_reflow(const domain::SongId& id) const;
     domain::Result<std::vector<domain::Song>> list_songs() const;
     domain::Result<domain::SermonDeck> save_deck(const domain::SermonDeck& deck);
     domain::Result<domain::SermonDeck> load_deck(const domain::SermonId& id) const;

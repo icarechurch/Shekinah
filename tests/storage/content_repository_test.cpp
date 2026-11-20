@@ -117,6 +117,31 @@ TEST_CASE("SQLite content repository loads stored asset metadata by id") {
     REQUIRE(loaded->size_bytes == imported->size_bytes);
 }
 
+TEST_CASE("SQLite content repository round-trips a Song Reflow document and split markers") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    SqliteContentRepository repository{*store};
+    REQUIRE(repository.save_song(Song{
+        SongId{"song-a"},
+        "Goodness",
+        std::nullopt,
+        {
+            Slide{CueId{"slide-0"}, "Verse 1", {"You are good"}, std::nullopt},
+            Slide{CueId{"slide-1"}, "Chorus", {"All the time"}, std::nullopt},
+        },
+    }));
+
+    const auto document = repository.load_song_reflow(SongId{"song-a"});
+
+    REQUIRE(document);
+    REQUIRE(document->text() == "You are good\nAll the time");
+    REQUIRE(document->breaks().size() == 1);
+    REQUIRE(document->breaks().front().utf8_offset == std::string{"You are good"}.size());
+    REQUIRE(document->breaks().front().section_label == "Chorus");
+    REQUIRE(document->to_slides().size() == 2);
+}
+
 TEST_CASE("reusable content cannot be archived while a service order references it") {
     auto project = TestProject::create();
     auto store = ProjectStore::create_or_open(project.root() / "Sunday");
