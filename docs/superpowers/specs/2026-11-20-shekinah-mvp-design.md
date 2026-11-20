@@ -15,6 +15,7 @@ Build a lightweight C++ desktop MVP for Shekinah, a ProPresenter alternative for
 - Windows-first desktop application with a portable core suitable for later Linux support.
 - Service-order workflow containing any number of songs, sermon decks, and future content types.
 - Built-in song editor and structured UTF-8 text import.
+- Built-in Song Reflow Editor with continuous lyric text, editable section labels, and explicit slide-break markers.
 - Sermon-deck import from ordered PNG files.
 - Reusable Songs and Sermons content library.
 - Project-scoped Asset Library containing imported images and videos.
@@ -49,6 +50,24 @@ Build a lightweight C++ desktop MVP for Shekinah, a ProPresenter alternative for
 4. Add any number of reusable content records to the service order.
 5. Reorder or remove service-order entries without deleting the referenced reusable content or assets.
 6. Select a song or sermon in the service order to load its cues into the cue grid.
+
+### Song creation and Reflow editing
+
+The Songs tab provides `New Song` and `Import Song Text` actions. `New Song` opens a Reflow Editor rather than requiring operators to create slides one at a time:
+
+- the left editor holds continuous lyric text and section labels;
+- visible horizontal slide-break markers split the text into generated lyric slides;
+- `Ctrl+Enter` at the text cursor inserts a slide break;
+- Backspace at the start of text immediately following a slide break removes that break and merges the two slides;
+- normal Enter inserts a lyric line break without creating a slide break;
+- a right-side, editor-only slide grid updates after each text or break edit;
+- this editor-only grid is not an audience or operator-preview surface and never changes Program until the user saves and later takes a cue live.
+
+Importing a text file opens the same Reflow Editor before it is saved, allowing break and section-label corrections. Saving persists both the continuous UTF-8 source text and its slide-break positions, then derives the ordered Song slides used in the live cue grid.
+
+### Sermon creation
+
+The Sermons tab provides `Import Sermon Deck` and `New Sermon Deck`. Import accepts one or more PNG files, naturally sorts filenames, lets the user set a title and reorder the images before save, and then stores the ordered deck as reusable content. An empty deck can add existing image assets or import additional PNGs later.
 
 ### Live operation
 
@@ -113,6 +132,8 @@ SQLite is the authoritative project database. Media is stored as files; SQLite s
 - `service_order_items`
 - `songs`
 - `song_slides`
+- `song_reflow_documents`
+- `song_slide_breaks`
 - `sermon_decks`
 - `sermon_slides`
 - `assets`
@@ -130,7 +151,7 @@ Content and assets have separate lifecycles:
 
 ### Song format
 
-The canonical editable Song record is stored in SQLite. The text importer accepts UTF-8 input with:
+The canonical editable Song record is stored in SQLite. Its Reflow document stores UTF-8 lyric text and ordered break positions at validated UTF-8 code-point boundaries; generated `song_slides` are persisted for fast live loading. The text importer accepts UTF-8 input with:
 
 - title metadata;
 - section markers such as `[Verse 1]` and `[Chorus]`;
@@ -199,7 +220,7 @@ The test suite mirrors the boundaries:
 - **Domain unit tests:** slide navigation, direct cue jumps, background precedence, playlist ordering, clear/black states, and invalid transitions.
 - **Application contract tests:** use cases against fake repositories, asset stores, presentation outputs, and clocks.
 - **SQLite integration tests:** migrations, foreign keys, persistence/reopen, unbounded service-order references, duplicate hashes, and rollback behavior.
-- **Importer tests:** valid/invalid song text, UTF-8, section markers, PNG deck ordering, malformed media, and deterministic IDs.
+- **Importer/Reflow tests:** valid/invalid song text, UTF-8, section markers, `Ctrl+Enter` break insertion, break removal/slide merge, PNG deck ordering, malformed media, and deterministic IDs.
 - **Media adapter tests:** still images, supported MP4/H.264 validation, loop state, pause/resume, crop/fit policy, and fallback behavior.
 - **UI contract tests:** service-order selection, left-click live behavior, right-click menu actions, Inspector popup lifecycle, responsive column policy, and unified controls.
 - **End-to-end smoke test:** create a project, import a Song and PNG Sermon, add multiple entries to the service order, load cues, jump directly between cues, clear, black out, and restore output.
@@ -225,7 +246,7 @@ GitHub Actions will reproduce the documented Windows build/test flow and retain 
 The MVP is ready for implementation handoff when the following are true:
 
 1. A user can create/open a SQLite-backed project folder.
-2. A user can create or import a Song and edit its slides.
+2. A user can create or import a Song in the Reflow Editor, insert and remove slide breaks, edit section labels, and save the resulting slides.
 3. A user can import an ordered PNG Sermon deck.
 4. A user can import images and MP4/H.264 videos into the Asset Library.
 5. A user can reuse Songs and Sermons and add any number of them to a service order.

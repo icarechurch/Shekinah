@@ -21,6 +21,12 @@
 - Keep representative working set under 100 MB when practical and fail the stress-performance test above 300 MB.
 - Every behavior change follows red-green-refactor. Never use focused, skipped, or weakened tests.
 - Keep individual test lanes below 110 seconds; use deterministic fixtures and no live network input.
+- Build every Song through a Reflow document: continuous UTF-8 text plus validated slide-break positions. `Ctrl+Enter` inserts a break, Backspace at the following text start merges slides, and normal Enter remains a lyric line break.
+- Produce at least 85 nonempty, green, meaningful commits. Do not commit red tests, broken code, formatting-only fragments, or no-op changes merely to increase the count.
+
+## Commit Cadence
+
+The task commits below are delivery milestones, not the complete commit count. Within each task, preserve each independently buildable green behavior as its own commit. The minimum schedule is: Task 1 (7 commits), Task 2 (10), Task 3 (12), Task 4 (8), Task 5 (12), Task 6 (7), Task 7 (7), Task 8 (8), Task 9 (6), Task 10 (8), Task 11 (7), and Task 12 (5): **97 meaningful commits total**. Each commit must include its passing tests and must leave its affected CTest labels green.
 
 ## Repository Map
 
@@ -284,11 +290,11 @@ git commit -m "feat: add project asset import and image cache"
 ## Task 5: Reusable Songs, Sermons, and unlimited service order
 
 **Files:**
-- Create: `src/core/application/include/shekinah/application/content_repository.hpp`, `src/core/application/service_order_service.cpp`
+- Create: `src/core/application/include/shekinah/application/content_repository.hpp`, `src/core/application/include/shekinah/application/song_reflow.hpp`, `src/core/application/service_order_service.cpp`, `src/core/application/song_reflow.cpp`
 - Create: `src/storage/sqlite/content_repository.cpp`, `src/storage/sqlite/song_text_importer.cpp`
-- Create: `tests/application/service_order_service_test.cpp`, `tests/storage/content_repository_test.cpp`
+- Create: `tests/application/service_order_service_test.cpp`, `tests/application/song_reflow_test.cpp`, `tests/storage/content_repository_test.cpp`
 
-**Interfaces:** Produces `ContentRepository`, `ServiceOrderService::append(ContentRef)`, `SongTextImporter::parse(string_view)`, and `SermonDeckImporter::import_pngs(vector<path>)`.
+**Interfaces:** Produces `ContentRepository`, `ServiceOrderService::append(ContentRef)`, `SongTextImporter::parse(string_view)`, `SongReflowDocument`, and `SermonDeckImporter::import_pngs(vector<path>)`.
 
 - [ ] **Step 1: Write failing reuse and scale tests.**
 
@@ -302,6 +308,11 @@ TEST_CASE("song text uses section headers and blank lines as slide boundaries") 
   auto song = SongTextImporter::parse("# Goodness\n[Verse 1]\nLine one\n\nLine two\n[Chorus]\nSing");
   REQUIRE(song.value().slides.size() == 3);
   REQUIRE(song.value().slides[2].section == "Chorus");
+}
+TEST_CASE("inserting then removing a Reflow break splits then merges a Song slide") {
+  SongReflowDocument doc{"First line\nSecond line", {}};
+  REQUIRE(doc.insert_break_after_utf8_offset(10)); REQUIRE(doc.to_slides().size() == 2);
+  REQUIRE(doc.remove_break_before_utf8_offset(11)); REQUIRE(doc.to_slides().size() == 1);
 }
 ```
 
@@ -320,9 +331,14 @@ public:
   Result<std::vector<ServiceOrderItem>> load_order(ServiceOrderId id) const;
 };
 class ServiceOrderService { public: Result<ServiceOrderItem> append(ServiceOrderId, ContentRef); };
+struct SlideBreak { std::size_t utf8_offset; std::string section_label; };
+class SongReflowDocument {
+public: Status insert_break_after_utf8_offset(std::size_t); Status remove_break_before_utf8_offset(std::size_t);
+  [[nodiscard]] std::vector<SongSlide> to_slides() const;
+};
 ```
 
-Persist `service_order_items(content_kind, content_id, ordinal)` without a unique constraint on `(content_kind, content_id)`. Sort PNG import by normalized filename, reject duplicate ordinal input, and save only asset references. Provide archive operations that refuse deletion while references exist unless the caller explicitly removes or replaces those references.
+Persist `service_order_items(content_kind, content_id, ordinal)` without a unique constraint on `(content_kind, content_id)`. Add `song_reflow_documents(song_id, utf8_text)` and `song_slide_breaks(song_id, ordinal, utf8_offset, section_label)` migrations. Validate every break sits on a UTF-8 code-point boundary, derive `song_slides` transactionally after each save, sort PNG import by normalized filename, reject duplicate ordinal input, and save only asset references. Provide archive operations that refuse deletion while references exist unless the caller explicitly removes or replaces those references.
 
 - [ ] **Step 4: Verify application and storage tests.**
 
@@ -543,7 +559,58 @@ git add src/ui/features/inspect_slide src/ui/features/edit_slide src/ui/features
 git commit -m "feat: add non-live Inspector actions"
 ```
 
-## Task 10: Bottom Library dock and reusable-content workflow
+## Task 10: Song Reflow Editor
+
+**Files:**
+- Create: `src/ui/features/edit_song/reflow_editor_dialog.*`, `src/ui/features/edit_song/reflow_text_edit.*`
+- Create: `tests/ui/reflow_editor_dialog_test.cpp`
+
+**Interfaces:** Consumes `SongReflowDocument`; produces `ReflowEditorDialog::load_song(SongId)`, `save_song()`, and `ReflowTextEdit::insert_slide_break()`.
+
+- [ ] **Step 1: Write failing Reflow UI tests.**
+
+```cpp
+TEST_CASE("Ctrl Enter inserts a visible Reflow break without changing lyric text") {
+  ReflowEditorDialog dialog{fake_song_service}; dialog.set_text("First line\nSecond line");
+  dialog.editor()->set_cursor_utf8_offset(10); QTest::keyClick(dialog.editor(), Qt::Key_Return, Qt::ControlModifier);
+  REQUIRE(dialog.reflow_document().to_slides().size() == 2);
+  REQUIRE(dialog.editor()->plain_text_utf8() == "First line\nSecond line");
+}
+```
+
+- [ ] **Step 2: Verify red.**
+
+Run: `ctest --test-dir build/windows-ucrt64-debug -R reflow_editor_dialog --output-on-failure`
+
+Expected: the Reflow dialog and text editor do not yet exist.
+
+- [ ] **Step 3: Implement the editor-only reflow workflow.**
+
+```cpp
+class ReflowTextEdit : public QPlainTextEdit {
+public: void insert_slide_break(); void remove_adjacent_slide_break(); [[nodiscard]] std::string plain_text_utf8() const;
+};
+class ReflowEditorDialog : public QDialog {
+public: void load_song(SongId); Status save_song(); [[nodiscard]] const SongReflowDocument& reflow_document() const;
+};
+```
+
+Render slide-break markers as editor decorations, not text characters. `Ctrl+Enter` inserts a marker at the cursor; Backspace at the following text start removes it; normal Enter only changes lyric text. Show derived slide thumbnails in the dialog’s right pane and update them synchronously after edits. The dialog is an editor and never calls `PresentationService::take_live`.
+
+- [ ] **Step 4: Verify Reflow tests.**
+
+Run: `ctest --test-dir build/windows-ucrt64-debug -R "song_reflow|reflow_editor_dialog" --output-on-failure`
+
+Expected: document and UI break/merge tests pass, with no Program-state changes.
+
+- [ ] **Step 5: Commit.**
+
+```powershell
+git add src/core/application/song_reflow.* src/core/application/include/shekinah/application/song_reflow.hpp src/ui/features/edit_song tests/application/song_reflow_test.cpp tests/ui/reflow_editor_dialog_test.cpp
+git commit -m "feat: add Song Reflow editor"
+```
+
+## Task 11: Bottom Library dock and reusable-content workflow
 
 **Files:**
 - Create: `src/ui/widgets/library_dock/library_dock_widget.*`, `src/ui/features/import_asset/import_asset_controller.*`, `src/ui/features/manage_content/content_library_controller.*`
@@ -584,7 +651,7 @@ public: void set_tab(LibraryTab); void refresh(); signals: void content_added(Co
 };
 ```
 
-Make the dock collapsible. The Assets tab imports/searches/displays media metadata and lazily generated thumbnails. Songs and Sermons tabs search, create, edit, duplicate, archive, and add reusable records to the service order. Removing a service-order item never deletes content or assets.
+Make the dock collapsible. The Assets tab imports/searches/displays media metadata and lazily generated thumbnails. The Songs tab offers `New Song` and `Import Song Text`; both open the Reflow Editor before save. The Sermons tab offers `New Sermon Deck` and `Import Sermon Deck`; import naturally sorts selected PNG filenames, presents a reorder confirmation, then saves a reusable deck. Songs and Sermons tabs also search, edit, duplicate, archive, and add reusable records to the service order. Removing a service-order item never deletes content or assets.
 
 - [ ] **Step 4: Verify end-to-end smoke.**
 
@@ -599,7 +666,7 @@ git add src/ui/widgets/library_dock src/ui/features/import_asset src/ui/features
 git commit -m "feat: add reusable content library dock"
 ```
 
-## Task 11: Memory diagnostics, stress gate, and CI completion
+## Task 12: Memory diagnostics, stress gate, and CI completion
 
 **Files:**
 - Create: `src/media/include/shekinah/media/memory_diagnostics.hpp`, `src/media/memory_diagnostics.cpp`, `tests/performance/memory_budget_test.cpp`
