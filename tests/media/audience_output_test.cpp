@@ -6,6 +6,8 @@
 #include <QScreen>
 #include <QTemporaryFile>
 
+#include <algorithm>
+
 #include "shekinah/media/audience_output.hpp"
 
 using namespace shekinah::domain;
@@ -93,6 +95,41 @@ TEST_CASE("audience output paints centered slide content without the grid checke
         }
     }
     REQUIRE(has_center_content);
+}
+
+TEST_CASE("audience output scales slide text for a church-sized screen") {
+    ensure_qapplication();
+    AudienceOutput output;
+    output.resize(1920, 1080);
+    output.present(ProgramState{
+        ProgramMode::cue,
+        CueRef{ContentRef::song("song-a"), CueId{"slide-1"}},
+    });
+    output.set_live_text(QStringLiteral("GINAWA MO’NG LAHAT\nPAG-IBIG MO AY TAPAT AT WAGAS"));
+
+    QImage rendered{output.size(), QImage::Format_ARGB32_Premultiplied};
+    rendered.fill(Qt::transparent);
+    output.render(&rendered);
+
+    const QColor background{QStringLiteral("#182337")};
+    int min_x = rendered.width();
+    int max_x = -1;
+    int min_y = rendered.height();
+    int max_y = -1;
+    for (int y = 0; y < rendered.height(); ++y) {
+        for (int x = 0; x < rendered.width(); ++x) {
+            if (rendered.pixelColor(x, y) == background) {
+                continue;
+            }
+            min_x = std::min(min_x, x);
+            max_x = std::max(max_x, x);
+            min_y = std::min(min_y, y);
+            max_y = std::max(max_y, y);
+        }
+    }
+
+    REQUIRE(max_x - min_x + 1 > 500);
+    REQUIRE(max_y - min_y + 1 > 70);
 }
 
 TEST_CASE("audience output exposes one video pause control") {
