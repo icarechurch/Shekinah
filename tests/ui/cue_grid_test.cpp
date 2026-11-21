@@ -29,6 +29,25 @@ TEST_CASE("cue grid follows the approved automatic column policy") {
     REQUIRE(CueGridWidget::column_count_for_geometry(450, 1366) == 2);
 }
 
+TEST_CASE("cue view carries card preview metadata") {
+    CueView cue{
+        CueId{"verse-1"},
+        "Verse 1",
+        "You are good",
+        3,
+        QStringLiteral("C:/assets/verse.png"),
+        FitMode::cover,
+        QStringLiteral("Verse 1"),
+        true,
+    };
+
+    REQUIRE(cue.number == 3);
+    REQUIRE(cue.background_path == QStringLiteral("C:/assets/verse.png"));
+    REQUIRE(cue.background_fit == FitMode::cover);
+    REQUIRE(cue.footer_label == QStringLiteral("Verse 1"));
+    REQUIRE(cue.show_text);
+}
+
 TEST_CASE("left clicking a cue dispatches the cue without changing grid ownership") {
     ensure_qapplication();
     CueGridWidget grid;
