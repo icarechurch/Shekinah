@@ -133,6 +133,30 @@ TEST_CASE("cue card accepts an asset drop and reports its cue") {
     delete mime;
 }
 
+TEST_CASE("cue card ignores unsupported asset drops") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.resize(700, 500);
+    grid.set_cues({CueView{CueId{"cue-1"}, "Verse", "Line", 1}});
+    bool callback_called = false;
+    grid.set_asset_drop_handler([&](CueId, AssetId) { callback_called = true; });
+    grid.show();
+    QTest::qWait(20);
+
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-cue-1"));
+    REQUIRE(card != nullptr);
+    QMimeData unsupported;
+    const auto position = card->rect().center();
+    QDragEnterEvent enter{position, Qt::CopyAction, &unsupported, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &enter);
+    REQUIRE_FALSE(enter.isAccepted());
+    QDropEvent event{position, Qt::CopyAction, &unsupported, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &event);
+
+    REQUIRE_FALSE(event.isAccepted());
+    REQUIRE_FALSE(callback_called);
+}
+
 TEST_CASE("cue cards show section and lyric summary text") {
     ensure_qapplication();
     CueGridWidget grid;
