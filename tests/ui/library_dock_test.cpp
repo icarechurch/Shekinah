@@ -139,6 +139,8 @@ TEST_CASE("library creates bounded thumbnails for image assets") {
     REQUIRE(list != nullptr);
     REQUIRE(list->count() == 1);
     REQUIRE(list->item(0)->text() == QStringLiteral("slide.png"));
+    REQUIRE(list->item(0)->toolTip().contains(QStringLiteral("media/slide.png")));
+    REQUIRE(list->item(0)->toolTip().contains(QStringLiteral("128 bytes")));
     REQUIRE_FALSE(list->item(0)->icon().isNull());
     const auto thumbnail_size = list->item(0)->icon().availableSizes().front();
     REQUIRE(thumbnail_size.width() <= 168);

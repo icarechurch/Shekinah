@@ -4,6 +4,7 @@
 #include "shekinah/ui/support/asset_drag.hpp"
 
 #include <QDragEnterEvent>
+#include <QDragLeaveEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>
 #include <QGridLayout>
@@ -41,6 +42,7 @@ public:
         setProperty("cue-background-path", cue.background_path);
         setProperty("cue-show-text", cue.show_text);
         setProperty("cue-live", false);
+        setProperty("cue-drop-target", false);
         setToolTip(cue.summary);
         slide_renderer_.set_content(media::SlideRenderData{
             cue.summary,
@@ -71,21 +73,37 @@ public:
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override {
         if (asset_id_from_mime_data(event->mimeData()).has_value()) {
+            setProperty("cue-drop-target", true);
+            update();
             event->acceptProposedAction();
         } else {
+            setProperty("cue-drop-target", false);
+            update();
             event->ignore();
         }
     }
 
     void dragMoveEvent(QDragMoveEvent* event) override {
         if (asset_id_from_mime_data(event->mimeData()).has_value()) {
+            setProperty("cue-drop-target", true);
+            update();
             event->acceptProposedAction();
         } else {
+            setProperty("cue-drop-target", false);
+            update();
             event->ignore();
         }
     }
 
+    void dragLeaveEvent(QDragLeaveEvent* event) override {
+        setProperty("cue-drop-target", false);
+        update();
+        event->accept();
+    }
+
     void dropEvent(QDropEvent* event) override {
+        setProperty("cue-drop-target", false);
+        update();
         const auto asset = asset_id_from_mime_data(event->mimeData());
         if (!asset.has_value()) {
             event->ignore();
@@ -131,10 +149,13 @@ protected:
                 footer.adjusted(32, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, footer_label);
         }
 
-        painter.setPen(QPen{property("cue-live").toBool()
-                                ? QColor{QStringLiteral("#087cff")}
-                                : QColor{QStringLiteral("#303030")},
-                            static_cast<qreal>(property("cue-live").toBool() ? 2 : 1)});
+        const auto live = property("cue-live").toBool();
+        const auto drop_target = property("cue-drop-target").toBool();
+        painter.setPen(QPen{drop_target
+                                ? QColor{QStringLiteral("#65d6ff")}
+                                : live ? QColor{QStringLiteral("#087cff")}
+                                       : QColor{QStringLiteral("#303030")},
+                            static_cast<qreal>(drop_target || live ? 2 : 1)});
         painter.drawRect(rect().adjusted(1, 1, -2, -2));
     }
 

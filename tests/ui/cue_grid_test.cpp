@@ -157,6 +157,33 @@ TEST_CASE("cue card ignores unsupported asset drops") {
     REQUIRE_FALSE(callback_called);
 }
 
+TEST_CASE("cue card marks a valid asset drag target and clears it after drop") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.resize(700, 500);
+    grid.set_cues({CueView{CueId{"cue-1"}, "Verse", "Line", 1}});
+    grid.set_asset_drop_handler([](CueId, AssetId) {});
+    grid.show();
+    QTest::qWait(20);
+
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-cue-1"));
+    REQUIRE(card != nullptr);
+    REQUIRE_FALSE(card->property("cue-drop-target").toBool());
+    auto* mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-1"});
+    const auto position = card->rect().center();
+    QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &enter);
+
+    REQUIRE(enter.isAccepted());
+    REQUIRE(card->property("cue-drop-target").toBool());
+    QDropEvent drop{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &drop);
+
+    REQUIRE(drop.isAccepted());
+    REQUIRE_FALSE(card->property("cue-drop-target").toBool());
+    delete mime;
+}
+
 TEST_CASE("cue cards show section and lyric summary text") {
     ensure_qapplication();
     CueGridWidget grid;
