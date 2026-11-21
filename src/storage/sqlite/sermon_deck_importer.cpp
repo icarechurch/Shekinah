@@ -70,7 +70,7 @@ bool natural_less(const std::string& left, const std::string& right) {
 
 }  // namespace
 
-domain::Result<domain::SermonDeck> SermonDeckImporter::import_pngs(
+domain::Result<domain::SermonDeck> SermonDeckImporter::import_files(
     domain::SermonId id,
     std::string title,
     std::vector<std::filesystem::path> paths,

@@ -842,7 +842,7 @@ domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
         return domain::Result<domain::SermonDeck>::fail(
             {domain::ErrorCode::storage_failure, "Open a project before importing sermons"});
     }
-    return storage::SermonDeckImporter{*store_}.import_pngs(
+    return storage::SermonDeckImporter{*store_}.import_files(
         domain::SermonId{allocate_sermon_id()}, std::move(title),
         std::move(sources), preserve_order);
 }

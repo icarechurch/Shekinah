@@ -13,7 +13,7 @@ class SermonDeckImporter {
 public:
     explicit SermonDeckImporter(ProjectStore& store) : store_(store) {}
 
-    domain::Result<domain::SermonDeck> import_pngs(
+    domain::Result<domain::SermonDeck> import_files(
         domain::SermonId id,
         std::string title,
         std::vector<std::filesystem::path> paths,
