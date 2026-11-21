@@ -19,6 +19,7 @@ target_include_directories(shekinah_ui
         ${CMAKE_CURRENT_SOURCE_DIR}/features/inspect_slide/include
         ${CMAKE_CURRENT_SOURCE_DIR}/widgets/library_dock/include
         ${CMAKE_CURRENT_SOURCE_DIR}/widgets/service_order/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/support/include
         ${CMAKE_CURRENT_SOURCE_DIR}/features/edit_song/include
         ${CMAKE_CURRENT_SOURCE_DIR}/features/edit_sermon/include
         ${CMAKE_CURRENT_SOURCE_DIR}/app/include

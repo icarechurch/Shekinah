@@ -2,10 +2,12 @@
 
 #include <QApplication>
 #include <QImage>
+#include <QMimeData>
 #include <QListWidget>
 
 #include "test_project.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
+#include "shekinah/ui/support/asset_drag.hpp"
 
 using namespace shekinah::domain;
 using namespace shekinah::ui;
@@ -33,6 +35,18 @@ TEST_CASE("library tabs retain assets when switching to reusable content") {
     dock.show_sermons();
     dock.show_assets();
     REQUIRE(dock.visible_asset_count() == 2);
+}
+
+TEST_CASE("asset drag payload round-trips an AssetId") {
+    ensure_qapplication();
+    const auto payload = shekinah::ui::make_asset_mime_data(AssetId{"asset-42"});
+
+    REQUIRE(payload != nullptr);
+    REQUIRE(payload->hasFormat(shekinah::ui::asset_mime_type()));
+    const auto parsed = shekinah::ui::asset_id_from_mime_data(payload);
+    REQUIRE(parsed.has_value());
+    REQUIRE(parsed->value == "asset-42");
+    delete payload;
 }
 
 TEST_CASE("library owns independent reusable Song and Sermon collections") {
