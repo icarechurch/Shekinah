@@ -54,7 +54,10 @@ void SlideRenderer::paint(QPainter& painter, const QRect& viewport) {
 
     if (content_.show_text && !content_.text.trimmed().isEmpty()) {
         QFont lyric_font = painter.font();
-        lyric_font.setPixelSize(std::clamp(viewport.height() / 12, 24, 64));
+        const auto font_size = content_.text_mode == SlideTextMode::audience
+            ? std::clamp(viewport.height() / 8, 40, 96)
+            : std::clamp(viewport.height() / 10, 11, 18);
+        lyric_font.setPixelSize(font_size);
         lyric_font.setBold(true);
         painter.setFont(lyric_font);
         const auto text = content_.text.toUpper();

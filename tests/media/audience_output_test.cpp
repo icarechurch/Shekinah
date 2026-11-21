@@ -3,12 +3,14 @@
 #include <QApplication>
 #include <QColor>
 #include <QImage>
+#include <QPainter>
 #include <QScreen>
 #include <QTemporaryFile>
 
 #include <algorithm>
 
 #include "shekinah/media/audience_output.hpp"
+#include "shekinah/media/slide_renderer.hpp"
 
 using namespace shekinah::domain;
 using namespace shekinah::media;
@@ -128,8 +130,45 @@ TEST_CASE("audience output scales slide text for a church-sized screen") {
         }
     }
 
-    REQUIRE(max_x - min_x + 1 > 500);
-    REQUIRE(max_y - min_y + 1 > 70);
+    REQUIRE(max_x - min_x + 1 > 1200);
+    REQUIRE(max_y - min_y + 1 > 140);
+}
+
+TEST_CASE("slide previews keep their compact operator text size") {
+    ensure_qapplication();
+    SlideRenderer renderer;
+    renderer.set_content(SlideRenderData{
+        QStringLiteral("GINAWA MO’NG LAHAT\nPAG-IBIG MO AY TAPAT AT WAGAS"),
+        {},
+        FitMode::cover,
+        true,
+        false,
+    });
+
+    QImage rendered{1920, 1080, QImage::Format_ARGB32_Premultiplied};
+    rendered.fill(QColor{QStringLiteral("#182337")});
+    QPainter painter{&rendered};
+    renderer.paint(painter, rendered.rect());
+
+    const QColor background{QStringLiteral("#182337")};
+    int min_x = rendered.width();
+    int max_x = -1;
+    int min_y = rendered.height();
+    int max_y = -1;
+    for (int y = 0; y < rendered.height(); ++y) {
+        for (int x = 0; x < rendered.width(); ++x) {
+            if (rendered.pixelColor(x, y) == background) {
+                continue;
+            }
+            min_x = std::min(min_x, x);
+            max_x = std::max(max_x, x);
+            min_y = std::min(min_y, y);
+            max_y = std::max(max_y, y);
+        }
+    }
+
+    REQUIRE(max_x - min_x + 1 < 500);
+    REQUIRE(max_y - min_y + 1 < 70);
 }
 
 TEST_CASE("audience output exposes one video pause control") {

@@ -172,6 +172,7 @@ void AudienceOutput::update_slide_renderer() {
         slide_background_fit_,
         true,
         false,
+        SlideTextMode::audience,
     });
 }
 

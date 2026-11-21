@@ -10,12 +10,18 @@ class QPainter;
 
 namespace shekinah::media {
 
+enum class SlideTextMode {
+    preview,
+    audience,
+};
+
 struct SlideRenderData {
     QString text;
     QString background_path;
     domain::FitMode background_fit{domain::FitMode::cover};
     bool show_text{true};
     bool checkerboard_fallback{true};
+    SlideTextMode text_mode{SlideTextMode::preview};
 };
 
 class SlideRenderer final {
