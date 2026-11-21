@@ -197,7 +197,7 @@ TEST_CASE("Inspector edits a live Song cue through the operator context menu") {
     auto* cue = window.operator_page()->cue_grid()->findChild<QWidget*>(
         QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[0].id.value)));
     REQUIRE(cue != nullptr);
-    REQUIRE(static_cast<QPushButton*>(cue)->text().contains(QStringLiteral("Changed live")));
+    REQUIRE(cue->property("cue-summary").toString().contains(QStringLiteral("Changed live")));
 }
 
 TEST_CASE("opening a project restores reusable content in the Library") {
@@ -473,7 +473,8 @@ TEST_CASE("typed lyric edits are persisted and restored from SQLite") {
     auto* cue = reopened.operator_page()->cue_grid()->findChild<QWidget*>(
         QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[0].id.value)));
     REQUIRE(cue != nullptr);
-    REQUIRE(static_cast<QPushButton*>(cue)->text().contains(QStringLiteral("Edited lyric from operator")));
+    REQUIRE(cue->property("cue-summary").toString().contains(
+        QStringLiteral("Edited lyric from operator")));
 }
 
 TEST_CASE("global Program controls navigate, clear, and black the live output") {
