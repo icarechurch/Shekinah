@@ -59,7 +59,7 @@ TEST_CASE("cue view carries card preview metadata") {
 
 - [ ] **Step 2: Run the focused test to verify it fails**
 
-Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -R shekinah_ui_tests --output-on-failure`
+Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -L ui --output-on-failure`
 
 Expected: compilation fails because the new `CueView` fields do not exist.
 
@@ -129,7 +129,7 @@ TEST_CASE("cue grid marks only the matching card live") {
 
 - [ ] **Step 2: Run the focused test to verify it fails**
 
-Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -R shekinah_ui_tests --output-on-failure`
+Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -L ui --output-on-failure`
 
 Expected: compilation fails because `set_live_cue()` and the custom card properties do not exist.
 
@@ -199,7 +199,7 @@ TEST_CASE("cue card paints checkerboard when no background is assigned") {
 
 - [ ] **Step 2: Run the focused test to verify it fails**
 
-Run the focused UI build/test command. Expected: the two sampled preview pixels are identical because the card is not yet painted.
+Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -L ui --output-on-failure`. Expected: the two sampled preview pixels are identical because the card is not yet painted.
 
 - [ ] **Step 3: Implement checkerboard painting**
 
@@ -207,7 +207,7 @@ In `paintEvent()`, create a preview rectangle inset from the outer border and pa
 
 - [ ] **Step 4: Run the focused test to verify it passes**
 
-Run the focused UI build/test command. Expected: checkerboard and all prior UI tests pass.
+Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -L ui --output-on-failure`. Expected: checkerboard and all prior UI tests pass.
 
 - [ ] **Step 5: Commit**
 
@@ -231,7 +231,7 @@ Create a temporary 40×20 image with a red left half and blue right half, pass i
 
 - [ ] **Step 2: Run the focused test to verify it fails**
 
-Run the focused UI build/test command. Expected: the rendered preview remains checkerboard.
+Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -L ui --output-on-failure`. Expected: the rendered preview remains checkerboard.
 
 - [ ] **Step 3: Implement scaled loading and fit modes**
 
@@ -248,7 +248,7 @@ Paint `stretch` directly, `contain` with `Qt::KeepAspectRatio`, and `cover` with
 
 - [ ] **Step 4: Run the focused test to verify it passes**
 
-Run the focused UI build/test command. Expected: image preview, fallback checkerboard, and existing tests pass.
+Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -L ui --output-on-failure`. Expected: image preview, fallback checkerboard, and existing tests pass.
 
 - [ ] **Step 5: Commit**
 
@@ -285,7 +285,7 @@ Also assert the card exposes child-free presentation properties `cue-number`, `c
 
 - [ ] **Step 2: Run the focused test to verify it fails**
 
-Run the focused UI build/test command. Expected: compilation fails because the helper and card properties do not exist.
+Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -L ui --output-on-failure`. Expected: compilation fails because the helper and card properties do not exist.
 
 - [ ] **Step 3: Implement footer and lyric painting**
 
@@ -293,7 +293,7 @@ Normalize `section.trimmed().toLower()` and use prefix checks for `chorus`, `bri
 
 - [ ] **Step 4: Run the focused test to verify it passes**
 
-Run the focused UI build/test command. Expected: palette, text metadata, checkerboard/image, and interaction tests pass.
+Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -L ui --output-on-failure`. Expected: palette, text metadata, checkerboard/image, and interaction tests pass.
 
 - [ ] **Step 5: Commit**
 
@@ -326,7 +326,7 @@ In `CueGridWidget::set_cues()`, rebuild cards and reapply `live_cue_`. In `set_l
 
 - [ ] **Step 4: Run the focused and operator UI tests**
 
-Run: `ctest --test-dir build/windows-ucrt64-debug -R "shekinah_ui_tests|shekinah_e2e_tests" --output-on-failure`
+Run: `ctest --test-dir build/windows-ucrt64-debug -L "ui|e2e" --output-on-failure`
 
 Expected: live highlighting, click behavior, operator page integration, and end-to-end tests pass.
 
@@ -354,7 +354,7 @@ Create a project fixture with one imported image-backed Song slide and one sermo
 
 - [ ] **Step 2: Run the focused integration test to verify it fails**
 
-Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -R shekinah_ui_tests --output-on-failure`
+Run: `cmake --build --preset windows-ucrt64-debug --target shekinah_ui_tests && ctest --test-dir build/windows-ucrt64-debug -L ui --output-on-failure`
 
 Expected: `CueView` values contain no paths because `refresh_cues()` currently fills only three fields.
 
