@@ -73,10 +73,35 @@ TEST_CASE("cue cards show section and lyric summary text") {
     ensure_qapplication();
     CueGridWidget grid;
     grid.set_cues({CueView{CueId{"verse-1"}, "Verse 1", "You are good"}});
-    auto* button = grid.findChild<QPushButton*>(QStringLiteral("cue-verse-1"));
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-verse-1"));
 
-    REQUIRE(button != nullptr);
-    REQUIRE(button->text() == QStringLiteral("Verse 1\nYou are good"));
+    REQUIRE(card != nullptr);
+    REQUIRE(card->property("cue-section").toString() == QStringLiteral("Verse 1"));
+    REQUIRE(card->property("cue-summary").toString() == QStringLiteral("You are good"));
+}
+
+TEST_CASE("cue card reserves a 16 by 9 preview and footer") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.set_cues({CueView{CueId{"one"}, "Verse", "Line", 1}});
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-one"));
+
+    REQUIRE(card != nullptr);
+    REQUIRE(card->property("cue-live").toBool() == false);
+    REQUIRE(card->heightForWidth(320) >= 320 * 9 / 16);
+}
+
+TEST_CASE("cue grid marks only the matching card live") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.set_cues({
+        CueView{CueId{"one"}, "Verse", "Line", 1},
+        CueView{CueId{"two"}, "Chorus", "Line", 2},
+    });
+    grid.set_live_cue(CueId{"two"});
+
+    REQUIRE(grid.findChild<QWidget*>(QStringLiteral("cue-one"))->property("cue-live").toBool() == false);
+    REQUIRE(grid.findChild<QWidget*>(QStringLiteral("cue-two"))->property("cue-live").toBool() == true);
 }
 
 TEST_CASE("empty Presentation view exposes authoring actions") {

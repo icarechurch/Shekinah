@@ -7,6 +7,7 @@
 #include <QWidget>
 
 #include <functional>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -53,6 +54,7 @@ public:
                                 std::function<void()> import_song,
                                 std::function<void()> import_sermon,
                                 std::function<void()> import_asset);
+    void set_live_cue(std::optional<domain::CueId> cue);
     void set_take_live_handler(TakeLiveHandler handler) { take_live_handler_ = std::move(handler); }
     void set_context_handler(ContextHandler handler) { context_handler_ = std::move(handler); }
     [[nodiscard]] QRect visual_rect(const domain::CueId& cue) const;
@@ -61,13 +63,14 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
-    class CueButton;
+    class CueCard;
     void rebuild_layout();
     void handle_left_click(const domain::CueId& cue);
     void handle_right_click(const domain::CueId& cue, QPoint global_position);
 
     std::vector<CueView> cues_;
-    std::vector<CueButton*> buttons_;
+    std::vector<CueCard*> cards_;
+    std::optional<domain::CueId> live_cue_;
     TakeLiveHandler take_live_handler_;
     ContextHandler context_handler_;
     QWidget* grid_container_{nullptr};

@@ -3,25 +3,40 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QMouseEvent>
+#include <QPainter>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QScreen>
 #include <QVBoxLayout>
 
 #include <algorithm>
+#include <cmath>
 
 namespace shekinah::ui {
 
-class CueGridWidget::CueButton final : public QPushButton {
+class CueGridWidget::CueCard final : public QWidget {
 public:
-    CueButton(const CueView& cue, CueGridWidget& owner) : QPushButton(&owner), cue_(cue), owner_(owner) {
+    CueCard(const CueView& cue, CueGridWidget& owner) : QWidget(&owner), cue_(cue), owner_(owner) {
         setObjectName(QStringLiteral("cue-%1").arg(QString::fromStdString(cue.id.value)));
-        setMinimumSize(120, 92);
+        setMinimumSize(120, 100);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         setCursor(Qt::PointingHandCursor);
-        const auto heading = cue.section.isEmpty() ? QString::fromStdString(cue.id.value) : cue.section;
-        setText(cue.summary.isEmpty() ? heading : heading + QStringLiteral("\n") + cue.summary);
+        setAttribute(Qt::WA_Hover, true);
+        setProperty("cue-section", cue.section);
+        setProperty("cue-summary", cue.summary);
+        setProperty("cue-live", false);
         setToolTip(cue.summary);
+    }
+
+    int heightForWidth(int width) const override {
+        return std::max(100, static_cast<int>(std::lround(static_cast<double>(width) * 9.0 / 16.0)) + 32);
+    }
+
+    bool hasHeightForWidth() const override { return true; }
+
+    void set_live(bool live) {
+        setProperty("cue-live", live);
+        update();
     }
 
 protected:
@@ -31,7 +46,12 @@ protected:
         } else if (event->button() == Qt::RightButton) {
             owner_.handle_right_click(cue_.id, mapToGlobal(event->position().toPoint()));
         }
-        QPushButton::mousePressEvent(event);
+        event->accept();
+    }
+
+    void paintEvent(QPaintEvent*) override {
+        QPainter painter{this};
+        painter.fillRect(rect(), QColor{QStringLiteral("#121212")});
     }
 
 private:
@@ -129,14 +149,23 @@ void CueGridWidget::set_authoring_handlers(std::function<void()> new_song,
     import_asset_handler_ = std::move(import_asset);
 }
 
+void CueGridWidget::set_live_cue(std::optional<domain::CueId> cue) {
+    live_cue_ = std::move(cue);
+    for (auto* card : cards_) {
+        card->set_live(live_cue_.has_value() &&
+                      card->property("cue-id").toString() ==
+                          QString::fromStdString(live_cue_->value));
+    }
+}
+
 QRect CueGridWidget::visual_rect(const domain::CueId& cue) const {
-    const auto button = std::find_if(buttons_.begin(), buttons_.end(), [&](const auto* candidate) {
+    const auto card = std::find_if(cards_.begin(), cards_.end(), [&](const auto* candidate) {
         return candidate->objectName() == QStringLiteral("cue-%1").arg(QString::fromStdString(cue.value));
     });
-    if (button == buttons_.end()) {
+    if (card == cards_.end()) {
         return {};
     }
-    return QRect(mapFrom(*button, QPoint{0, 0}), (*button)->size());
+    return QRect(mapFrom(*card, QPoint{0, 0}), (*card)->size());
 }
 
 void CueGridWidget::resizeEvent(QResizeEvent* event) {
@@ -157,7 +186,7 @@ void CueGridWidget::rebuild_layout() {
         }
         delete old_layout;
     }
-    buttons_.clear();
+    cards_.clear();
 
     auto* layout = new QGridLayout(grid_container_);
     layout->setContentsMargins(8, 8, 8, 8);
@@ -165,11 +194,13 @@ void CueGridWidget::rebuild_layout() {
     const int screen_width = screen() == nullptr ? 1920 : screen()->size().width();
     const int columns = column_count_for_geometry(width(), screen_width);
     for (std::size_t index = 0; index != cues_.size(); ++index) {
-        auto* button = new CueButton{cues_[index], *this};
-        buttons_.push_back(button);
+        auto* card = new CueCard{cues_[index], *this};
+        card->setProperty("cue-id", QString::fromStdString(cues_[index].id.value));
+        card->set_live(live_cue_.has_value() && cues_[index].id == *live_cue_);
+        cards_.push_back(card);
         const int row = static_cast<int>(index / static_cast<std::size_t>(columns));
         const int column = static_cast<int>(index % static_cast<std::size_t>(columns));
-        layout->addWidget(button, row, column);
+        layout->addWidget(card, row, column);
     }
 }
 
