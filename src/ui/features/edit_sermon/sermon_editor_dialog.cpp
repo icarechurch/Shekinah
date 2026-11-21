@@ -25,7 +25,8 @@ SermonEditorDialog::SermonEditorDialog(QWidget* parent) : QDialog(parent) {
     layout->addWidget(title_);
 
     auto* description = new QLabel{
-        QStringLiteral("Add PNG slides, then arrange them in the order they should appear."), this};
+        QStringLiteral("Add media files, then arrange them in the order they should appear."), this};
+    description->setObjectName(QStringLiteral("sermon-description"));
     description->setWordWrap(true);
     layout->addWidget(description);
 
@@ -41,7 +42,7 @@ SermonEditorDialog::SermonEditorDialog(QWidget* parent) : QDialog(parent) {
         QObject::connect(button, &QPushButton::clicked, this, handler);
         controls->addWidget(button);
     };
-    add_button(QStringLiteral("Add PNGs"), QStringLiteral("sermon-add-files"), [this] { add_files(); });
+    add_button(QStringLiteral("Add Media"), QStringLiteral("sermon-add-files"), [this] { add_files(); });
     add_button(QStringLiteral("Move Up"), QStringLiteral("sermon-move-up"), [this] { move_current(-1); });
     add_button(QStringLiteral("Move Down"), QStringLiteral("sermon-move-down"), [this] { move_current(1); });
     add_button(QStringLiteral("Remove"), QStringLiteral("sermon-remove"), [this] { remove_current(); });
@@ -82,7 +83,9 @@ int SermonEditorDialog::file_count() const noexcept { return files_->count(); }
 
 void SermonEditorDialog::add_files() {
     const auto paths = QFileDialog::getOpenFileNames(
-        this, QStringLiteral("Add Sermon PNGs"), {}, QStringLiteral("PNG slides (*.png)"));
+        this, QStringLiteral("Add Sermon Media"), {},
+        QStringLiteral(
+            "Media (*.png *.jpg *.jpeg *.webp *.bmp *.gif *.tif *.tiff *.mp4);;All files (*)"));
     for (const auto& path : paths) {
         bool duplicate = false;
         for (int index = 0; index != files_->count(); ++index) {
