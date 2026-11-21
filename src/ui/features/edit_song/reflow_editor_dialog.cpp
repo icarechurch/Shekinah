@@ -4,7 +4,9 @@
 
 #include <QListWidget>
 #include <QDialogButtonBox>
+#include <QHBoxLayout>
 #include <QLineEdit>
+#include <QPushButton>
 #include <QSplitter>
 #include <QVBoxLayout>
 
@@ -27,7 +29,21 @@ ReflowEditorDialog::ReflowEditorDialog(QWidget* parent) : QDialog(parent) {
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 0);
     layout->addWidget(splitter);
-    auto* buttons = new QDialogButtonBox{QDialogButtonBox::Save | QDialogButtonBox::Cancel, this};
+    auto* actions = new QWidget{this};
+    actions->setObjectName(QStringLiteral("song-editor-actions"));
+    auto* actions_layout = new QHBoxLayout{actions};
+    actions_layout->setContentsMargins(0, 0, 0, 0);
+    auto* split_button = new QPushButton{QStringLiteral("Split Slide / Reflow"), actions};
+    split_button->setObjectName(QStringLiteral("split-slide-reflow"));
+    split_button->setToolTip(QStringLiteral("Insert a slide break at the cursor (Ctrl+Enter)"));
+    QObject::connect(split_button, &QPushButton::clicked, this, [this] {
+        editor_->insert_slide_break();
+    });
+    actions_layout->addWidget(split_button);
+    actions_layout->addStretch(1);
+
+    auto* buttons = new QDialogButtonBox{
+        QDialogButtonBox::Save | QDialogButtonBox::Cancel, actions};
     buttons->setObjectName(QStringLiteral("song-editor-buttons"));
     QObject::connect(buttons, &QDialogButtonBox::accepted, this, [this] {
         if (save_song()) {
@@ -35,7 +51,8 @@ ReflowEditorDialog::ReflowEditorDialog(QWidget* parent) : QDialog(parent) {
         }
     });
     QObject::connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    layout->addWidget(buttons);
+    actions_layout->addWidget(buttons);
+    layout->addWidget(actions);
     editor_->set_document_changed_handler([this] { refresh_thumbnails(); });
     resize(920, 600);
 }

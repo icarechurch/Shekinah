@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QPushButton>
 #include <QTest>
 
 #include "shekinah/ui/reflow_editor_dialog.hpp"
@@ -45,6 +46,22 @@ TEST_CASE("Backspace at the following text start merges the Reflow slides") {
     REQUIRE(dialog.editor()->plain_text_utf8() == "First line\nSecond line");
     REQUIRE(dialog.editor()->visible_break_count() == 0);
     REQUIRE(dialog.reflow_document().to_slides().size() == 1);
+}
+
+TEST_CASE("Split Slide / Reflow button inserts a cursor slide break") {
+    ensure_qapplication();
+    ReflowEditorDialog dialog;
+    dialog.set_text("First line\nSecond line");
+    dialog.editor()->set_cursor_utf8_offset(10);
+
+    auto* split_button = dialog.findChild<QPushButton*>(QStringLiteral("split-slide-reflow"));
+    REQUIRE(split_button != nullptr);
+    QTest::mouseClick(split_button, Qt::LeftButton);
+
+    REQUIRE(dialog.editor()->plain_text_utf8() == "First line\nSecond line");
+    REQUIRE(dialog.editor()->visible_break_count() == 1);
+    REQUIRE(dialog.reflow_document().to_slides().size() == 2);
+    REQUIRE(dialog.thumbnail_count() == 2);
 }
 
 TEST_CASE("Reflow editor validates and materializes a reusable Song draft") {
