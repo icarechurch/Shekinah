@@ -10,6 +10,7 @@
 #include "test_project.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/support/asset_drag.hpp"
+#include "shekinah/ui/support/content_drag.hpp"
 
 using namespace shekinah::domain;
 using namespace shekinah::ui;
@@ -48,6 +49,17 @@ TEST_CASE("asset drag payload round-trips an AssetId") {
     const auto parsed = shekinah::ui::asset_id_from_mime_data(payload);
     REQUIRE(parsed.has_value());
     REQUIRE(parsed->value == "asset-42");
+    delete payload;
+}
+
+TEST_CASE("reusable content drag payload round-trips a Song reference") {
+    ensure_qapplication();
+    const auto payload = shekinah::ui::make_content_mime_data(ContentRef::song("song-42"));
+
+    const auto parsed = shekinah::ui::content_ref_from_mime_data(payload);
+
+    REQUIRE(parsed.has_value());
+    REQUIRE(parsed.value() == ContentRef::song("song-42"));
     delete payload;
 }
 
