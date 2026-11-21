@@ -108,3 +108,31 @@ TEST_CASE("service order reports an asset dropped on a Song row") {
     REQUIRE(asset == AssetId{"asset-1"});
     delete mime;
 }
+
+TEST_CASE("service order ignores unsupported or out-of-row asset drops") {
+    ensure_qapplication();
+    ServiceOrderWidget widget;
+    widget.set_items({ServiceOrderView{
+        ServiceOrderItem{ServiceOrderItemId{"item-1"}, ContentRef::song("song-1"), 0},
+        QStringLiteral("Song")}});
+    bool callback_called = false;
+    widget.set_asset_drop_handler([&](ContentRef, AssetId) { callback_called = true; });
+    widget.show();
+    QTest::qWait(20);
+
+    auto* list = widget.findChild<QListWidget*>(QStringLiteral("service-order-list"));
+    REQUIRE(list != nullptr);
+    QMimeData unsupported;
+    QDropEvent unsupported_event{list->visualItemRect(list->item(0)).center(), Qt::CopyAction,
+                                 &unsupported, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &unsupported_event);
+    REQUIRE_FALSE(unsupported_event.isAccepted());
+
+    auto* mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-1"});
+    const auto outside = list->viewport()->rect().bottomRight();
+    QDropEvent outside_event{outside, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &outside_event);
+    REQUIRE_FALSE(outside_event.isAccepted());
+    REQUIRE_FALSE(callback_called);
+    delete mime;
+}
