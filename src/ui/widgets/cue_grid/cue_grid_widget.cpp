@@ -157,12 +157,6 @@ protected:
             painter.drawText(text_rect.translated(1, 1), Qt::AlignCenter | Qt::TextWordWrap, text);
             painter.setPen(Qt::white);
             painter.drawText(text_rect, Qt::AlignCenter | Qt::TextWordWrap, text);
-            const int center_y = preview.center().y();
-            painter.setPen(QPen{QColor{QStringLiteral("#d9d9d9")}, 1});
-            painter.drawLine(preview.center().x() - 22, center_y - 31,
-                             preview.center().x() + 22, center_y - 31);
-            painter.drawLine(preview.center().x() - 22, center_y + 31,
-                             preview.center().x() + 22, center_y + 31);
         }
 
         painter.setPen(QPen{property("cue-live").toBool()

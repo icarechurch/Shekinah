@@ -179,6 +179,40 @@ TEST_CASE("cue card paints a usable background image") {
     REQUIRE(image.pixelColor(12, 12).green() < 80);
 }
 
+TEST_CASE("cue card omits decorative lyric rules") {
+    ensure_qapplication();
+    QTemporaryDir directory;
+    REQUIRE(directory.isValid());
+    const auto path = directory.filePath(QStringLiteral("background.png"));
+    QImage background{40, 20, QImage::Format_RGB32};
+    background.fill(Qt::black);
+    REQUIRE(background.save(path));
+
+    CueGridWidget grid;
+    grid.resize(320, 240);
+    grid.set_cues({CueView{
+        CueId{"no-rules"},
+        "Verse",
+        "Aming Ama",
+        1,
+        path,
+        FitMode::stretch,
+        QStringLiteral("Verse"),
+        true,
+    }});
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-no-rules"));
+    REQUIRE(card != nullptr);
+    card->resize(320, card->heightForWidth(320));
+
+    QImage image(card->size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    card->render(&image);
+
+    const auto preview = card->rect().adjusted(2, 2, -2, -34);
+    REQUIRE(image.pixelColor(preview.center().x(), preview.center().y() - 31) == QColor(Qt::black));
+    REQUIRE(image.pixelColor(preview.center().x(), preview.center().y() + 31) == QColor(Qt::black));
+}
+
 TEST_CASE("cue card falls back to checkerboard for an unreadable background") {
     ensure_qapplication();
     CueGridWidget grid;
