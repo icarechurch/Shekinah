@@ -19,6 +19,8 @@ struct ServiceOrderView {
 
 class ServiceOrderWidget final : public QWidget {
 public:
+    using AssetDropHandler = std::function<void(domain::ContentRef, domain::AssetId)>;
+
     explicit ServiceOrderWidget(QWidget* parent = nullptr);
 
     void set_items(std::vector<ServiceOrderView> items);
@@ -27,6 +29,9 @@ public:
     }
     void set_move_handler(std::function<void(domain::ServiceOrderItemId, std::int64_t)> handler) {
         move_handler_ = std::move(handler);
+    }
+    void set_asset_drop_handler(AssetDropHandler handler) {
+        asset_drop_handler_ = std::move(handler);
     }
     void select_row(int row);
     [[nodiscard]] int count() const noexcept;
@@ -37,6 +42,7 @@ private:
     std::vector<ServiceOrderView> items_;
     std::function<void(domain::ServiceOrderItemId)> selection_handler_;
     std::function<void(domain::ServiceOrderItemId, std::int64_t)> move_handler_;
+    AssetDropHandler asset_drop_handler_;
 };
 
 }  // namespace shekinah::ui

@@ -1,10 +1,16 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QDropEvent>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QListWidget>
+#include <QMimeData>
 #include <QPushButton>
 #include <QTest>
 
 #include "shekinah/ui/service_order_widget.hpp"
+#include "shekinah/ui/support/asset_drag.hpp"
 
 using namespace shekinah::domain;
 using namespace shekinah::ui;
@@ -61,4 +67,44 @@ TEST_CASE("service order widget reports requested moves from its controls") {
 
     REQUIRE(moved.value == "item-2");
     REQUIRE(target == 0);
+}
+
+TEST_CASE("service order reports an asset dropped on a Song row") {
+    ensure_qapplication();
+    ServiceOrderWidget widget;
+    widget.set_items({ServiceOrderView{
+        ServiceOrderItem{ServiceOrderItemId{"item-1"}, ContentRef::song("song-1"), 0},
+        QStringLiteral("Song")}});
+    ContentRef target = ContentRef::sermon("unset");
+    AssetId asset{"unset"};
+    bool callback_called = false;
+    widget.set_asset_drop_handler([&](ContentRef content, AssetId dropped) {
+        callback_called = true;
+        target = std::move(content);
+        asset = std::move(dropped);
+    });
+
+    auto* list = widget.findChild<QListWidget*>(QStringLiteral("service-order-list"));
+    REQUIRE(list != nullptr);
+    widget.show();
+    QTest::qWait(20);
+    auto* mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-1"});
+    const auto position = list->visualItemRect(list->item(0)).center();
+    REQUIRE(list->acceptDrops());
+    REQUIRE(list->visualItemRect(list->item(0)).contains(position));
+    REQUIRE(shekinah::ui::asset_id_from_mime_data(mime).has_value());
+    QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &enter);
+    REQUIRE(enter.isAccepted());
+    QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &move);
+    REQUIRE(move.isAccepted());
+    QDropEvent event{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &event);
+
+    REQUIRE(callback_called);
+    REQUIRE(event.isAccepted());
+    REQUIRE(target == ContentRef::song("song-1"));
+    REQUIRE(asset == AssetId{"asset-1"});
+    delete mime;
 }
