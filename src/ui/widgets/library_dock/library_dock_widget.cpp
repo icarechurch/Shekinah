@@ -1,7 +1,9 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 
 #include <QImageReader>
+#include <QAbstractItemView>
 #include <QIcon>
+#include <QListView>
 #include <QListWidget>
 #include <QLineEdit>
 #include <QMenu>
@@ -82,7 +84,17 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     songs_ = new QListWidget{tabs_};
     sermons_ = new QListWidget{tabs_};
     assets_->setObjectName(QStringLiteral("assets-list"));
-    assets_->setIconSize(QSize{128, 72});
+    assets_->setViewMode(QListView::IconMode);
+    assets_->setFlow(QListView::LeftToRight);
+    assets_->setWrapping(true);
+    assets_->setResizeMode(QListView::Adjust);
+    assets_->setMovement(QListView::Static);
+    assets_->setSelectionMode(QAbstractItemView::SingleSelection);
+    assets_->setDragEnabled(true);
+    assets_->setDragDropMode(QAbstractItemView::DragOnly);
+    assets_->setSpacing(10);
+    assets_->setIconSize(QSize{168, 94});
+    assets_->setGridSize(QSize{192, 126});
     assets_->setUniformItemSizes(true);
     songs_->setObjectName(QStringLiteral("songs-list"));
     sermons_->setObjectName(QStringLiteral("sermons-list"));

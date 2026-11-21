@@ -1,7 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QAbstractItemView>
 #include <QImage>
+#include <QListView>
 #include <QMimeData>
 #include <QListWidget>
 
@@ -47,6 +49,21 @@ TEST_CASE("asset drag payload round-trips an AssetId") {
     REQUIRE(parsed.has_value());
     REQUIRE(parsed->value == "asset-42");
     delete payload;
+}
+
+TEST_CASE("library presents assets as a wrapping tile grid") {
+    ensure_qapplication();
+    LibraryDockWidget dock;
+    dock.add_asset(AssetRecord{AssetId{"asset-1"}, AssetKind::image, "hash", "one.png", 100});
+
+    auto* list = dock.findChild<QListWidget*>(QStringLiteral("assets-list"));
+    REQUIRE(list != nullptr);
+    REQUIRE(list->viewMode() == QListView::IconMode);
+    REQUIRE(list->flow() == QListView::LeftToRight);
+    REQUIRE(list->isWrapping());
+    REQUIRE(list->movement() == QListView::Static);
+    REQUIRE(list->dragEnabled());
+    REQUIRE(list->dragDropMode() == QAbstractItemView::DragOnly);
 }
 
 TEST_CASE("library owns independent reusable Song and Sermon collections") {
