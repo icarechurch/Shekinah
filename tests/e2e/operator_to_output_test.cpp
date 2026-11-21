@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <QAction>
 #include <QApplication>
 #include <QImage>
 #include <QTest>
@@ -48,4 +49,10 @@ TEST_CASE("operator cue click reaches the Audience Output boundary") {
 
     REQUIRE(output->program().mode == shekinah::domain::ProgramMode::cue);
     REQUIRE(output->slide_image_loaded());
+    REQUIRE(cue->property("cue-live").toBool());
+
+    auto* clear = window.findChild<QAction*>(QStringLiteral("clear-program"));
+    REQUIRE(clear != nullptr);
+    clear->trigger();
+    REQUIRE_FALSE(cue->property("cue-live").toBool());
 }
