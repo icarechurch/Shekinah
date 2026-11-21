@@ -359,6 +359,59 @@ TEST_CASE("asset dropped on a Song row sets its default background") {
             QString::fromStdString((project.root() / "Sunday" / asset->relative_path).string()));
 }
 
+TEST_CASE("asset dropped on a non-selected Song row updates that Song") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto image_source = project.root() / "background.png";
+    QImage image{800, 450, QImage::Format_RGB32};
+    image.fill(Qt::yellow);
+    REQUIRE(image.save(QString::fromStdString(image_source.string()), "PNG"));
+    const auto song_source = project.root() / "goodness.txt";
+    std::ofstream{song_source} << "# Goodness\n[Verse]\nYou are good\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto asset = window.import_asset_file(image_source);
+    const auto first = window.import_song_file(song_source);
+    const auto second = window.import_song_file(song_source);
+    REQUIRE(asset);
+    REQUIRE(first);
+    REQUIRE(second);
+    window.library_dock()->add_song(*first);
+    window.library_dock()->add_song(*second);
+    window.library_dock()->show_songs();
+    window.library_dock()->activate_song_row(0);
+    window.library_dock()->activate_song_row(1);
+    window.show();
+    QTest::qWait(20);
+
+    auto* list = window.operator_page()->service_order_widget()->findChild<QListWidget*>(
+        QStringLiteral("service-order-list"));
+    REQUIRE(list != nullptr);
+    REQUIRE(list->count() == 2);
+    auto* mime = shekinah::ui::make_asset_mime_data(asset->id);
+    const auto position = list->visualItemRect(list->item(1)).center();
+    QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &enter);
+    QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &move);
+    QDropEvent drop{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &drop);
+    delete mime;
+
+    REQUIRE(drop.isAccepted());
+    QTest::qWait(20);
+    auto store = shekinah::storage::ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    shekinah::storage::SqliteContentRepository repository{*store};
+    const auto saved_first = repository.load_song(first->id);
+    const auto saved_second = repository.load_song(second->id);
+    REQUIRE(saved_first);
+    REQUIRE(saved_second);
+    REQUIRE_FALSE(saved_first->default_background.has_value());
+    REQUIRE(saved_second->default_background->asset == asset->id);
+}
+
 TEST_CASE("a live cue is mirrored to the Audience Output state") {
     ensure_qapplication();
     auto project = TestProject::create();
