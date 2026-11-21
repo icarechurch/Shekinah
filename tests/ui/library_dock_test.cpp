@@ -66,6 +66,17 @@ TEST_CASE("library presents assets as a wrapping tile grid") {
     REQUIRE(list->dragDropMode() == QAbstractItemView::DragOnly);
 }
 
+TEST_CASE("library presents video assets with a media fallback icon") {
+    ensure_qapplication();
+    LibraryDockWidget dock;
+    dock.add_asset(AssetRecord{AssetId{"asset-video"}, AssetKind::video, "hash", "loop.mp4", 200});
+
+    auto* list = dock.findChild<QListWidget*>(QStringLiteral("assets-list"));
+    REQUIRE(list != nullptr);
+    REQUIRE(list->item(0)->text() == QStringLiteral("loop.mp4"));
+    REQUIRE_FALSE(list->item(0)->icon().isNull());
+}
+
 TEST_CASE("library owns independent reusable Song and Sermon collections") {
     ensure_qapplication();
     LibraryDockWidget dock;
