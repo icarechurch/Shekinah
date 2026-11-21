@@ -35,7 +35,7 @@ The project is intentionally focused on the needs of I Care Balaybay Mountain Ch
 ## Key Features
 
 - **Songs and service order:** Create or import Songs, reuse content, and arrange service items for a presentation.
-- **Sermon decks:** Import ordered PNG slides as Sermon decks and edit their slide content.
+- **Sermon decks:** Import ordered image or video media as Sermon decks and edit their slide content.
 - **Media assets:** Import image and video assets, use them as Song or slide backgrounds, and keep project media file-backed.
 - **Live cue control:** Select cues from the operator workspace, navigate presentation state, and manage clear or black output states.
 - **Audience output:** Show the live presentation in a separate audience-output window.
