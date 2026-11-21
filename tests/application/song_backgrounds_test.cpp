@@ -43,3 +43,17 @@ TEST_CASE("Song default background assignment leaves slide overrides unchanged")
     REQUIRE(song.default_background->fit == FitMode::contain);
     REQUIRE(song.slides[0].background->asset == AssetId{"slide"});
 }
+
+TEST_CASE("a later slide drop starts a new background range") {
+    Song song{SongId{"song"},
+              "Song",
+              std::nullopt,
+              {Slide{CueId{"one"}, "Verse", {"One"}, BackgroundRef{AssetId{"first"}}},
+               Slide{CueId{"two"}, "Chorus", {"Two"}, BackgroundRef{AssetId{"first"}}},
+               Slide{CueId{"three"}, "Bridge", {"Three"}, BackgroundRef{AssetId{"first"}}}}};
+
+    REQUIRE(apply_background_from_slide(song, CueId{"two"}, BackgroundRef{AssetId{"second"}}));
+    REQUIRE(song.slides[0].background->asset == AssetId{"first"});
+    REQUIRE(song.slides[1].background->asset == AssetId{"second"});
+    REQUIRE(song.slides[2].background->asset == AssetId{"second"});
+}
