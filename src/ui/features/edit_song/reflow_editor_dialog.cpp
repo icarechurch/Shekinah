@@ -31,6 +31,7 @@ ReflowEditorDialog::ReflowEditorDialog(QWidget* parent) : QDialog(parent) {
     layout->addWidget(splitter);
     auto* actions = new QWidget{this};
     actions->setObjectName(QStringLiteral("song-editor-actions"));
+    actions->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     auto* actions_layout = new QHBoxLayout{actions};
     actions_layout->setContentsMargins(0, 0, 0, 0);
     auto* split_button = new QPushButton{QStringLiteral("Split Slide / Reflow"), actions};

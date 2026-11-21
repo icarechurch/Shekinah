@@ -64,6 +64,18 @@ TEST_CASE("Split Slide / Reflow button inserts a cursor slide break") {
     REQUIRE(dialog.thumbnail_count() == 2);
 }
 
+TEST_CASE("Reflow action row stays compact and anchored to the dialog bottom") {
+    ensure_qapplication();
+    ReflowEditorDialog dialog;
+    dialog.show();
+    QTest::qWait(20);
+
+    auto* actions = dialog.findChild<QWidget*>(QStringLiteral("song-editor-actions"));
+    REQUIRE(actions != nullptr);
+    REQUIRE(actions->height() <= 60);
+    REQUIRE(actions->geometry().bottom() >= dialog.height() - 20);
+}
+
 TEST_CASE("Reflow editor validates and materializes a reusable Song draft") {
     ensure_qapplication();
     ReflowEditorDialog dialog;
