@@ -12,6 +12,8 @@
 #include <utility>
 #include <vector>
 
+class QScrollArea;
+
 namespace shekinah::ui {
 
 struct CueView {
@@ -76,6 +78,7 @@ private:
     TakeLiveHandler take_live_handler_;
     ContextHandler context_handler_;
     QWidget* grid_container_{nullptr};
+    QScrollArea* grid_scroll_{nullptr};
     QWidget* empty_state_{nullptr};
     std::function<void()> new_song_handler_;
     std::function<void()> import_song_handler_;

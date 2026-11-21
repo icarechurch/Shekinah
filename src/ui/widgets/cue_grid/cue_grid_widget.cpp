@@ -1,12 +1,14 @@
 #include "shekinah/ui/cue_grid_widget.hpp"
 
 #include <QGridLayout>
+#include <QFrame>
 #include <QImageReader>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPushButton>
 #include <QResizeEvent>
+#include <QScrollArea>
 #include <QScreen>
 #include <QVBoxLayout>
 
@@ -225,8 +227,15 @@ CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_
     });
     empty_layout->addStretch(1);
     outer->addWidget(empty_state_);
-    outer->addWidget(grid_container_);
-    grid_container_->setVisible(false);
+    grid_scroll_ = new QScrollArea{this};
+    grid_scroll_->setObjectName(QStringLiteral("cue-grid-scroll"));
+    grid_scroll_->setFrameShape(QFrame::NoFrame);
+    grid_scroll_->setWidgetResizable(true);
+    grid_scroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    grid_scroll_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    grid_scroll_->setWidget(grid_container_);
+    outer->addWidget(grid_scroll_);
+    grid_scroll_->setVisible(false);
     setMinimumWidth(240);
 }
 
@@ -267,7 +276,7 @@ void CueGridWidget::set_cues(std::vector<CueView> cues) {
     cues_ = std::move(cues);
     const bool empty = cues_.empty();
     empty_state_->setVisible(empty);
-    grid_container_->setVisible(!empty);
+    grid_scroll_->setVisible(!empty);
     rebuild_layout();
 }
 

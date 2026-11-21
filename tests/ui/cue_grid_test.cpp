@@ -4,6 +4,8 @@
 #include <QColor>
 #include <QImage>
 #include <QPushButton>
+#include <QScrollArea>
+#include <QScrollBar>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -30,6 +32,27 @@ TEST_CASE("cue grid follows the approved automatic column policy") {
     REQUIRE(CueGridWidget::column_count_for_geometry(1500, 3200) == 6);
     REQUIRE(CueGridWidget::column_count_for_geometry(250, 1366) == 1);
     REQUIRE(CueGridWidget::column_count_for_geometry(450, 1366) == 2);
+}
+
+TEST_CASE("cue grid scrolls vertically without horizontal scrolling") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.resize(480, 240);
+    std::vector<CueView> cues;
+    for (int number = 1; number <= 9; ++number) {
+        cues.emplace_back(
+            CueId{"cue-" + std::to_string(number)}, "Verse", "Line", number);
+    }
+    grid.set_cues(std::move(cues));
+    grid.show();
+    QTest::qWait(20);
+
+    auto* scroll = grid.findChild<QScrollArea*>(QStringLiteral("cue-grid-scroll"));
+    REQUIRE(scroll != nullptr);
+    REQUIRE(scroll->horizontalScrollBarPolicy() == Qt::ScrollBarAlwaysOff);
+    REQUIRE(scroll->verticalScrollBarPolicy() == Qt::ScrollBarAsNeeded);
+    REQUIRE(scroll->verticalScrollBar()->isVisible());
+    REQUIRE_FALSE(scroll->horizontalScrollBar()->isVisible());
 }
 
 TEST_CASE("cue view carries card preview metadata") {
