@@ -2,6 +2,7 @@
 
 #include "shekinah/domain/model.hpp"
 
+#include <QColor>
 #include <QPoint>
 #include <QRect>
 #include <QWidget>
@@ -49,6 +50,7 @@ public:
     explicit CueGridWidget(QWidget* parent = nullptr);
 
     static int column_count_for_geometry(int viewport_width, int screen_width);
+    static QColor footer_color_for_section(const QString& section);
     void set_cues(std::vector<CueView> cues);
     void set_authoring_handlers(std::function<void()> new_song,
                                 std::function<void()> import_song,

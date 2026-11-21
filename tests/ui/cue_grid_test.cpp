@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QColor>
 #include <QImage>
 #include <QPushButton>
 #include <QTemporaryDir>
@@ -153,6 +154,35 @@ TEST_CASE("cue card paints a usable background image") {
 
     REQUIRE(image.pixelColor(12, 12).red() > 200);
     REQUIRE(image.pixelColor(12, 12).green() < 80);
+}
+
+TEST_CASE("cue card footer colors follow section names") {
+    REQUIRE(CueGridWidget::footer_color_for_section("Verse 1") == QColor("#0b80ba"));
+    REQUIRE(CueGridWidget::footer_color_for_section("Chorus 1") == QColor("#cc1f58"));
+    REQUIRE(CueGridWidget::footer_color_for_section("Bridge") == QColor("#8336c7"));
+    REQUIRE(CueGridWidget::footer_color_for_section("Tag") == QColor("#cf3a32"));
+    REQUIRE(CueGridWidget::footer_color_for_section("Intro") == QColor("#0b80ba"));
+}
+
+TEST_CASE("cue card exposes numbered footer metadata") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.set_cues({CueView{
+        CueId{"footer"},
+        "Chorus 1",
+        "You are here",
+        4,
+        {},
+        FitMode::cover,
+        QStringLiteral("Chorus 1"),
+        true,
+    }});
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-footer"));
+
+    REQUIRE(card != nullptr);
+    REQUIRE(card->property("cue-number").toInt() == 4);
+    REQUIRE(card->property("cue-footer-label").toString() == QStringLiteral("Chorus 1"));
+    REQUIRE(card->property("cue-section-color").value<QColor>() == QColor("#cc1f58"));
 }
 
 TEST_CASE("empty Presentation view exposes authoring actions") {

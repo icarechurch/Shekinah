@@ -25,6 +25,11 @@ public:
         setAttribute(Qt::WA_Hover, true);
         setProperty("cue-section", cue.section);
         setProperty("cue-summary", cue.summary);
+        setProperty("cue-number", cue.number);
+        setProperty(
+            "cue-footer-label",
+            cue.footer_label.isEmpty() ? cue.section : cue.footer_label);
+        setProperty("cue-section-color", CueGridWidget::footer_color_for_section(cue.section));
         setProperty("cue-live", false);
         setToolTip(cue.summary);
     }
@@ -115,6 +120,52 @@ protected:
                 }
             }
         }
+
+        const QRect footer{2, height() - 34, width() - 4, 32};
+        painter.fillRect(footer, CueGridWidget::footer_color_for_section(cue_.section));
+        painter.setPen(Qt::white);
+        QFont footer_font = painter.font();
+        footer_font.setPixelSize(18);
+        footer_font.setBold(true);
+        painter.setFont(footer_font);
+        const auto number = cue_.number > 0
+                                ? QString::number(cue_.number)
+                                : QString::fromStdString(cue_.id.value);
+        painter.drawText(footer.adjusted(4, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, number);
+
+        const auto footer_label = cue_.footer_label.isEmpty() ? cue_.section : cue_.footer_label;
+        if (!footer_label.isEmpty()) {
+            QFont label_font = footer_font;
+            label_font.setBold(false);
+            painter.setFont(label_font);
+            painter.drawText(
+                footer.adjusted(32, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, footer_label);
+        }
+
+        if (cue_.show_text && !cue_.summary.trimmed().isEmpty()) {
+            QFont lyric_font = painter.font();
+            lyric_font.setPixelSize(std::clamp(preview.height() / 10, 11, 18));
+            lyric_font.setBold(true);
+            painter.setFont(lyric_font);
+            const auto text = cue_.summary.toUpper();
+            const auto text_rect = preview.adjusted(20, 20, -20, -20);
+            painter.setPen(QColor{QStringLiteral("#080808")});
+            painter.drawText(text_rect.translated(1, 1), Qt::AlignCenter | Qt::TextWordWrap, text);
+            painter.setPen(Qt::white);
+            painter.drawText(text_rect, Qt::AlignCenter | Qt::TextWordWrap, text);
+            const int center_y = preview.center().y();
+            painter.setPen(QPen{QColor{QStringLiteral("#d9d9d9")}, 1});
+            painter.drawLine(preview.center().x() - 22, center_y - 31,
+                             preview.center().x() + 22, center_y - 31);
+            painter.drawLine(preview.center().x() - 22, center_y + 31,
+                             preview.center().x() + 22, center_y + 31);
+        }
+
+        painter.setPen(QPen{property("cue-live").toBool()
+                                ? QColor{QStringLiteral("#087cff")}
+                                : QColor{QStringLiteral("#303030")},
+                            static_cast<qreal>(property("cue-live").toBool() ? 2 : 1)});
+        painter.drawRect(rect().adjusted(1, 1, -2, -2));
     }
 
 private:
@@ -175,6 +226,20 @@ CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_
     outer->addWidget(grid_container_);
     grid_container_->setVisible(false);
     setMinimumWidth(240);
+}
+
+QColor CueGridWidget::footer_color_for_section(const QString& section) {
+    const auto normalized = section.trimmed().toLower();
+    if (normalized.startsWith(QStringLiteral("chorus"))) {
+        return QColor{QStringLiteral("#cc1f58")};
+    }
+    if (normalized.startsWith(QStringLiteral("bridge"))) {
+        return QColor{QStringLiteral("#8336c7")};
+    }
+    if (normalized.startsWith(QStringLiteral("tag"))) {
+        return QColor{QStringLiteral("#cf3a32")};
+    }
+    return QColor{QStringLiteral("#0b80ba")};
 }
 
 int CueGridWidget::column_count_for_geometry(int viewport_width, int screen_width) {
