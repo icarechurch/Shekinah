@@ -98,17 +98,26 @@ TEST_CASE("library clears all catalogs for a project reload") {
 TEST_CASE("library creates bounded thumbnails for image assets") {
     ensure_qapplication();
     const auto project = TestProject::create();
-    const auto image_path = project.root() / "slide.png";
+    const auto media_directory = project.root() / "media";
+    std::filesystem::create_directories(media_directory);
+    const auto image_path = media_directory / "slide.png";
     QImage image{320, 180, QImage::Format_ARGB32};
     image.fill(Qt::blue);
     REQUIRE(image.save(QString::fromStdString(image_path.string()), "PNG"));
 
     LibraryDockWidget dock;
     dock.set_asset_root(project.root());
-    dock.add_asset(AssetRecord{AssetId{"asset-image"}, AssetKind::image, "hash", "slide.png", 128});
+    dock.add_asset(
+        AssetRecord{AssetId{"asset-image"}, AssetKind::image, "hash", "media/slide.png", 128});
 
     auto* list = dock.findChild<QListWidget*>(QStringLiteral("assets-list"));
     REQUIRE(list != nullptr);
     REQUIRE(list->count() == 1);
+    REQUIRE(list->item(0)->text() == QStringLiteral("slide.png"));
     REQUIRE_FALSE(list->item(0)->icon().isNull());
+    const auto thumbnail_size = list->item(0)->icon().availableSizes().front();
+    REQUIRE(thumbnail_size.width() <= 168);
+    REQUIRE(thumbnail_size.height() <= 94);
+    REQUIRE(thumbnail_size.width() >= 160);
+    REQUIRE(thumbnail_size.height() >= 90);
 }

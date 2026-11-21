@@ -153,7 +153,9 @@ void LibraryDockWidget::show_songs() { set_tab(LibraryTab::songs, 1); }
 void LibraryDockWidget::show_sermons() { set_tab(LibraryTab::sermons, 2); }
 
 void LibraryDockWidget::add_asset(domain::AssetRecord asset) {
-    auto* item = new QListWidgetItem{QString::fromStdString(asset.relative_path)};
+    const auto filename = std::filesystem::path{asset.relative_path}.filename().string();
+    auto* item = new QListWidgetItem{
+        QString::fromStdString(filename.empty() ? asset.relative_path : filename)};
     item->setData(kContentIdRole, QString::fromStdString(asset.id.value));
     item->setToolTip(QStringLiteral("%1\n%2 bytes")
                          .arg(QString::fromStdString(asset.relative_path))
@@ -163,8 +165,8 @@ void LibraryDockWidget::add_asset(domain::AssetRecord asset) {
         reader.setAutoTransform(true);
         const auto source_size = reader.size();
         if (source_size.isValid()) {
-            constexpr int kThumbnailWidth = 128;
-            constexpr int kThumbnailHeight = 72;
+            constexpr int kThumbnailWidth = 168;
+            constexpr int kThumbnailHeight = 94;
             reader.setScaledSize(source_size.scaled(kThumbnailWidth, kThumbnailHeight, Qt::KeepAspectRatio));
         }
         const auto image = reader.read();
