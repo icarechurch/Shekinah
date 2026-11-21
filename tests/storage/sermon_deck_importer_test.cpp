@@ -11,7 +11,7 @@
 using namespace shekinah::domain;
 using namespace shekinah::storage;
 
-TEST_CASE("sermon deck importer naturally orders PNG slides") {
+TEST_CASE("sermon deck importer naturally orders sermon files") {
     auto project = TestProject::create();
     auto store = ProjectStore::create_or_open(project.root() / "Sunday");
     REQUIRE(store);
@@ -24,7 +24,7 @@ TEST_CASE("sermon deck importer naturally orders PNG slides") {
     std::ofstream(slide_1, std::ios::binary) << "one";
 
     SermonDeckImporter importer{*store};
-    const auto deck = importer.import_pngs(
+    const auto deck = importer.import_files(
         SermonId{"sermon-a"}, "Sunday Sermon", {slide_10, slide_2, slide_1});
 
     REQUIRE(deck);
@@ -48,26 +48,57 @@ TEST_CASE("sermon deck importer naturally orders PNG slides") {
 
 }
 
-TEST_CASE("sermon deck importer rejects duplicate names and non-PNG files") {
+TEST_CASE("sermon deck importer accepts mixed supported media") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+
+    const auto jpg = project.root() / "Slide 1.jpg";
+    const auto gif = project.root() / "Slide 2.GIF";
+    const auto mp4 = project.root() / "Slide 3.MP4";
+    std::ofstream(jpg, std::ios::binary) << "jpg-bytes";
+    std::ofstream(gif, std::ios::binary) << "gif-bytes";
+    std::ofstream(mp4, std::ios::binary) << "mp4-bytes";
+
+    SermonDeckImporter importer{*store};
+    const auto deck = importer.import_files(
+        SermonId{"sermon-media"}, "Media Sermon", {jpg, gif, mp4}, true);
+
+    REQUIRE(deck);
+    REQUIRE(deck->slides.size() == 3);
+
+    SqliteContentRepository repository{*store};
+    const auto first = repository.load_asset(deck->slides[0].image);
+    const auto second = repository.load_asset(deck->slides[1].image);
+    const auto third = repository.load_asset(deck->slides[2].image);
+    REQUIRE(first);
+    REQUIRE(second);
+    REQUIRE(third);
+    REQUIRE(first->kind == AssetKind::image);
+    REQUIRE(second->kind == AssetKind::image);
+    REQUIRE(third->kind == AssetKind::video);
+}
+
+TEST_CASE("sermon deck importer rejects duplicate names and unsupported media") {
     auto project = TestProject::create();
     auto store = ProjectStore::create_or_open(project.root() / "Sunday");
     REQUIRE(store);
 
     const auto first = project.root() / "Slide 1.png";
     const auto duplicate = project.root() / "slide 1.PNG";
-    const auto jpg = project.root() / "Slide 2.jpg";
+    const auto unsupported = project.root() / "Slide 2.txt";
     std::ofstream(first, std::ios::binary) << "one";
     std::ofstream(duplicate, std::ios::binary) << "duplicate";
-    std::ofstream(jpg, std::ios::binary) << "jpg";
+    std::ofstream(unsupported, std::ios::binary) << "text";
 
     SermonDeckImporter importer{*store};
-    const auto duplicate_result = importer.import_pngs(
+    const auto duplicate_result = importer.import_files(
         SermonId{"sermon-a"}, "Sunday Sermon", {first, duplicate});
     REQUIRE_FALSE(duplicate_result);
     REQUIRE(duplicate_result.error().code == ErrorCode::invalid_input);
 
-    const auto extension_result = importer.import_pngs(
-        SermonId{"sermon-b"}, "Sunday Sermon", {jpg});
+    const auto extension_result = importer.import_files(
+        SermonId{"sermon-b"}, "Sunday Sermon", {unsupported});
     REQUIRE_FALSE(extension_result);
     REQUIRE(extension_result.error().code == ErrorCode::unsupported_media);
 }
@@ -85,7 +116,7 @@ TEST_CASE("sermon deck importer preserves the operator-defined order when reques
     std::ofstream(second, std::ios::binary) << "two";
 
     SermonDeckImporter importer{*store};
-    const auto deck = importer.import_pngs(
+    const auto deck = importer.import_files(
         SermonId{"sermon-ordered"}, "Ordered Sermon", {third, first, second}, true);
 
     REQUIRE(deck);
