@@ -56,6 +56,17 @@ TEST_CASE("Program Status renders the live cue label") {
     REQUIRE(widget.findChild<QLabel*>(QStringLiteral("program-cue"))->text() == QStringLiteral("bridge-1"));
 }
 
+TEST_CASE("Program Status preview carries the actual slide content") {
+    ensure_qapplication();
+    ProgramStatusWidget widget;
+    widget.set_slide_preview(QStringLiteral("First lyric line\nSecond lyric line"));
+
+    auto* preview = widget.findChild<QWidget*>(QStringLiteral("program-preview"));
+    REQUIRE(preview != nullptr);
+    REQUIRE(preview->property("slide-text").toString() ==
+            QStringLiteral("First lyric line\nSecond lyric line"));
+}
+
 TEST_CASE("Program Status exposes the right-side output panel") {
     ensure_qapplication();
     ProgramStatusWidget widget;

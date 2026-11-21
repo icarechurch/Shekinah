@@ -449,24 +449,6 @@ void ShekinahWindow::update_program_status() {
         selected_live_cue = program.live_cue->cue;
     }
     operator_page_->cue_grid()->set_live_cue(std::move(selected_live_cue));
-
-    QString title;
-    if (repository_ && program.live_cue.has_value()) {
-        if (program.live_cue->content.kind == domain::ContentKind::song) {
-            const auto song = repository_->load_song(
-                std::get<domain::SongId>(program.live_cue->content.id));
-            if (song) {
-                title = QString::fromStdString(song->title);
-            }
-        } else {
-            const auto sermon = repository_->load_deck(
-                std::get<domain::SermonId>(program.live_cue->content.id));
-            if (sermon) {
-                title = QString::fromStdString(sermon->title);
-            }
-        }
-    }
-    operator_page_->program_status()->set_program_title(std::move(title));
     operator_page_->program_status()->set_program(program);
     if (audience_output_) {
         audience_output_->present(presentation_.program());
@@ -476,10 +458,12 @@ void ShekinahWindow::update_program_status() {
 
 void ShekinahWindow::present_live_media() {
     if (!audience_output_ || !repository_) {
+        operator_page_->program_status()->set_slide_preview({});
         return;
     }
     const auto& program = presentation_.program();
     if (program.mode != domain::ProgramMode::cue || !program.live_cue.has_value()) {
+        operator_page_->program_status()->set_slide_preview({});
         audience_output_->set_live_text({});
         audience_output_->clear_slide_image();
         audience_output_->clear_loop_video();
@@ -487,6 +471,8 @@ void ShekinahWindow::present_live_media() {
     }
 
     std::optional<domain::AssetId> asset_id;
+    QString preview_text;
+    domain::FitMode preview_fit = domain::FitMode::cover;
     const auto& cue = *program.live_cue;
     if (cue.content.kind == domain::ContentKind::song) {
         const auto song = repository_->load_song(std::get<domain::SongId>(cue.content.id));
@@ -502,7 +488,8 @@ void ShekinahWindow::present_live_media() {
                     }
                     lyric_text << slide->lines[index];
                 }
-                audience_output_->set_live_text(QString::fromStdString(lyric_text.str()));
+                preview_text = QString::fromStdString(lyric_text.str());
+                audience_output_->set_live_text(preview_text);
             } else {
                 audience_output_->set_live_text({});
             }
@@ -512,6 +499,7 @@ void ShekinahWindow::present_live_media() {
         const auto background = presentation_.resolve_background(cue.content, cue.cue);
         if (background && background->has_value()) {
             asset_id = background->value().asset;
+            preview_fit = background->value().fit;
         }
     } else {
         audience_output_->set_live_text({});
@@ -527,19 +515,24 @@ void ShekinahWindow::present_live_media() {
     }
 
     if (!asset_id.has_value()) {
+        operator_page_->program_status()->set_slide_preview(std::move(preview_text));
         audience_output_->clear_slide_image();
         audience_output_->clear_loop_video();
         return;
     }
     const auto asset = repository_->load_asset(*asset_id);
     if (!asset) {
+        operator_page_->program_status()->set_slide_preview(std::move(preview_text));
         return;
     }
     const auto path = store_->root() / asset->relative_path;
     if (asset->kind == domain::AssetKind::image) {
+        operator_page_->program_status()->set_slide_preview(
+            std::move(preview_text), QString::fromStdString(path.string()), preview_fit);
         audience_output_->clear_loop_video();
         audience_output_->load_slide_image(path);
     } else {
+        operator_page_->program_status()->set_slide_preview(std::move(preview_text));
         if (!live_media_admitted()) {
             return;
         }

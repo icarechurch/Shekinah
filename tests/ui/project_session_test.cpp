@@ -329,6 +329,10 @@ TEST_CASE("a live cue is mirrored to the Audience Output state") {
     REQUIRE(output->program().mode == shekinah::domain::ProgramMode::cue);
     REQUIRE(output->program().live_cue->cue == song->slides[0].id);
     REQUIRE(output->live_text() == QStringLiteral("You are good"));
+    REQUIRE(window.operator_page()->program_status()->findChild<QWidget*>(
+                QStringLiteral("program-preview"))
+                ->property("slide-text")
+                .toString() == QStringLiteral("You are good"));
 }
 
 TEST_CASE("a live sermon cue loads its imported PNG into Audience Output") {
