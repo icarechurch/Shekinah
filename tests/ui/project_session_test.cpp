@@ -463,7 +463,7 @@ TEST_CASE("asset dropped on a Song slide applies through the following slides") 
     REQUIRE(third != nullptr);
     REQUIRE(first->property("cue-background-path").toString().isEmpty());
     REQUIRE(second->property("cue-background-path").toString() == background_path);
-    REQUIRE(third->property("cue-background-path").toString() == background_path);
+    REQUIRE(third->property("cue-background-path").toString().isEmpty());
 
     auto store = shekinah::storage::ProjectStore::create_or_open(project.root() / "Sunday");
     REQUIRE(store);
@@ -522,6 +522,19 @@ TEST_CASE("asset slide drops refresh the live preview") {
         QStringLiteral("program-preview"));
     REQUIRE(preview != nullptr);
     REQUIRE(preview->property("slide-background-path").toString() ==
+            QString::fromStdString((project.root() / "Sunday" / asset->relative_path).string()));
+
+    auto* following = window.operator_page()->cue_grid()->findChild<QWidget*>(
+        QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[2].id.value)));
+    REQUIRE(following != nullptr);
+    REQUIRE(following->property("cue-background-path").toString().isEmpty());
+    QTest::mouseClick(following, Qt::LeftButton, Qt::NoModifier, following->rect().center());
+    REQUIRE(output->program().live_cue->cue == song->slides[2].id);
+    REQUIRE(output->slide_image_loaded());
+    REQUIRE(window.operator_page()->program_status()
+                ->findChild<QWidget*>(QStringLiteral("program-preview"))
+                ->property("slide-background-path")
+                .toString() ==
             QString::fromStdString((project.root() / "Sunday" / asset->relative_path).string()));
 }
 

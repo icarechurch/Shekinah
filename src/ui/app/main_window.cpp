@@ -22,6 +22,7 @@
 #include <QKeySequence>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QStringList>
 #include <QTimer>
 
@@ -386,6 +387,7 @@ void ShekinahWindow::refresh_cues() {
             return;
         }
         cues.reserve(song->slides.size());
+        std::optional<domain::BackgroundRef> previous_background;
         for (std::size_t index = 0; index != song->slides.size(); ++index) {
             const auto& slide = song->slides[index];
             std::ostringstream summary;
@@ -398,15 +400,21 @@ void ShekinahWindow::refresh_cues() {
 
             QString background_path;
             domain::FitMode background_fit = domain::FitMode::cover;
-            const auto background = presentation_.resolve_background(selected->content, slide.id);
-            if (background && background->has_value() && store_) {
-                const auto asset = repository_->load_asset(background->value().asset);
+            const auto background = slide.background.has_value()
+                                      ? slide.background
+                                      : song->default_background;
+            const auto starts_asset_range = background.has_value() &&
+                                            (!previous_background.has_value() ||
+                                             previous_background != background);
+            if (starts_asset_range && store_) {
+                const auto asset = repository_->load_asset(background->asset);
                 if (asset) {
                     background_path = QString::fromStdString(
                         (store_->root() / asset->relative_path).string());
-                    background_fit = background->value().fit;
+                    background_fit = background->fit;
                 }
             }
+            previous_background = background;
             cues.push_back(CueView{
                 slide.id,
                 QString::fromStdString(slide.section),
@@ -588,13 +596,19 @@ void ShekinahWindow::import_asset() {
         return;
     }
     const auto path = QFileDialog::getOpenFileName(
-        this, QStringLiteral("Import Asset"), {}, QStringLiteral("Media (*.png *.jpg *.jpeg *.mp4)"));
+        this, QStringLiteral("Import Asset"), {},
+        QStringLiteral(
+            "Media (*.png *.jpg *.jpeg *.webp *.bmp *.gif *.tif *.tiff *.mp4);;All files (*)"));
     if (path.isEmpty()) {
         return;
     }
     const auto imported = import_asset_file(path.toStdString());
     if (imported) {
-        library_dock_->add_asset(*imported);
+        refresh_library();
+        library_dock_->show_assets();
+    } else {
+        QMessageBox::warning(
+            this, QStringLiteral("Asset import failed"), QString::fromStdString(imported.error().message));
     }
 }
 

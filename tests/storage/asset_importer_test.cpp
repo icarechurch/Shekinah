@@ -62,3 +62,22 @@ TEST_CASE("deduplicated imports return the canonical stored path") {
     REQUIRE(second->relative_path == first->relative_path);
     REQUIRE(std::filesystem::exists(project.root() / "Sunday" / second->relative_path));
 }
+
+TEST_CASE("asset importer accepts common ProContent image extensions") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    const auto webp_path = project.root() / "background.webp";
+    const auto bmp_path = project.root() / "texture.bmp";
+    std::ofstream(webp_path, std::ios::binary) << "webp-bytes";
+    std::ofstream(bmp_path, std::ios::binary) << "bmp-bytes";
+
+    AssetImporter importer{*store};
+    const auto webp = importer.import_file(webp_path);
+    const auto bmp = importer.import_file(bmp_path);
+
+    REQUIRE(webp);
+    REQUIRE(bmp);
+    REQUIRE(webp->kind == AssetKind::image);
+    REQUIRE(bmp->kind == AssetKind::image);
+}

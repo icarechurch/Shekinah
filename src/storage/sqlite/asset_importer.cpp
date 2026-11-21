@@ -19,7 +19,9 @@ domain::Result<std::pair<domain::AssetKind, std::string>> classify(
     auto extension = source.extension().string();
     std::transform(extension.begin(), extension.end(), extension.begin(),
                    [](unsigned char value) { return static_cast<char>(std::tolower(value)); });
-    if (extension == ".png" || extension == ".jpg" || extension == ".jpeg") {
+    if (extension == ".png" || extension == ".jpg" || extension == ".jpeg" ||
+        extension == ".webp" || extension == ".bmp" || extension == ".gif" ||
+        extension == ".tif" || extension == ".tiff") {
         return domain::Result<std::pair<domain::AssetKind, std::string>>::ok(
             {domain::AssetKind::image, extension});
     }
@@ -28,7 +30,8 @@ domain::Result<std::pair<domain::AssetKind, std::string>> classify(
             {domain::AssetKind::video, extension});
     }
     return domain::Result<std::pair<domain::AssetKind, std::string>>::fail(
-        {domain::ErrorCode::unsupported_media, "supported assets are PNG, JPG, JPEG, and MP4"});
+        {domain::ErrorCode::unsupported_media,
+         "supported assets are PNG, JPG, JPEG, WEBP, BMP, GIF, TIFF, and MP4"});
 }
 
 domain::Result<std::string> sha256_file(const std::filesystem::path& source) {
