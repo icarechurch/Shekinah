@@ -475,6 +475,56 @@ TEST_CASE("asset dropped on a Song slide applies through the following slides") 
     REQUIRE(saved_song->slides[2].background->asset == asset->id);
 }
 
+TEST_CASE("asset slide drops refresh the live preview") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto image_source = project.root() / "background.png";
+    QImage image{800, 450, QImage::Format_RGB32};
+    image.fill(Qt::magenta);
+    REQUIRE(image.save(QString::fromStdString(image_source.string()), "PNG"));
+    const auto song_source = project.root() / "goodness.txt";
+    std::ofstream{song_source}
+        << "# Goodness\n[Verse]\nOne\n\n[Chorus]\nTwo\n\n[Bridge]\nThree\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto asset = window.import_asset_file(image_source);
+    const auto song = window.import_song_file(song_source);
+    REQUIRE(asset);
+    REQUIRE(song);
+    window.library_dock()->add_song(*song);
+    window.library_dock()->show_songs();
+    window.library_dock()->activate_song_row(0);
+    auto* output = window.audience_output();
+    window.show();
+    QTest::qWait(20);
+
+    auto* live = window.operator_page()->cue_grid()->findChild<QWidget*>(
+        QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[1].id.value)));
+    REQUIRE(live != nullptr);
+    QTest::mouseClick(live, Qt::LeftButton, Qt::NoModifier, live->rect().center());
+    REQUIRE(output->program().live_cue->cue == song->slides[1].id);
+
+    auto* mime = shekinah::ui::make_asset_mime_data(asset->id);
+    const auto position = live->rect().center();
+    QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(live, &enter);
+    QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(live, &move);
+    QDropEvent drop{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(live, &drop);
+    delete mime;
+
+    REQUIRE(drop.isAccepted());
+    QTest::qWait(20);
+    REQUIRE(output->slide_image_loaded());
+    const auto preview = window.operator_page()->program_status()->findChild<QWidget*>(
+        QStringLiteral("program-preview"));
+    REQUIRE(preview != nullptr);
+    REQUIRE(preview->property("slide-background-path").toString() ==
+            QString::fromStdString((project.root() / "Sunday" / asset->relative_path).string()));
+}
+
 TEST_CASE("a live cue is mirrored to the Audience Output state") {
     ensure_qapplication();
     auto project = TestProject::create();
