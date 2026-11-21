@@ -452,21 +452,23 @@ void ShekinahWindow::update_program_status() {
     operator_page_->program_status()->set_program(program);
     if (audience_output_) {
         audience_output_->present(presentation_.program());
-        present_live_media();
     }
+    present_live_media();
 }
 
 void ShekinahWindow::present_live_media() {
-    if (!audience_output_ || !repository_) {
+    if (!repository_) {
         operator_page_->program_status()->set_slide_preview({});
         return;
     }
     const auto& program = presentation_.program();
     if (program.mode != domain::ProgramMode::cue || !program.live_cue.has_value()) {
         operator_page_->program_status()->set_slide_preview({});
-        audience_output_->set_live_text({});
-        audience_output_->clear_slide_image();
-        audience_output_->clear_loop_video();
+        if (audience_output_) {
+            audience_output_->set_live_text({});
+            audience_output_->clear_slide_image();
+            audience_output_->clear_loop_video();
+        }
         return;
     }
 
@@ -489,12 +491,7 @@ void ShekinahWindow::present_live_media() {
                     lyric_text << slide->lines[index];
                 }
                 preview_text = QString::fromStdString(lyric_text.str());
-                audience_output_->set_live_text(preview_text);
-            } else {
-                audience_output_->set_live_text({});
             }
-        } else {
-            audience_output_->set_live_text({});
         }
         const auto background = presentation_.resolve_background(cue.content, cue.cue);
         if (background && background->has_value()) {
@@ -502,7 +499,6 @@ void ShekinahWindow::present_live_media() {
             preview_fit = background->value().fit;
         }
     } else {
-        audience_output_->set_live_text({});
         const auto deck = repository_->load_deck(std::get<domain::SermonId>(cue.content.id));
         if (deck) {
             const auto slide = std::find_if(deck->slides.begin(), deck->slides.end(), [&](const auto& candidate) {
@@ -514,10 +510,16 @@ void ShekinahWindow::present_live_media() {
         }
     }
 
+    if (audience_output_) {
+        audience_output_->set_live_text(preview_text);
+    }
+
     if (!asset_id.has_value()) {
         operator_page_->program_status()->set_slide_preview(std::move(preview_text));
-        audience_output_->clear_slide_image();
-        audience_output_->clear_loop_video();
+        if (audience_output_) {
+            audience_output_->clear_slide_image();
+            audience_output_->clear_loop_video();
+        }
         return;
     }
     const auto asset = repository_->load_asset(*asset_id);
@@ -529,10 +531,15 @@ void ShekinahWindow::present_live_media() {
     if (asset->kind == domain::AssetKind::image) {
         operator_page_->program_status()->set_slide_preview(
             std::move(preview_text), QString::fromStdString(path.string()), preview_fit);
-        audience_output_->clear_loop_video();
-        audience_output_->load_slide_image(path);
+        if (audience_output_) {
+            audience_output_->clear_loop_video();
+            audience_output_->load_slide_image(path, preview_fit);
+        }
     } else {
         operator_page_->program_status()->set_slide_preview(std::move(preview_text));
+        if (!audience_output_) {
+            return;
+        }
         if (!live_media_admitted()) {
             return;
         }

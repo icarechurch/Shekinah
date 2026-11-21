@@ -2,6 +2,7 @@
 
 #include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
+#include "shekinah/media/slide_renderer.hpp"
 
 #include <QWidget>
 #include <QImage>
@@ -11,7 +12,6 @@
 class QScreen;
 class QMediaPlayer;
 class QVideoWidget;
-class QLabel;
 
 namespace shekinah::media {
 
@@ -26,7 +26,9 @@ public:
     void present(const domain::ProgramState& program);
     void set_live_text(QString text);
     void set_video_paused(bool paused) noexcept;
-    domain::Status load_slide_image(const std::filesystem::path& path);
+    domain::Status load_slide_image(
+        const std::filesystem::path& path,
+        domain::FitMode background_fit = domain::FitMode::cover);
     void clear_slide_image() noexcept;
     domain::Status load_loop_video(const std::filesystem::path& path);
     void clear_loop_video();
@@ -43,6 +45,8 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
+    void update_slide_renderer();
+
     OutputMode mode_{OutputMode::hidden};
     domain::ProgramState program_{};
     bool video_paused_{false};
@@ -50,9 +54,11 @@ private:
     bool loop_video_loaded_{false};
     QString live_text_;
     QImage slide_image_;
+    QString slide_background_path_;
+    domain::FitMode slide_background_fit_{domain::FitMode::cover};
+    SlideRenderer slide_renderer_;
     QMediaPlayer* player_{nullptr};
     QVideoWidget* video_widget_{nullptr};
-    QLabel* lyric_overlay_{nullptr};
 };
 
 }  // namespace shekinah::media

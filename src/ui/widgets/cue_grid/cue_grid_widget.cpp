@@ -1,8 +1,9 @@
 #include "shekinah/ui/cue_grid_widget.hpp"
 
+#include "shekinah/media/slide_renderer.hpp"
+
 #include <QGridLayout>
 #include <QFrame>
-#include <QImageReader>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
@@ -36,6 +37,13 @@ public:
         setProperty("cue-show-text", cue.show_text);
         setProperty("cue-live", false);
         setToolTip(cue.summary);
+        slide_renderer_.set_content(media::SlideRenderData{
+            cue.summary,
+            cue.background_path,
+            cue.background_fit,
+            cue.show_text,
+            true,
+        });
     }
 
     int heightForWidth(int width) const override {
@@ -48,32 +56,6 @@ public:
         constexpr int border = 2;
         constexpr int footer = 32;
         return rect().adjusted(border, border, -border, -footer - border);
-    }
-
-    void ensure_preview_image(const QRect& preview) {
-        if (preview_image_size_ == preview.size()) {
-            return;
-        }
-        preview_image_size_ = preview.size();
-        preview_image_ = {};
-        if (cue_.background_path.isEmpty()) {
-            return;
-        }
-
-        QImageReader reader{cue_.background_path};
-        reader.setAutoTransform(true);
-        QSize decoded_size = preview.size();
-        const auto source_size = reader.size();
-        if (source_size.isValid() && cue_.background_fit != domain::FitMode::stretch) {
-            decoded_size = source_size;
-            decoded_size.scale(
-                preview.size(),
-                cue_.background_fit == domain::FitMode::contain
-                    ? Qt::KeepAspectRatio
-                    : Qt::KeepAspectRatioByExpanding);
-        }
-        reader.setScaledSize(decoded_size);
-        preview_image_ = reader.read();
     }
 
     void set_live(bool live) {
@@ -95,35 +77,7 @@ protected:
         QPainter painter{this};
         painter.fillRect(rect(), QColor{QStringLiteral("#121212")});
         const auto preview = preview_rect();
-        ensure_preview_image(preview);
-        if (!preview_image_.isNull()) {
-            if (cue_.background_fit == domain::FitMode::stretch) {
-                painter.drawImage(preview, preview_image_);
-            } else {
-                QSize draw_size = preview_image_.size();
-                draw_size.scale(
-                    preview.size(),
-                    cue_.background_fit == domain::FitMode::contain
-                        ? Qt::KeepAspectRatio
-                        : Qt::KeepAspectRatioByExpanding);
-                const QRect draw_rect{
-                    preview.center() - QPoint{draw_size.width() / 2, draw_size.height() / 2},
-                    draw_size};
-                painter.drawImage(draw_rect, preview_image_);
-            }
-        } else {
-            constexpr int tile_size = 16;
-            for (int y = preview.top(); y < preview.bottom(); y += tile_size) {
-                for (int x = preview.left(); x < preview.right(); x += tile_size) {
-                    const auto tile = ((x - preview.left()) / tile_size +
-                                       (y - preview.top()) / tile_size) % 2;
-                    painter.fillRect(
-                        QRect{x, y, tile_size, tile_size},
-                        tile == 0 ? QColor{QStringLiteral("#111111")}
-                                  : QColor{QStringLiteral("#282828")});
-                }
-            }
-        }
+        slide_renderer_.paint(painter, preview);
 
         const QRect footer{2, height() - 34, width() - 4, 32};
         painter.fillRect(footer, CueGridWidget::footer_color_for_section(cue_.section));
@@ -146,19 +100,6 @@ protected:
                 footer.adjusted(32, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, footer_label);
         }
 
-        if (cue_.show_text && !cue_.summary.trimmed().isEmpty()) {
-            QFont lyric_font = painter.font();
-            lyric_font.setPixelSize(std::clamp(preview.height() / 10, 11, 18));
-            lyric_font.setBold(true);
-            painter.setFont(lyric_font);
-            const auto text = cue_.summary.toUpper();
-            const auto text_rect = preview.adjusted(20, 20, -20, -20);
-            painter.setPen(QColor{QStringLiteral("#080808")});
-            painter.drawText(text_rect.translated(1, 1), Qt::AlignCenter | Qt::TextWordWrap, text);
-            painter.setPen(Qt::white);
-            painter.drawText(text_rect, Qt::AlignCenter | Qt::TextWordWrap, text);
-        }
-
         painter.setPen(QPen{property("cue-live").toBool()
                                 ? QColor{QStringLiteral("#087cff")}
                                 : QColor{QStringLiteral("#303030")},
@@ -169,8 +110,7 @@ protected:
 private:
     CueView cue_;
     CueGridWidget& owner_;
-    QImage preview_image_;
-    QSize preview_image_size_;
+    media::SlideRenderer slide_renderer_;
 };
 
 CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_(new QWidget(this)) {

@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QColor>
 #include <QImage>
 #include <QScreen>
 #include <QTemporaryFile>
@@ -62,6 +63,36 @@ TEST_CASE("audience output stores and clears live lyric text") {
     output.present(ProgramState{ProgramMode::clear, std::nullopt});
 
     REQUIRE(output.live_text().isEmpty());
+}
+
+TEST_CASE("audience output paints centered slide content without the grid checkerboard") {
+    ensure_qapplication();
+    AudienceOutput output;
+    output.resize(320, 180);
+    output.present(ProgramState{
+        ProgramMode::cue,
+        CueRef{ContentRef::song("song-a"), CueId{"slide-1"}},
+    });
+    output.set_live_text(QStringLiteral("Aming Ama"));
+
+    QImage rendered{output.size(), QImage::Format_ARGB32_Premultiplied};
+    rendered.fill(Qt::transparent);
+    output.render(&rendered);
+
+    REQUIRE(rendered.pixelColor(4, 4) == QColor(QStringLiteral("#182337")));
+    REQUIRE(rendered.pixelColor(20, 4) == QColor(QStringLiteral("#182337")));
+    REQUIRE(rendered.pixelColor(5, 80) == QColor(QStringLiteral("#182337")));
+
+    bool has_center_content = false;
+    for (int y = 30; y < 150 && !has_center_content; ++y) {
+        for (int x = 20; x < 300; ++x) {
+            if (rendered.pixelColor(x, y) != QColor(QStringLiteral("#182337"))) {
+                has_center_content = true;
+                break;
+            }
+        }
+    }
+    REQUIRE(has_center_content);
 }
 
 TEST_CASE("audience output exposes one video pause control") {

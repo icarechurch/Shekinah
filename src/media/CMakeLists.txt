@@ -3,6 +3,7 @@ add_library(shekinah_media STATIC
     image_cache.cpp
     low_end_profile.cpp
     memory_diagnostics.cpp
+    slide_renderer.cpp
 )
 
 target_include_directories(shekinah_media

@@ -2,7 +2,6 @@
 
 #include <QGuiApplication>
 #include <QImageReader>
-#include <QLabel>
 #include <QMediaPlayer>
 #include <QPainter>
 #include <QResizeEvent>
@@ -10,7 +9,6 @@
 #include <QUrl>
 #include <QVideoWidget>
 
-#include <algorithm>
 #include <utility>
 
 namespace shekinah::media {
@@ -24,14 +22,7 @@ AudienceOutput::AudienceOutput(QWidget* parent) : QWidget(parent) {
     video_widget_ = new QVideoWidget{this};
     video_widget_->setVisible(false);
     player_->setVideoOutput(video_widget_);
-    lyric_overlay_ = new QLabel{this};
-    lyric_overlay_->setAlignment(Qt::AlignCenter);
-    lyric_overlay_->setWordWrap(true);
-    lyric_overlay_->setStyleSheet(
-        QStringLiteral("QLabel { color: white; background: rgba(0, 0, 0, 150); "
-                       "padding: 18px; font: 28px 'Segoe UI'; }"));
-    lyric_overlay_->setVisible(false);
-    lyric_overlay_->raise();
+    update_slide_renderer();
 }
 
 void AudienceOutput::show_fullscreen(QScreen* screen) {
@@ -58,25 +49,17 @@ void AudienceOutput::present(const domain::ProgramState& program) {
     if (program_.mode != domain::ProgramMode::cue) {
         video_widget_->setVisible(false);
         live_text_.clear();
-        lyric_overlay_->setVisible(false);
+        slide_background_path_.clear();
+        update_slide_renderer();
     } else if (loop_video_loaded_) {
         video_widget_->setVisible(true);
-    }
-    if (program_.mode == domain::ProgramMode::cue && !live_text_.isEmpty()) {
-        lyric_overlay_->setVisible(true);
-        lyric_overlay_->raise();
     }
     update();
 }
 
 void AudienceOutput::set_live_text(QString text) {
     live_text_ = std::move(text);
-    const bool visible = program_.mode == domain::ProgramMode::cue && !live_text_.isEmpty();
-    lyric_overlay_->setText(live_text_);
-    lyric_overlay_->setVisible(visible);
-    if (visible) {
-        lyric_overlay_->raise();
-    }
+    update_slide_renderer();
     update();
 }
 
@@ -92,7 +75,8 @@ void AudienceOutput::set_video_paused(bool paused) noexcept {
     }
 }
 
-domain::Status AudienceOutput::load_slide_image(const std::filesystem::path& path) {
+domain::Status AudienceOutput::load_slide_image(
+    const std::filesystem::path& path, domain::FitMode background_fit) {
     if (!std::filesystem::is_regular_file(path)) {
         return domain::Status::fail({domain::ErrorCode::io_failure, "slide image path is not a file"});
     }
@@ -108,6 +92,9 @@ domain::Status AudienceOutput::load_slide_image(const std::filesystem::path& pat
     }
     slide_image_ = image;
     slide_image_loaded_ = true;
+    slide_background_path_ = QString::fromStdString(path.string());
+    slide_background_fit_ = background_fit;
+    update_slide_renderer();
     update();
     return domain::success();
 }
@@ -115,6 +102,8 @@ domain::Status AudienceOutput::load_slide_image(const std::filesystem::path& pat
 void AudienceOutput::clear_slide_image() noexcept {
     slide_image_ = QImage{};
     slide_image_loaded_ = false;
+    slide_background_path_.clear();
+    update_slide_renderer();
     update();
 }
 
@@ -149,20 +138,16 @@ void AudienceOutput::paintEvent(QPaintEvent* event) {
         return;
     }
 
-    const QColor background = program_.mode == domain::ProgramMode::clear
-                                  ? QColor{QStringLiteral("#101318")}
-                                  : QColor{QStringLiteral("#182337")};
-    painter.fillRect(rect(), background);
-    if (program_.mode == domain::ProgramMode::cue && slide_image_loaded_) {
-        const auto target = slide_image_.size().scaled(rect().size(), Qt::KeepAspectRatio);
-        const auto destination = QRect{(width() - target.width()) / 2,
-                                       (height() - target.height()) / 2,
-                                       target.width(), target.height()};
-        painter.drawImage(destination, slide_image_);
-    }
-    if (program_.mode == domain::ProgramMode::cue && !live_text_.isEmpty()) {
+    if (program_.mode == domain::ProgramMode::cue) {
+        slide_renderer_.paint(painter, rect());
         return;
     }
+
+    painter.fillRect(
+        rect(),
+        program_.mode == domain::ProgramMode::clear
+            ? QColor{QStringLiteral("#101318")}
+            : QColor{QStringLiteral("#182337")});
     painter.setPen(Qt::white);
     painter.setFont(QFont{QStringLiteral("Segoe UI"), 28});
     const QString text = program_.mode == domain::ProgramMode::clear
@@ -178,11 +163,16 @@ void AudienceOutput::resizeEvent(QResizeEvent* event) {
     if (video_widget_ != nullptr) {
         video_widget_->setGeometry(rect());
     }
-    if (lyric_overlay_ != nullptr) {
-        const int overlay_height = std::max(120, height() / 3);
-        lyric_overlay_->setGeometry(0, height() - overlay_height, width(), overlay_height);
-        lyric_overlay_->raise();
-    }
+}
+
+void AudienceOutput::update_slide_renderer() {
+    slide_renderer_.set_content(SlideRenderData{
+        live_text_,
+        slide_background_path_,
+        slide_background_fit_,
+        true,
+        false,
+    });
 }
 
 }  // namespace shekinah::media

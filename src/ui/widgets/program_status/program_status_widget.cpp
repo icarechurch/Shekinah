@@ -1,14 +1,13 @@
 #include "shekinah/ui/program_status_widget.hpp"
 
+#include "shekinah/media/slide_renderer.hpp"
+
 #include <QFrame>
-#include <QImageReader>
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QPainter>
 #include <QPushButton>
 #include <QVBoxLayout>
-
-#include <algorithm>
 
 namespace shekinah::ui {
 namespace {
@@ -24,8 +23,13 @@ public:
         text_ = std::move(text);
         background_path_ = std::move(background_path);
         background_fit_ = background_fit;
-        background_image_ = {};
-        background_image_size_ = {};
+        renderer_.set_content(media::SlideRenderData{
+            text_,
+            background_path_,
+            background_fit_,
+            true,
+            false,
+        });
         setProperty("slide-text", text_);
         setProperty("slide-background-path", background_path_);
         update();
@@ -34,69 +38,13 @@ public:
 protected:
     void paintEvent(QPaintEvent*) override {
         QPainter painter{this};
-        painter.fillRect(rect(), QColor{QStringLiteral("#182337")});
-        ensure_background_image();
-        if (!background_image_.isNull()) {
-            if (background_fit_ == domain::FitMode::stretch) {
-                painter.drawImage(rect(), background_image_);
-            } else {
-                QSize draw_size = background_image_.size();
-                draw_size.scale(
-                    rect().size(),
-                    background_fit_ == domain::FitMode::contain
-                        ? Qt::KeepAspectRatio
-                        : Qt::KeepAspectRatioByExpanding);
-                const QRect draw_rect{
-                    rect().center() - QPoint{draw_size.width() / 2, draw_size.height() / 2},
-                    draw_size};
-                painter.drawImage(draw_rect, background_image_);
-            }
-        }
-
-        if (text_.trimmed().isEmpty()) {
-            return;
-        }
-
-        QFont text_font = painter.font();
-        text_font.setPixelSize(std::clamp(height() / 8, 10, 24));
-        text_font.setBold(true);
-        painter.setFont(text_font);
-        const auto text_rect = rect().adjusted(12, 12, -12, -12);
-        painter.setPen(QColor{QStringLiteral("#080808")});
-        painter.drawText(text_rect.translated(1, 1), Qt::AlignCenter | Qt::TextWordWrap, text_);
-        painter.setPen(Qt::white);
-        painter.drawText(text_rect, Qt::AlignCenter | Qt::TextWordWrap, text_);
-    }
-
-private:
-    void ensure_background_image() {
-        if (background_path_.isEmpty() || background_image_size_ == size()) {
-            return;
-        }
-        background_image_size_ = size();
-        background_image_ = {};
-        QImageReader reader{background_path_};
-        reader.setAutoTransform(true);
-        const auto source_size = reader.size();
-        if (source_size.isValid() && background_fit_ != domain::FitMode::stretch) {
-            auto decoded_size = source_size;
-            decoded_size.scale(
-                size(),
-                background_fit_ == domain::FitMode::contain
-                    ? Qt::KeepAspectRatio
-                    : Qt::KeepAspectRatioByExpanding);
-            reader.setScaledSize(decoded_size);
-        } else {
-            reader.setScaledSize(size());
-        }
-        background_image_ = reader.read();
+        renderer_.paint(painter, rect());
     }
 
     QString text_;
     QString background_path_;
     domain::FitMode background_fit_{domain::FitMode::cover};
-    QImage background_image_;
-    QSize background_image_size_;
+    media::SlideRenderer renderer_;
 };
 
 QString mode_text(domain::ProgramMode mode) {

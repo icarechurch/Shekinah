@@ -335,6 +335,33 @@ TEST_CASE("a live cue is mirrored to the Audience Output state") {
                 .toString() == QStringLiteral("You are good"));
 }
 
+TEST_CASE("Program Status previews a live song before Audience Output is created") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "goodness.txt";
+    std::ofstream{source} << "# Goodness\n[Verse]\nYou are good\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto song = window.import_song_file(source);
+    REQUIRE(song);
+    window.library_dock()->add_song(*song);
+    window.library_dock()->show_songs();
+    window.library_dock()->activate_song_row(0);
+    window.show();
+    QTest::qWait(20);
+
+    auto* cue = window.operator_page()->cue_grid()->findChild<QWidget*>(
+        QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[0].id.value)));
+    REQUIRE(cue != nullptr);
+    QTest::mouseClick(cue, Qt::LeftButton, Qt::NoModifier, cue->rect().center());
+
+    REQUIRE(window.operator_page()->program_status()->findChild<QWidget*>(
+                QStringLiteral("program-preview"))
+                ->property("slide-text")
+                .toString() == QStringLiteral("You are good"));
+}
+
 TEST_CASE("a live sermon cue loads its imported PNG into Audience Output") {
     ensure_qapplication();
     auto project = TestProject::create();
