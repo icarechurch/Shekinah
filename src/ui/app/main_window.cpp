@@ -121,6 +121,21 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         [this](domain::ContentRef content, domain::AssetId asset) {
             apply_asset_to_song(std::move(content), std::move(asset));
         });
+    operator_page_->set_service_order_content_drop_handler([this](domain::ContentRef content) {
+        if (!repository_) {
+            return;
+        }
+        const auto appended = repository_->append_to_order(
+            domain::ServiceOrderId{"default-service"}, std::move(content));
+        if (appended) {
+            refresh_service_order();
+        }
+    });
+    operator_page_->set_service_order_remove_handler([this](domain::ServiceOrderItemId item) {
+        if (repository_ && repository_->remove_from_order(item)) {
+            refresh_service_order();
+        }
+    });
     operator_page_->set_cue_asset_drop_handler(
         [this](domain::CueId cue, domain::AssetId asset) {
             apply_asset_to_slide(std::move(cue), std::move(asset));
@@ -131,7 +146,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         });
     library_dock_->setMinimumHeight(190);
     library_dock_->show();
-    library_dock_->set_add_content_handler([this](domain::ContentRef content) {
+    const auto add_content_to_presentation = [this](domain::ContentRef content) {
         if (!repository_) {
             return;
         }
@@ -140,7 +155,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         if (appended) {
             refresh_service_order();
         }
-    });
+    };
+    library_dock_->set_add_content_handler(add_content_to_presentation);
 
     auto* file_menu = menuBar()->addMenu(QStringLiteral("File"));
     auto* new_project_action = file_menu->addAction(QStringLiteral("New Project"));

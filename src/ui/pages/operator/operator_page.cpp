@@ -70,6 +70,16 @@ void OperatorPage::set_service_order_asset_drop_handler(
     service_order_->set_asset_drop_handler(std::move(handler));
 }
 
+void OperatorPage::set_service_order_content_drop_handler(
+    std::function<void(domain::ContentRef)> handler) {
+    service_order_->set_content_drop_handler(std::move(handler));
+}
+
+void OperatorPage::set_service_order_remove_handler(
+    std::function<void(domain::ServiceOrderItemId)> handler) {
+    service_order_->set_remove_handler(std::move(handler));
+}
+
 void OperatorPage::set_cue_asset_drop_handler(
     std::function<void(domain::CueId, domain::AssetId)> handler) {
     cue_grid_->set_asset_drop_handler(std::move(handler));

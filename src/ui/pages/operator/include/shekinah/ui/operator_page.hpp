@@ -31,6 +31,8 @@ public:
         std::function<void(domain::ServiceOrderItemId, std::int64_t)> handler);
     void set_service_order_asset_drop_handler(
         std::function<void(domain::ContentRef, domain::AssetId)> handler);
+    void set_service_order_content_drop_handler(std::function<void(domain::ContentRef)> handler);
+    void set_service_order_remove_handler(std::function<void(domain::ServiceOrderItemId)> handler);
     void set_cue_asset_drop_handler(std::function<void(domain::CueId, domain::AssetId)> handler);
     void set_authoring_handlers(std::function<void()> new_song,
                                 std::function<void()> import_song,

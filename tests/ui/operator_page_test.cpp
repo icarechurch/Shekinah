@@ -6,12 +6,14 @@
 #include <QDropEvent>
 #include <QListWidget>
 #include <QMimeData>
+#include <QPushButton>
 #include <QSplitter>
 #include <QTest>
 
 #include "shekinah/ui/cue_grid_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
+#include "shekinah/ui/support/content_drag.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 #include "shekinah/ui/support/asset_drag.hpp"
 
@@ -153,4 +155,37 @@ TEST_CASE("operator page forwards both asset drop surfaces") {
     REQUIRE(dropped_content == ContentRef::song("song-a"));
     REQUIRE(dropped_cue == CueId{"cue-1"});
     REQUIRE(dropped_asset == AssetId{"asset-cue"});
+}
+
+TEST_CASE("operator page forwards reusable content drops and removal") {
+    ensure_qapplication();
+    OperatorPage page;
+    page.set_service_order({ServiceOrderView{
+        ServiceOrderItem{ServiceOrderItemId{"item-1"}, ContentRef::song("song-1"), 0},
+        QStringLiteral("Song")}});
+    ContentRef dropped = ContentRef::sermon("unset");
+    ServiceOrderItemId removed{"unset"};
+    page.set_service_order_content_drop_handler([&](ContentRef content) { dropped = std::move(content); });
+    page.set_service_order_remove_handler([&](ServiceOrderItemId item) { removed = std::move(item); });
+    page.show();
+    QTest::qWait(20);
+
+    auto* list = page.service_order_widget()->findChild<QListWidget*>(
+        QStringLiteral("service-order-list"));
+    REQUIRE(list != nullptr);
+    auto* mime = shekinah::ui::make_content_mime_data(ContentRef::song("song-2"));
+    const auto position = list->visualItemRect(list->item(0)).center();
+    QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &enter);
+    QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &move);
+    QDropEvent drop{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &drop);
+    delete mime;
+
+    REQUIRE(drop.isAccepted());
+    REQUIRE(dropped == ContentRef::song("song-2"));
+    page.service_order_widget()->select_row(0);
+    page.service_order_widget()->findChild<QPushButton*>(QStringLiteral("service-order-remove"))->click();
+    REQUIRE(removed == ServiceOrderItemId{"item-1"});
 }
