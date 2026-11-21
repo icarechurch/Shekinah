@@ -111,6 +111,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         [this] { import_asset(); });
     operator_page_->set_inspector_handler([this](domain::CueId cue) { show_inspector(cue); });
     operator_page_->set_edit_slide_handler([this](domain::CueId cue) { show_inspector(cue); });
+    operator_page_->set_cue_asset_name_handler(
+        [this](domain::CueId cue) { return asset_name_for_cue(cue); });
     operator_page_->set_duplicate_slide_handler([this](domain::CueId cue) { duplicate_slide(cue); });
     operator_page_->set_delete_slide_handler([this](domain::CueId cue) { delete_slide(cue); });
     operator_page_->set_service_order_asset_drop_handler(
@@ -563,6 +565,26 @@ void ShekinahWindow::present_live_media() {
         audience_output_->clear_slide_image();
         audience_output_->load_loop_video(path);
     }
+}
+
+QString ShekinahWindow::asset_name_for_cue(const domain::CueId& cue) const {
+    if (!repository_) {
+        return {};
+    }
+    const auto selected = presentation_.selected_item();
+    if (!selected.has_value() || selected->content.kind != domain::ContentKind::song) {
+        return {};
+    }
+    const auto background = presentation_.resolve_background(selected->content, cue);
+    if (!background || !background->has_value()) {
+        return {};
+    }
+    const auto asset = repository_->load_asset(background->value().asset);
+    if (!asset) {
+        return {};
+    }
+    const auto filename = std::filesystem::path{asset->relative_path}.filename().string();
+    return QString::fromStdString(filename.empty() ? asset->relative_path : filename);
 }
 
 void ShekinahWindow::choose_background(const domain::CueId& cue) {

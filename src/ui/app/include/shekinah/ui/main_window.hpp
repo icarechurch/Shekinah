@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QString>
 
 #include <cstddef>
 #include <filesystem>
@@ -72,6 +73,7 @@ private:
     void refresh_cues();
     void update_program_status();
     void present_live_media();
+    QString asset_name_for_cue(const domain::CueId& cue) const;
     void apply_asset_to_song(domain::ContentRef content, domain::AssetId asset);
     void apply_asset_to_slide(domain::CueId cue, domain::AssetId asset);
     void choose_background(const domain::CueId& cue);

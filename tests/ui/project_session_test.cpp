@@ -14,6 +14,7 @@
 #include <QPlainTextEdit>
 #include <QTest>
 
+#include <algorithm>
 #include <fstream>
 
 #include "test_project.hpp"
@@ -357,6 +358,41 @@ TEST_CASE("asset dropped on a Song row sets its default background") {
     REQUIRE(cue != nullptr);
     REQUIRE(cue->property("cue-background-path").toString() ==
             QString::fromStdString((project.root() / "Sunday" / asset->relative_path).string()));
+}
+
+TEST_CASE("Song slide context menus name their removable asset") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto image_source = project.root() / "background.png";
+    QImage image{800, 450, QImage::Format_RGB32};
+    image.fill(Qt::green);
+    REQUIRE(image.save(QString::fromStdString(image_source.string()), "PNG"));
+    const auto song_source = project.root() / "goodness.txt";
+    std::ofstream{song_source} << "# Goodness\n[Verse]\nYou are good\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto asset = window.import_asset_file(image_source);
+    const auto song = window.import_song_file(song_source);
+    REQUIRE(asset);
+    REQUIRE(song);
+    window.library_dock()->add_song(*song);
+    window.library_dock()->show_songs();
+    window.library_dock()->activate_song_row(0);
+    REQUIRE(window.set_slide_background(song->slides[0].id, asset->id));
+
+    auto* menu = window.operator_page()->create_context_menu(song->slides[0].id);
+    REQUIRE(menu != nullptr);
+    const auto actions = menu->actions();
+    const auto asset_name = QString::fromStdString(
+        std::filesystem::path{asset->relative_path}.filename().string());
+    REQUIRE(std::any_of(actions.begin(), actions.end(), [](const auto* action) {
+        return action->text().startsWith(QStringLiteral("Remove asset "));
+    }));
+    REQUIRE(std::any_of(actions.begin(), actions.end(), [&](const auto* action) {
+        return action->text() == QStringLiteral("Remove asset ") + asset_name;
+    }));
+    menu->deleteLater();
 }
 
 TEST_CASE("asset dropped on a non-selected Song row updates that Song") {
