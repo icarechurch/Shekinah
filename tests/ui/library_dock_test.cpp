@@ -77,6 +77,20 @@ TEST_CASE("library presents video assets with a media fallback icon") {
     REQUIRE_FALSE(list->item(0)->icon().isNull());
 }
 
+TEST_CASE("asset tiles preserve ids and filter by filename") {
+    ensure_qapplication();
+    LibraryDockWidget dock;
+    dock.add_asset(AssetRecord{AssetId{"asset-one"}, AssetKind::image, "h1", "media/one.png", 10});
+    dock.add_asset(AssetRecord{AssetId{"asset-two"}, AssetKind::image, "h2", "media/two.png", 20});
+    auto* list = dock.findChild<QListWidget*>(QStringLiteral("assets-list"));
+    REQUIRE(list != nullptr);
+    REQUIRE(list->item(0)->data(Qt::UserRole + 1).toString() == QStringLiteral("asset-one"));
+
+    dock.set_search_text(QStringLiteral("two"));
+    REQUIRE(list->item(0)->isHidden());
+    REQUIRE_FALSE(list->item(1)->isHidden());
+}
+
 TEST_CASE("library owns independent reusable Song and Sermon collections") {
     ensure_qapplication();
     LibraryDockWidget dock;
