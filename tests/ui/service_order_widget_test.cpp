@@ -11,6 +11,7 @@
 
 #include "shekinah/ui/service_order_widget.hpp"
 #include "shekinah/ui/support/asset_drag.hpp"
+#include "shekinah/ui/support/content_drag.hpp"
 
 using namespace shekinah::domain;
 using namespace shekinah::ui;
@@ -107,6 +108,52 @@ TEST_CASE("service order reports an asset dropped on a Song row") {
     REQUIRE(target == ContentRef::song("song-1"));
     REQUIRE(asset == AssetId{"asset-1"});
     delete mime;
+}
+
+TEST_CASE("service order reports reusable content drops as presentation references") {
+    ensure_qapplication();
+    ServiceOrderWidget widget;
+    widget.set_items({ServiceOrderView{
+        ServiceOrderItem{ServiceOrderItemId{"item-1"}, ContentRef::song("song-1"), 0},
+        QStringLiteral("Song")}});
+    ContentRef dropped = ContentRef::sermon("unset");
+    widget.set_content_drop_handler([&](ContentRef content) { dropped = std::move(content); });
+    widget.show();
+    QTest::qWait(20);
+
+    auto* list = widget.findChild<QListWidget*>(QStringLiteral("service-order-list"));
+    REQUIRE(list != nullptr);
+    auto* mime = shekinah::ui::make_content_mime_data(ContentRef::song("song-2"));
+    const auto position = list->visualItemRect(list->item(0)).center();
+    QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &enter);
+    REQUIRE(enter.isAccepted());
+    QDropEvent drop{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &drop);
+
+    REQUIRE(drop.isAccepted());
+    REQUIRE(dropped == ContentRef::song("song-2"));
+    delete mime;
+}
+
+TEST_CASE("service order reports removal of the selected presentation reference") {
+    ensure_qapplication();
+    ServiceOrderWidget widget;
+    widget.set_items({
+        ServiceOrderView{ServiceOrderItem{ServiceOrderItemId{"item-1"}, ContentRef::song("song-1"), 0}, "Song 1"},
+        ServiceOrderView{ServiceOrderItem{ServiceOrderItemId{"item-2"}, ContentRef::song("song-2"), 1}, "Song 2"},
+    });
+    ServiceOrderItemId removed;
+    widget.set_remove_handler([&](ServiceOrderItemId id) { removed = std::move(id); });
+    widget.show();
+    widget.select_row(1);
+    QTest::qWait(20);
+
+    auto* remove = widget.findChild<QPushButton*>(QStringLiteral("service-order-remove"));
+    REQUIRE(remove != nullptr);
+    remove->click();
+
+    REQUIRE(removed == ServiceOrderItemId{"item-2"});
 }
 
 TEST_CASE("service order ignores unsupported or out-of-row asset drops") {
