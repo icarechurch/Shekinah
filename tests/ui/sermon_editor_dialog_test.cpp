@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QDialogButtonBox>
+#include <QLabel>
 #include <QListWidget>
 #include <QPushButton>
 
@@ -25,15 +26,23 @@ TEST_CASE("Sermon editor saves a user-defined title and slide order") {
     ensure_qapplication();
     shekinah::ui::SermonEditorDialog dialog;
     dialog.set_title(QStringLiteral("Sunday Message"));
-    dialog.set_files({"C:/slides/Slide 1.png", "C:/slides/Slide 2.png"});
+    dialog.set_files({"C:/slides/Slide 1.jpg", "C:/slides/Clip 2.MP4"});
     dialog.findChild<QListWidget*>(QStringLiteral("sermon-files"))->setCurrentRow(1);
     dialog.findChild<QPushButton*>(QStringLiteral("sermon-move-up"))->click();
 
     REQUIRE(dialog.title() == QStringLiteral("Sunday Message"));
     REQUIRE(dialog.file_count() == 2);
+    auto* description = dialog.findChild<QLabel*>(QStringLiteral("sermon-description"));
+    REQUIRE(description != nullptr);
+    REQUIRE(description->text().contains(QStringLiteral("media"), Qt::CaseInsensitive));
+
+    auto* add_button = dialog.findChild<QPushButton*>(QStringLiteral("sermon-add-files"));
+    REQUIRE(add_button != nullptr);
+    REQUIRE(add_button->text() == QStringLiteral("Add Media"));
+
     const auto files = dialog.files();
-    REQUIRE(files[0].filename().string() == "Slide 2.png");
-    REQUIRE(files[1].filename().string() == "Slide 1.png");
+    REQUIRE(files[0].filename().string() == "Clip 2.MP4");
+    REQUIRE(files[1].filename().string() == "Slide 1.jpg");
 
     auto* buttons = dialog.findChild<QDialogButtonBox*>(QStringLiteral("sermon-buttons"));
     REQUIRE(buttons != nullptr);
