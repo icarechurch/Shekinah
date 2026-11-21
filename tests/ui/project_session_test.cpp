@@ -525,6 +525,62 @@ TEST_CASE("asset slide drops refresh the live preview") {
             QString::fromStdString((project.root() / "Sunday" / asset->relative_path).string()));
 }
 
+TEST_CASE("forward Song slide backgrounds survive a project reopen") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto image_source = project.root() / "background.png";
+    QImage image{800, 450, QImage::Format_RGB32};
+    image.fill(Qt::darkGreen);
+    REQUIRE(image.save(QString::fromStdString(image_source.string()), "PNG"));
+    const auto song_source = project.root() / "goodness.txt";
+    std::ofstream{song_source}
+        << "# Goodness\n[Verse]\nOne\n\n[Chorus]\nTwo\n\n[Bridge]\nThree\n";
+
+    shekinah::domain::SongId song_id;
+    shekinah::domain::AssetId asset_id;
+    {
+        shekinah::ui::ShekinahWindow window;
+        REQUIRE(window.open_project(project.root() / "Sunday"));
+        const auto asset = window.import_asset_file(image_source);
+        const auto song = window.import_song_file(song_source);
+        REQUIRE(asset);
+        REQUIRE(song);
+        song_id = song->id;
+        asset_id = asset->id;
+        window.library_dock()->add_song(*song);
+        window.library_dock()->show_songs();
+        window.library_dock()->activate_song_row(0);
+        window.show();
+        QTest::qWait(20);
+
+        auto* target = window.operator_page()->cue_grid()->findChild<QWidget*>(
+            QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[1].id.value)));
+        REQUIRE(target != nullptr);
+        auto* mime = shekinah::ui::make_asset_mime_data(asset->id);
+        const auto position = target->rect().center();
+        QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+        QApplication::sendEvent(target, &enter);
+        QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+        QApplication::sendEvent(target, &move);
+        QDropEvent drop{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+        QApplication::sendEvent(target, &drop);
+        delete mime;
+        REQUIRE(drop.isAccepted());
+        QTest::qWait(20);
+    }
+
+    shekinah::ui::ShekinahWindow reopened;
+    REQUIRE(reopened.open_project(project.root() / "Sunday"));
+    auto store = shekinah::storage::ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+    shekinah::storage::SqliteContentRepository repository{*store};
+    const auto saved_song = repository.load_song(song_id);
+    REQUIRE(saved_song);
+    REQUIRE_FALSE(saved_song->slides[0].background.has_value());
+    REQUIRE(saved_song->slides[1].background->asset == asset_id);
+    REQUIRE(saved_song->slides[2].background->asset == asset_id);
+}
+
 TEST_CASE("a live cue is mirrored to the Audience Output state") {
     ensure_qapplication();
     auto project = TestProject::create();
