@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/resource_governor.hpp"
+#include "shekinah/application/song_backgrounds.hpp"
 #include "shekinah/application/song_text_importer.hpp"
 #include "shekinah/media/audience_output.hpp"
 #include "shekinah/media/memory_diagnostics.hpp"
@@ -111,6 +112,14 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     operator_page_->set_edit_slide_handler([this](domain::CueId cue) { show_inspector(cue); });
     operator_page_->set_duplicate_slide_handler([this](domain::CueId cue) { duplicate_slide(cue); });
     operator_page_->set_delete_slide_handler([this](domain::CueId cue) { delete_slide(cue); });
+    operator_page_->set_service_order_asset_drop_handler(
+        [this](domain::ContentRef content, domain::AssetId asset) {
+            apply_asset_to_song(std::move(content), std::move(asset));
+        });
+    operator_page_->set_cue_asset_drop_handler(
+        [this](domain::CueId cue, domain::AssetId asset) {
+            apply_asset_to_slide(std::move(cue), std::move(asset));
+        });
     operator_page_->set_inspector_save_handler(
         [this](domain::CueId cue, std::string section, std::vector<std::string> lines, domain::FitMode fit) {
             save_inspected_slide(std::move(cue), std::move(section), std::move(lines), fit);
@@ -587,6 +596,59 @@ void ShekinahWindow::import_asset() {
     if (imported) {
         library_dock_->add_asset(*imported);
     }
+}
+
+void ShekinahWindow::apply_asset_to_song(domain::ContentRef content, domain::AssetId asset) {
+    if (!repository_ || content.kind != domain::ContentKind::song) {
+        return;
+    }
+    const auto asset_record = repository_->load_asset(asset);
+    if (!asset_record) {
+        return;
+    }
+    auto song = repository_->load_song(std::get<domain::SongId>(content.id));
+    if (!song) {
+        return;
+    }
+    application::set_default_background(
+        *song, domain::BackgroundRef{asset_record->id, domain::FitMode::cover});
+    const auto saved = repository_->save_song(*song);
+    if (!saved) {
+        return;
+    }
+    presentation_.register_song(*saved);
+    refresh_cues();
+    update_program_status();
+}
+
+void ShekinahWindow::apply_asset_to_slide(domain::CueId cue, domain::AssetId asset) {
+    if (!repository_) {
+        return;
+    }
+    const auto selected = presentation_.selected_item();
+    if (!selected.has_value() || selected->content.kind != domain::ContentKind::song) {
+        return;
+    }
+    const auto asset_record = repository_->load_asset(asset);
+    if (!asset_record) {
+        return;
+    }
+    auto song = repository_->load_song(std::get<domain::SongId>(selected->content.id));
+    if (!song) {
+        return;
+    }
+    const auto changed = application::apply_background_from_slide(
+        *song, cue, domain::BackgroundRef{asset_record->id, domain::FitMode::cover});
+    if (!changed) {
+        return;
+    }
+    const auto saved = repository_->save_song(*song);
+    if (!saved) {
+        return;
+    }
+    presentation_.register_song(*saved);
+    refresh_cues();
+    update_program_status();
 }
 
 domain::Result<domain::AssetRecord> ShekinahWindow::import_asset_file(

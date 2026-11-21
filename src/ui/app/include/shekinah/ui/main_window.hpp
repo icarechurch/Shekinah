@@ -72,6 +72,8 @@ private:
     void refresh_cues();
     void update_program_status();
     void present_live_media();
+    void apply_asset_to_song(domain::ContentRef content, domain::AssetId asset);
+    void apply_asset_to_slide(domain::CueId cue, domain::AssetId asset);
     void choose_background(const domain::CueId& cue);
     void import_asset();
     void import_song_text();
