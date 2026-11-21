@@ -63,6 +63,22 @@ TEST_CASE("reusable content drag payload round-trips a Song reference") {
     delete payload;
 }
 
+TEST_CASE("Songs and Sermons library lists are draggable") {
+    ensure_qapplication();
+    LibraryDockWidget dock;
+    dock.add_song(Song{SongId{"song-1"}, "Song", std::nullopt, {}});
+    dock.add_sermon(SermonDeck{SermonId{"sermon-1"}, "Sermon", {}});
+
+    auto* songs = dock.findChild<QListWidget*>(QStringLiteral("songs-list"));
+    auto* sermons = dock.findChild<QListWidget*>(QStringLiteral("sermons-list"));
+    REQUIRE(songs != nullptr);
+    REQUIRE(sermons != nullptr);
+    REQUIRE(songs->dragEnabled());
+    REQUIRE(sermons->dragEnabled());
+    REQUIRE(songs->dragDropMode() == QAbstractItemView::DragOnly);
+    REQUIRE(sermons->dragDropMode() == QAbstractItemView::DragOnly);
+}
+
 TEST_CASE("library presents assets as a wrapping tile grid") {
     ensure_qapplication();
     LibraryDockWidget dock;

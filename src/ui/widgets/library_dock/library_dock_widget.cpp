@@ -1,5 +1,6 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/support/asset_drag.hpp"
+#include "shekinah/ui/support/content_drag.hpp"
 
 #include <QImageReader>
 #include <QAbstractItemView>
@@ -31,6 +32,28 @@ protected:
         const auto id = items.front()->data(kContentIdRole).toString();
         return id.isEmpty() ? nullptr : make_asset_mime_data(domain::AssetId{id.toStdString()});
     }
+};
+
+class ContentListWidget final : public QListWidget {
+public:
+    ContentListWidget(domain::ContentKind kind, QWidget* parent) : QListWidget(parent), kind_(kind) {}
+
+protected:
+    QMimeData* mimeData(const QList<QListWidgetItem*>& items) const override {
+        if (items.size() != 1 || items.front() == nullptr) {
+            return nullptr;
+        }
+        const auto id = items.front()->data(kContentIdRole).toString();
+        if (id.isEmpty()) {
+            return nullptr;
+        }
+        return make_content_mime_data(kind_ == domain::ContentKind::song
+                                          ? domain::ContentRef::song(id.toStdString())
+                                          : domain::ContentRef::sermon(id.toStdString()));
+    }
+
+private:
+    domain::ContentKind kind_;
 };
 
 }  // namespace
@@ -96,8 +119,8 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     container_layout->addWidget(actions);
     tabs_ = new QTabWidget{container};
     assets_ = new AssetListWidget{tabs_};
-    songs_ = new QListWidget{tabs_};
-    sermons_ = new QListWidget{tabs_};
+    songs_ = new ContentListWidget{domain::ContentKind::song, tabs_};
+    sermons_ = new ContentListWidget{domain::ContentKind::sermon, tabs_};
     assets_->setObjectName(QStringLiteral("assets-list"));
     assets_->setViewMode(QListView::IconMode);
     assets_->setFlow(QListView::LeftToRight);
@@ -113,6 +136,11 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     assets_->setUniformItemSizes(true);
     songs_->setObjectName(QStringLiteral("songs-list"));
     sermons_->setObjectName(QStringLiteral("sermons-list"));
+    for (auto* list : {songs_, sermons_}) {
+        list->setSelectionMode(QAbstractItemView::SingleSelection);
+        list->setDragEnabled(true);
+        list->setDragDropMode(QAbstractItemView::DragOnly);
+    }
     songs_->setContextMenuPolicy(Qt::CustomContextMenu);
     QObject::connect(songs_, &QListWidget::customContextMenuRequested, this, [this](const QPoint& position) {
         auto* item = songs_->itemAt(position);
