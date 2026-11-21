@@ -77,7 +77,8 @@ domain::Result<domain::SermonDeck> SermonDeckImporter::import_files(
     bool preserve_order) {
     if (id.empty() || title.empty() || paths.empty()) {
         return domain::Result<domain::SermonDeck>::fail(
-            {domain::ErrorCode::invalid_input, "A Sermon deck needs an id, title, and at least one PNG"});
+            {domain::ErrorCode::invalid_input,
+             "A Sermon deck needs an id, title, and at least one media file"});
     }
 
     struct Candidate {
@@ -88,10 +89,6 @@ domain::Result<domain::SermonDeck> SermonDeckImporter::import_files(
     candidates.reserve(paths.size());
     for (auto& path : paths) {
         const auto normalized_name = normalized_filename(path);
-        if (path.extension().string().empty() || normalized_name.ends_with(".png") == false) {
-            return domain::Result<domain::SermonDeck>::fail(
-                {domain::ErrorCode::unsupported_media, "Sermon decks accept PNG slides only"});
-        }
         candidates.push_back(Candidate{std::move(path), normalized_name});
     }
 
