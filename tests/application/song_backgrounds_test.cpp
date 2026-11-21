@@ -57,3 +57,19 @@ TEST_CASE("a later slide drop starts a new background range") {
     REQUIRE(song.slides[1].background->asset == AssetId{"second"});
     REQUIRE(song.slides[2].background->asset == AssetId{"second"});
 }
+
+TEST_CASE("removing an asset clears every reference from the Song") {
+    Song song{SongId{"song"},
+              "Song",
+              BackgroundRef{AssetId{"shared"}},
+              {Slide{CueId{"one"}, "Verse", {"One"}, BackgroundRef{AssetId{"shared"}}},
+               Slide{CueId{"two"}, "Chorus", {"Two"}, BackgroundRef{AssetId{"other"}}},
+               Slide{CueId{"three"}, "Bridge", {"Three"}, BackgroundRef{AssetId{"shared"}}}}};
+
+    remove_asset_from_song(song, AssetId{"shared"});
+
+    REQUIRE_FALSE(song.default_background.has_value());
+    REQUIRE_FALSE(song.slides[0].background.has_value());
+    REQUIRE(song.slides[1].background->asset == AssetId{"other"});
+    REQUIRE_FALSE(song.slides[2].background.has_value());
+}

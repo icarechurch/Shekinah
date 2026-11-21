@@ -24,4 +24,15 @@ void set_default_background(domain::Song& song, domain::BackgroundRef background
     song.default_background = std::move(background);
 }
 
+void remove_asset_from_song(domain::Song& song, const domain::AssetId& asset) {
+    if (song.default_background.has_value() && song.default_background->asset == asset) {
+        song.default_background.reset();
+    }
+    for (auto& slide : song.slides) {
+        if (slide.background.has_value() && slide.background->asset == asset) {
+            slide.background.reset();
+        }
+    }
+}
+
 }  // namespace shekinah::application
