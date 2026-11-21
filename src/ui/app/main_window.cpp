@@ -813,7 +813,9 @@ void ShekinahWindow::import_sermon_deck() {
         return;
     }
     const auto paths = QFileDialog::getOpenFileNames(
-        this, QStringLiteral("Import Sermon Deck"), {}, QStringLiteral("PNG slides (*.png)"));
+        this, QStringLiteral("Import Sermon Deck"), {},
+        QStringLiteral(
+            "Media (*.png *.jpg *.jpeg *.webp *.bmp *.gif *.tif *.tiff *.mp4);;All files (*)"));
     if (paths.isEmpty()) {
         return;
     }
