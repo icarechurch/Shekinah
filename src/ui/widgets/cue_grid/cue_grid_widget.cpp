@@ -30,6 +30,8 @@ public:
             "cue-footer-label",
             cue.footer_label.isEmpty() ? cue.section : cue.footer_label);
         setProperty("cue-section-color", CueGridWidget::footer_color_for_section(cue.section));
+        setProperty("cue-background-path", cue.background_path);
+        setProperty("cue-show-text", cue.show_text);
         setProperty("cue-live", false);
         setToolTip(cue.summary);
     }

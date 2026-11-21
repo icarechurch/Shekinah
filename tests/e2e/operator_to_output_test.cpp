@@ -45,6 +45,7 @@ TEST_CASE("operator cue click reaches the Audience Output boundary") {
 
     auto* cue = window.operator_page()->cue_grid()->findChild<QWidget*>(QStringLiteral("cue-slide-0"));
     REQUIRE(cue != nullptr);
+    REQUIRE_FALSE(cue->property("cue-background-path").toString().isEmpty());
     QTest::mouseClick(cue, Qt::LeftButton, Qt::NoModifier, cue->rect().center());
 
     REQUIRE(output->program().mode == shekinah::domain::ProgramMode::cue);

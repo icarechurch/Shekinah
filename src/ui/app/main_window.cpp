@@ -377,7 +377,8 @@ void ShekinahWindow::refresh_cues() {
             return;
         }
         cues.reserve(song->slides.size());
-        for (const auto& slide : song->slides) {
+        for (std::size_t index = 0; index != song->slides.size(); ++index) {
+            const auto& slide = song->slides[index];
             std::ostringstream summary;
             for (std::size_t index = 0; index != slide.lines.size(); ++index) {
                 if (index != 0) {
@@ -385,10 +386,27 @@ void ShekinahWindow::refresh_cues() {
                 }
                 summary << slide.lines[index];
             }
+
+            QString background_path;
+            domain::FitMode background_fit = domain::FitMode::cover;
+            const auto background = presentation_.resolve_background(selected->content, slide.id);
+            if (background && background->has_value() && store_) {
+                const auto asset = repository_->load_asset(background->value().asset);
+                if (asset) {
+                    background_path = QString::fromStdString(
+                        (store_->root() / asset->relative_path).string());
+                    background_fit = background->value().fit;
+                }
+            }
             cues.push_back(CueView{
                 slide.id,
                 QString::fromStdString(slide.section),
                 QString::fromStdString(summary.str()),
+                static_cast<int>(index + 1),
+                std::move(background_path),
+                background_fit,
+                QString::fromStdString(slide.section),
+                true,
             });
         }
     } else {
@@ -399,10 +417,23 @@ void ShekinahWindow::refresh_cues() {
         }
         cues.reserve(sermon->slides.size());
         for (std::size_t index = 0; index != sermon->slides.size(); ++index) {
+            QString background_path;
+            if (store_) {
+                const auto asset = repository_->load_asset(sermon->slides[index].image);
+                if (asset) {
+                    background_path = QString::fromStdString(
+                        (store_->root() / asset->relative_path).string());
+                }
+            }
             cues.push_back(CueView{
                 sermon->slides[index].id,
+                {},
+                {},
+                static_cast<int>(index + 1),
+                std::move(background_path),
+                domain::FitMode::cover,
                 QStringLiteral("Slide %1").arg(static_cast<qulonglong>(index + 1)),
-                QString::fromStdString(sermon->slides[index].image.value),
+                false,
             });
         }
     }
