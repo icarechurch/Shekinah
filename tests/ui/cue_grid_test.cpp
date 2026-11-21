@@ -2,7 +2,11 @@
 
 #include <QApplication>
 #include <QColor>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
 #include <QImage>
+#include <QMimeData>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -10,6 +14,7 @@
 #include <QTest>
 
 #include "shekinah/ui/cue_grid_widget.hpp"
+#include "shekinah/ui/support/asset_drag.hpp"
 
 using namespace shekinah::domain;
 using namespace shekinah::ui;
@@ -93,6 +98,39 @@ TEST_CASE("left clicking a cue dispatches the cue without changing grid ownershi
     REQUIRE(target != nullptr);
     QTest::mouseClick(target, Qt::LeftButton, Qt::NoModifier, target->rect().center());
     REQUIRE(requested.value == "chorus-1");
+}
+
+TEST_CASE("cue card accepts an asset drop and reports its cue") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.resize(700, 500);
+    grid.set_cues({CueView{CueId{"cue-1"}, "Verse", "Line", 1}});
+    CueId target{"unset"};
+    AssetId asset{"unset"};
+    grid.set_asset_drop_handler([&](CueId cue, AssetId dropped) {
+        target = std::move(cue);
+        asset = std::move(dropped);
+    });
+    grid.show();
+    QTest::qWait(20);
+
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-cue-1"));
+    REQUIRE(card != nullptr);
+    auto* mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-1"});
+    const auto position = card->rect().center();
+    QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &enter);
+    REQUIRE(enter.isAccepted());
+    QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &move);
+    REQUIRE(move.isAccepted());
+    QDropEvent event{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &event);
+
+    REQUIRE(event.isAccepted());
+    REQUIRE(target == CueId{"cue-1"});
+    REQUIRE(asset == AssetId{"asset-1"});
+    delete mime;
 }
 
 TEST_CASE("cue cards show section and lyric summary text") {

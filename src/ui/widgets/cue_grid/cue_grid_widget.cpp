@@ -1,7 +1,11 @@
 #include "shekinah/ui/cue_grid_widget.hpp"
 
 #include "shekinah/media/slide_renderer.hpp"
+#include "shekinah/ui/support/asset_drag.hpp"
 
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
 #include <QGridLayout>
 #include <QFrame>
 #include <QLabel>
@@ -26,6 +30,7 @@ public:
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         setCursor(Qt::PointingHandCursor);
         setAttribute(Qt::WA_Hover, true);
+        setAcceptDrops(true);
         setProperty("cue-section", cue.section);
         setProperty("cue-summary", cue.summary);
         setProperty("cue-number", cue.number);
@@ -64,6 +69,32 @@ public:
     }
 
 protected:
+    void dragEnterEvent(QDragEnterEvent* event) override {
+        if (asset_id_from_mime_data(event->mimeData()).has_value()) {
+            event->acceptProposedAction();
+        } else {
+            event->ignore();
+        }
+    }
+
+    void dragMoveEvent(QDragMoveEvent* event) override {
+        if (asset_id_from_mime_data(event->mimeData()).has_value()) {
+            event->acceptProposedAction();
+        } else {
+            event->ignore();
+        }
+    }
+
+    void dropEvent(QDropEvent* event) override {
+        const auto asset = asset_id_from_mime_data(event->mimeData());
+        if (!asset.has_value()) {
+            event->ignore();
+            return;
+        }
+        owner_.handle_asset_drop(cue_.id, *asset);
+        event->acceptProposedAction();
+    }
+
     void mousePressEvent(QMouseEvent* event) override {
         if (event->button() == Qt::LeftButton) {
             owner_.handle_left_click(cue_.id);
@@ -288,6 +319,12 @@ void CueGridWidget::handle_left_click(const domain::CueId& cue) {
 void CueGridWidget::handle_right_click(const domain::CueId& cue, QPoint global_position) {
     if (context_handler_) {
         context_handler_(cue, global_position);
+    }
+}
+
+void CueGridWidget::handle_asset_drop(const domain::CueId& cue, const domain::AssetId& asset) {
+    if (asset_drop_handler_) {
+        asset_drop_handler_(cue, asset);
     }
 }
 

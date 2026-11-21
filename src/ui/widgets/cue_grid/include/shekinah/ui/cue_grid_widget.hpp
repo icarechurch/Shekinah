@@ -48,6 +48,7 @@ class CueGridWidget final : public QWidget {
 public:
     using TakeLiveHandler = std::function<void(domain::CueId)>;
     using ContextHandler = std::function<void(domain::CueId, QPoint)>;
+    using AssetDropHandler = std::function<void(domain::CueId, domain::AssetId)>;
 
     explicit CueGridWidget(QWidget* parent = nullptr);
 
@@ -61,6 +62,9 @@ public:
     void set_live_cue(std::optional<domain::CueId> cue);
     void set_take_live_handler(TakeLiveHandler handler) { take_live_handler_ = std::move(handler); }
     void set_context_handler(ContextHandler handler) { context_handler_ = std::move(handler); }
+    void set_asset_drop_handler(AssetDropHandler handler) {
+        asset_drop_handler_ = std::move(handler);
+    }
     [[nodiscard]] QRect visual_rect(const domain::CueId& cue) const;
 
 protected:
@@ -71,12 +75,14 @@ private:
     void rebuild_layout();
     void handle_left_click(const domain::CueId& cue);
     void handle_right_click(const domain::CueId& cue, QPoint global_position);
+    void handle_asset_drop(const domain::CueId& cue, const domain::AssetId& asset);
 
     std::vector<CueView> cues_;
     std::vector<CueCard*> cards_;
     std::optional<domain::CueId> live_cue_;
     TakeLiveHandler take_live_handler_;
     ContextHandler context_handler_;
+    AssetDropHandler asset_drop_handler_;
     QWidget* grid_container_{nullptr};
     QScrollArea* grid_scroll_{nullptr};
     QWidget* empty_state_{nullptr};
