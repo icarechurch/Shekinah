@@ -1,6 +1,7 @@
 #include "shekinah/ui/cue_grid_widget.hpp"
 
 #include <QGridLayout>
+#include <QImageReader>
 #include <QLabel>
 #include <QMouseEvent>
 #include <QPainter>
@@ -40,6 +41,32 @@ public:
         return rect().adjusted(border, border, -border, -footer - border);
     }
 
+    void ensure_preview_image(const QRect& preview) {
+        if (preview_image_size_ == preview.size()) {
+            return;
+        }
+        preview_image_size_ = preview.size();
+        preview_image_ = {};
+        if (cue_.background_path.isEmpty()) {
+            return;
+        }
+
+        QImageReader reader{cue_.background_path};
+        reader.setAutoTransform(true);
+        QSize decoded_size = preview.size();
+        const auto source_size = reader.size();
+        if (source_size.isValid() && cue_.background_fit != domain::FitMode::stretch) {
+            decoded_size = source_size;
+            decoded_size.scale(
+                preview.size(),
+                cue_.background_fit == domain::FitMode::contain
+                    ? Qt::KeepAspectRatio
+                    : Qt::KeepAspectRatioByExpanding);
+        }
+        reader.setScaledSize(decoded_size);
+        preview_image_ = reader.read();
+    }
+
     void set_live(bool live) {
         setProperty("cue-live", live);
         update();
@@ -59,15 +86,33 @@ protected:
         QPainter painter{this};
         painter.fillRect(rect(), QColor{QStringLiteral("#121212")});
         const auto preview = preview_rect();
-        constexpr int tile_size = 16;
-        for (int y = preview.top(); y < preview.bottom(); y += tile_size) {
-            for (int x = preview.left(); x < preview.right(); x += tile_size) {
-                const auto tile = ((x - preview.left()) / tile_size +
-                                   (y - preview.top()) / tile_size) % 2;
-                painter.fillRect(
-                    QRect{x, y, tile_size, tile_size},
-                    tile == 0 ? QColor{QStringLiteral("#111111")}
-                              : QColor{QStringLiteral("#282828")});
+        ensure_preview_image(preview);
+        if (!preview_image_.isNull()) {
+            if (cue_.background_fit == domain::FitMode::stretch) {
+                painter.drawImage(preview, preview_image_);
+            } else {
+                QSize draw_size = preview_image_.size();
+                draw_size.scale(
+                    preview.size(),
+                    cue_.background_fit == domain::FitMode::contain
+                        ? Qt::KeepAspectRatio
+                        : Qt::KeepAspectRatioByExpanding);
+                const QRect draw_rect{
+                    preview.center() - QPoint{draw_size.width() / 2, draw_size.height() / 2},
+                    draw_size};
+                painter.drawImage(draw_rect, preview_image_);
+            }
+        } else {
+            constexpr int tile_size = 16;
+            for (int y = preview.top(); y < preview.bottom(); y += tile_size) {
+                for (int x = preview.left(); x < preview.right(); x += tile_size) {
+                    const auto tile = ((x - preview.left()) / tile_size +
+                                       (y - preview.top()) / tile_size) % 2;
+                    painter.fillRect(
+                        QRect{x, y, tile_size, tile_size},
+                        tile == 0 ? QColor{QStringLiteral("#111111")}
+                                  : QColor{QStringLiteral("#282828")});
+                }
             }
         }
     }
@@ -75,6 +120,8 @@ protected:
 private:
     CueView cue_;
     CueGridWidget& owner_;
+    QImage preview_image_;
+    QSize preview_image_size_;
 };
 
 CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_(new QWidget(this)) {

@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QImage>
 #include <QPushButton>
+#include <QTemporaryDir>
 #include <QTest>
 
 #include "shekinah/ui/cue_grid_widget.hpp"
@@ -119,6 +120,39 @@ TEST_CASE("cue card paints checkerboard when no background is assigned") {
     card->render(&image);
 
     REQUIRE(image.pixelColor(12, 12) != image.pixelColor(24, 12));
+}
+
+TEST_CASE("cue card paints a usable background image") {
+    ensure_qapplication();
+    QTemporaryDir directory;
+    REQUIRE(directory.isValid());
+    const auto path = directory.filePath(QStringLiteral("background.png"));
+    QImage background{40, 20, QImage::Format_RGB32};
+    background.fill(Qt::red);
+    REQUIRE(background.save(path));
+
+    CueGridWidget grid;
+    grid.resize(320, 240);
+    grid.set_cues({CueView{
+        CueId{"image"},
+        "Verse",
+        "You are here",
+        1,
+        path,
+        FitMode::stretch,
+        QStringLiteral("Verse"),
+        true,
+    }});
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-image"));
+    REQUIRE(card != nullptr);
+    card->resize(320, card->heightForWidth(320));
+
+    QImage image(card->size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    card->render(&image);
+
+    REQUIRE(image.pixelColor(12, 12).red() > 200);
+    REQUIRE(image.pixelColor(12, 12).green() < 80);
 }
 
 TEST_CASE("empty Presentation view exposes authoring actions") {
