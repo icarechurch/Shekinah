@@ -54,6 +54,22 @@ TEST_CASE("Set background dispatches the selected cue to the operator boundary")
     menu->deleteLater();
 }
 
+TEST_CASE("right-click context menu exposes removal for a slide asset") {
+    ensure_qapplication();
+    OperatorPage page;
+    CueId requested;
+    page.set_cue_asset_name_handler([](CueId) { return QStringLiteral("worship.webp"); });
+    page.set_remove_asset_handler([&requested](CueId cue) { requested = std::move(cue); });
+    auto* menu = page.create_context_menu(CueId{"bridge-1"});
+
+    REQUIRE(menu->actions().size() == 6);
+    REQUIRE(menu->actions()[3]->text() == QStringLiteral("Remove asset worship.webp"));
+    menu->actions()[3]->trigger();
+
+    REQUIRE(requested == CueId{"bridge-1"});
+    menu->deleteLater();
+}
+
 TEST_CASE("Inspector is a non-live floating popup") {
     ensure_qapplication();
     InspectorDialog dialog;

@@ -3,6 +3,7 @@
 #include "shekinah/domain/model.hpp"
 #include "shekinah/ui/inspector_dialog.hpp"
 
+#include <QString>
 #include <QWidget>
 
 #include <cstdint>
@@ -36,6 +37,8 @@ public:
                                 std::function<void()> import_sermon,
                                 std::function<void()> import_asset);
     void set_inspector_handler(std::function<void(domain::CueId)> handler);
+    void set_cue_asset_name_handler(std::function<QString(domain::CueId)> handler);
+    void set_remove_asset_handler(std::function<void(domain::CueId)> handler);
     void set_edit_slide_handler(std::function<void(domain::CueId)> handler);
     void set_duplicate_slide_handler(std::function<void(domain::CueId)> handler);
     void set_delete_slide_handler(std::function<void(domain::CueId)> handler);
@@ -59,6 +62,8 @@ private:
     InspectorDialog* inspector_{nullptr};
     std::function<void(domain::CueId)> background_handler_;
     std::function<void(domain::CueId)> inspector_handler_;
+    std::function<QString(domain::CueId)> cue_asset_name_handler_;
+    std::function<void(domain::CueId)> remove_asset_handler_;
     std::function<void(domain::CueId)> edit_slide_handler_;
     std::function<void(domain::CueId)> duplicate_slide_handler_;
     std::function<void(domain::CueId)> delete_slide_handler_;

@@ -87,6 +87,14 @@ void OperatorPage::set_inspector_handler(std::function<void(domain::CueId)> hand
     inspector_handler_ = std::move(handler);
 }
 
+void OperatorPage::set_cue_asset_name_handler(std::function<QString(domain::CueId)> handler) {
+    cue_asset_name_handler_ = std::move(handler);
+}
+
+void OperatorPage::set_remove_asset_handler(std::function<void(domain::CueId)> handler) {
+    remove_asset_handler_ = std::move(handler);
+}
+
 void OperatorPage::set_edit_slide_handler(std::function<void(domain::CueId)> handler) {
     edit_slide_handler_ = std::move(handler);
 }
@@ -132,6 +140,11 @@ QMenu* OperatorPage::create_context_menu(const domain::CueId& cue) {
     auto* inspector = menu->addAction(QStringLiteral("Open Inspector"));
     auto* edit = menu->addAction(QStringLiteral("Edit slide"));
     auto* background = menu->addAction(QStringLiteral("Set background"));
+    const auto asset_name = cue_asset_name_handler_ ? cue_asset_name_handler_(cue) : QString{};
+    QAction* remove_asset = nullptr;
+    if (!asset_name.isEmpty()) {
+        remove_asset = menu->addAction(QStringLiteral("Remove asset %1").arg(asset_name));
+    }
     auto* duplicate = menu->addAction(QStringLiteral("Duplicate"));
     auto* remove = menu->addAction(QStringLiteral("Delete"));
     QObject::connect(inspector, &QAction::triggered, this, [this, cue] {
@@ -151,6 +164,13 @@ QMenu* OperatorPage::create_context_menu(const domain::CueId& cue) {
             background_handler_(cue);
         }
     });
+    if (remove_asset != nullptr) {
+        QObject::connect(remove_asset, &QAction::triggered, this, [this, cue] {
+            if (remove_asset_handler_) {
+                remove_asset_handler_(cue);
+            }
+        });
+    }
     QObject::connect(duplicate, &QAction::triggered, this, [this, cue] {
         if (duplicate_slide_handler_) {
             duplicate_slide_handler_(cue);
