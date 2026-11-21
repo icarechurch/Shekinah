@@ -1,4 +1,5 @@
 #include "shekinah/ui/library_dock_widget.hpp"
+#include "shekinah/ui/support/asset_drag.hpp"
 
 #include <QImageReader>
 #include <QAbstractItemView>
@@ -17,6 +18,20 @@ namespace shekinah::ui {
 namespace {
 
 constexpr int kContentIdRole = Qt::UserRole + 1;
+
+class AssetListWidget final : public QListWidget {
+public:
+    using QListWidget::QListWidget;
+
+protected:
+    QMimeData* mimeData(const QList<QListWidgetItem*>& items) const override {
+        if (items.size() != 1 || items.front() == nullptr) {
+            return nullptr;
+        }
+        const auto id = items.front()->data(kContentIdRole).toString();
+        return id.isEmpty() ? nullptr : make_asset_mime_data(domain::AssetId{id.toStdString()});
+    }
+};
 
 }  // namespace
 
@@ -80,7 +95,7 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent) : QDockWidget(parent) {
     });
     container_layout->addWidget(actions);
     tabs_ = new QTabWidget{container};
-    assets_ = new QListWidget{tabs_};
+    assets_ = new AssetListWidget{tabs_};
     songs_ = new QListWidget{tabs_};
     sermons_ = new QListWidget{tabs_};
     assets_->setObjectName(QStringLiteral("assets-list"));
