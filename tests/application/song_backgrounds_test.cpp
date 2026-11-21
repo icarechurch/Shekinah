@@ -30,3 +30,16 @@ TEST_CASE("slide background assignment rejects an unknown cue without mutation")
         song, CueId{"missing"}, BackgroundRef{AssetId{"new"}}));
     REQUIRE_FALSE(song.slides[0].background.has_value());
 }
+
+TEST_CASE("Song default background assignment leaves slide overrides unchanged") {
+    Song song{SongId{"song"},
+              "Song",
+              std::nullopt,
+              {Slide{CueId{"one"}, "Verse", {"One"}, BackgroundRef{AssetId{"slide"}}}}};
+
+    set_default_background(song, BackgroundRef{AssetId{"default"}, FitMode::contain});
+
+    REQUIRE(song.default_background->asset == AssetId{"default"});
+    REQUIRE(song.default_background->fit == FitMode::contain);
+    REQUIRE(song.slides[0].background->asset == AssetId{"slide"});
+}
