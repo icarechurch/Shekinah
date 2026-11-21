@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <array>
 #include <fstream>
 
 #include "test_project.hpp"
@@ -77,6 +78,29 @@ TEST_CASE("sermon deck importer accepts mixed supported media") {
     REQUIRE(first->kind == AssetKind::image);
     REQUIRE(second->kind == AssetKind::image);
     REQUIRE(third->kind == AssetKind::video);
+}
+
+TEST_CASE("sermon deck importer accepts every supported asset media extension") {
+    auto project = TestProject::create();
+    auto store = ProjectStore::create_or_open(project.root() / "Sunday");
+    REQUIRE(store);
+
+    constexpr std::array extensions{
+        ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff", ".mp4"};
+    std::vector<std::filesystem::path> paths;
+    paths.reserve(extensions.size());
+    for (std::size_t index = 0; index != extensions.size(); ++index) {
+        const auto path = project.root() / ("Slide " + std::to_string(index + 1) + extensions[index]);
+        std::ofstream(path, std::ios::binary) << "media-" << index;
+        paths.push_back(path);
+    }
+
+    SermonDeckImporter importer{*store};
+    const auto deck = importer.import_files(
+        SermonId{"sermon-all-media"}, "All Media Sermon", std::move(paths), true);
+
+    REQUIRE(deck);
+    REQUIRE(deck->slides.size() == extensions.size());
 }
 
 TEST_CASE("sermon deck importer rejects duplicate names and unsupported media") {
