@@ -65,6 +65,16 @@ void OperatorPage::set_service_order_move_handler(
     service_order_->set_move_handler(std::move(handler));
 }
 
+void OperatorPage::set_service_order_asset_drop_handler(
+    std::function<void(domain::ContentRef, domain::AssetId)> handler) {
+    service_order_->set_asset_drop_handler(std::move(handler));
+}
+
+void OperatorPage::set_cue_asset_drop_handler(
+    std::function<void(domain::CueId, domain::AssetId)> handler) {
+    cue_grid_->set_asset_drop_handler(std::move(handler));
+}
+
 void OperatorPage::set_authoring_handlers(std::function<void()> new_song,
                                           std::function<void()> import_song,
                                           std::function<void()> import_sermon,

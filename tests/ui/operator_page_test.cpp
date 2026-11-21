@@ -1,6 +1,11 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QDragEnterEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QListWidget>
+#include <QMimeData>
 #include <QSplitter>
 #include <QTest>
 
@@ -8,6 +13,7 @@
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
+#include "shekinah/ui/support/asset_drag.hpp"
 
 using namespace shekinah::ui;
 using namespace shekinah::domain;
@@ -92,4 +98,59 @@ TEST_CASE("operator page forwards service-order selection and cue actions") {
 
     REQUIRE(selected == ServiceOrderItemId{"item-1"});
     REQUIRE(live == CueId{"verse-1"});
+}
+
+TEST_CASE("operator page forwards both asset drop surfaces") {
+    ensure_qapplication();
+    OperatorPage page;
+    page.set_service_order({ServiceOrderView{
+        ServiceOrderItem{ServiceOrderItemId{"item-1"}, ContentRef::song("song-a"), 0},
+        "Song A",
+    }});
+    page.cue_grid()->set_cues({CueView{CueId{"cue-1"}, "Verse", "One"}});
+    ContentRef dropped_content = ContentRef::sermon("unset");
+    CueId dropped_cue{"unset"};
+    AssetId dropped_asset{"unset"};
+    page.set_service_order_asset_drop_handler([&](ContentRef content, AssetId asset) {
+        dropped_content = std::move(content);
+        dropped_asset = std::move(asset);
+    });
+    page.set_cue_asset_drop_handler([&](CueId cue, AssetId asset) {
+        dropped_cue = std::move(cue);
+        dropped_asset = std::move(asset);
+    });
+    page.show();
+    QTest::qWait(20);
+
+    auto* list = page.service_order_widget()->findChild<QListWidget*>(
+        QStringLiteral("service-order-list"));
+    REQUIRE(list != nullptr);
+    auto* order_mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-order"});
+    const auto order_position = list->visualItemRect(list->item(0)).center();
+    QDragEnterEvent order_enter{
+        order_position, Qt::CopyAction, order_mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &order_enter);
+    QDragMoveEvent order_move{
+        order_position, Qt::CopyAction, order_mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &order_move);
+    QDropEvent order_drop{
+        order_position, Qt::CopyAction, order_mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(list->viewport(), &order_drop);
+    delete order_mime;
+
+    auto* card = page.cue_grid()->findChild<QWidget*>(QStringLiteral("cue-cue-1"));
+    REQUIRE(card != nullptr);
+    auto* cue_mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-cue"});
+    const auto cue_position = card->rect().center();
+    QDragEnterEvent cue_enter{cue_position, Qt::CopyAction, cue_mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &cue_enter);
+    QDragMoveEvent cue_move{cue_position, Qt::CopyAction, cue_mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &cue_move);
+    QDropEvent cue_drop{cue_position, Qt::CopyAction, cue_mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(card, &cue_drop);
+    delete cue_mime;
+
+    REQUIRE(dropped_content == ContentRef::song("song-a"));
+    REQUIRE(dropped_cue == CueId{"cue-1"});
+    REQUIRE(dropped_asset == AssetId{"asset-cue"});
 }
