@@ -156,6 +156,66 @@ TEST_CASE("cue card paints a usable background image") {
     REQUIRE(image.pixelColor(12, 12).green() < 80);
 }
 
+TEST_CASE("cue card falls back to checkerboard for an unreadable background") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.resize(320, 240);
+    grid.set_cues({CueView{
+        CueId{"missing"},
+        "Verse",
+        "You are here",
+        1,
+        QStringLiteral("C:/does-not-exist/shekinah-background.png"),
+        FitMode::cover,
+        QStringLiteral("Verse"),
+        true,
+    }});
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-missing"));
+    REQUIRE(card != nullptr);
+    card->resize(320, card->heightForWidth(320));
+
+    QImage image(card->size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    card->render(&image);
+
+    REQUIRE(image.pixelColor(12, 12) != image.pixelColor(24, 12));
+}
+
+TEST_CASE("right clicking a cue dispatches its context handler") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.set_cues({CueView{CueId{"context"}, "Verse", "Line", 1}});
+    CueId requested;
+    QPoint position;
+    grid.set_context_handler([&](CueId cue, QPoint global_position) {
+        requested = std::move(cue);
+        position = global_position;
+    });
+    grid.show();
+    QTest::qWait(20);
+
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-context"));
+    REQUIRE(card != nullptr);
+    QTest::mouseClick(card, Qt::RightButton, Qt::NoModifier, card->rect().center());
+
+    REQUIRE(requested.value == "context");
+    REQUIRE(position.isNull() == false);
+}
+
+TEST_CASE("clearing the live cue removes every card highlight") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.set_cues({
+        CueView{CueId{"one"}, "Verse", "Line", 1},
+        CueView{CueId{"two"}, "Chorus", "Line", 2},
+    });
+    grid.set_live_cue(CueId{"two"});
+    grid.set_live_cue(std::nullopt);
+
+    REQUIRE_FALSE(grid.findChild<QWidget*>(QStringLiteral("cue-one"))->property("cue-live").toBool());
+    REQUIRE_FALSE(grid.findChild<QWidget*>(QStringLiteral("cue-two"))->property("cue-live").toBool());
+}
+
 TEST_CASE("cue card footer colors follow section names") {
     REQUIRE(CueGridWidget::footer_color_for_section("Verse 1") == QColor("#0b80ba"));
     REQUIRE(CueGridWidget::footer_color_for_section("Chorus 1") == QColor("#cc1f58"));
