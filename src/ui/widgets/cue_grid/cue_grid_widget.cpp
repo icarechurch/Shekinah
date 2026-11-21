@@ -34,6 +34,12 @@ public:
 
     bool hasHeightForWidth() const override { return true; }
 
+    QRect preview_rect() const {
+        constexpr int border = 2;
+        constexpr int footer = 32;
+        return rect().adjusted(border, border, -border, -footer - border);
+    }
+
     void set_live(bool live) {
         setProperty("cue-live", live);
         update();
@@ -52,6 +58,18 @@ protected:
     void paintEvent(QPaintEvent*) override {
         QPainter painter{this};
         painter.fillRect(rect(), QColor{QStringLiteral("#121212")});
+        const auto preview = preview_rect();
+        constexpr int tile_size = 16;
+        for (int y = preview.top(); y < preview.bottom(); y += tile_size) {
+            for (int x = preview.left(); x < preview.right(); x += tile_size) {
+                const auto tile = ((x - preview.left()) / tile_size +
+                                   (y - preview.top()) / tile_size) % 2;
+                painter.fillRect(
+                    QRect{x, y, tile_size, tile_size},
+                    tile == 0 ? QColor{QStringLiteral("#111111")}
+                              : QColor{QStringLiteral("#282828")});
+            }
+        }
     }
 
 private:

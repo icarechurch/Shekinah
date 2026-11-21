@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <QApplication>
+#include <QImage>
 #include <QPushButton>
 #include <QTest>
 
@@ -102,6 +103,22 @@ TEST_CASE("cue grid marks only the matching card live") {
 
     REQUIRE(grid.findChild<QWidget*>(QStringLiteral("cue-one"))->property("cue-live").toBool() == false);
     REQUIRE(grid.findChild<QWidget*>(QStringLiteral("cue-two"))->property("cue-live").toBool() == true);
+}
+
+TEST_CASE("cue card paints checkerboard when no background is assigned") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    grid.resize(320, 240);
+    grid.set_cues({CueView{CueId{"empty"}, "Verse", "You are here", 1}});
+    auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-empty"));
+    REQUIRE(card != nullptr);
+    card->resize(320, card->heightForWidth(320));
+
+    QImage image(card->size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    card->render(&image);
+
+    REQUIRE(image.pixelColor(12, 12) != image.pixelColor(24, 12));
 }
 
 TEST_CASE("empty Presentation view exposes authoring actions") {
