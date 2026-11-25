@@ -20,6 +20,7 @@ AudienceOutput::AudienceOutput(QWidget* parent) : QWidget(parent) {
     player_ = new QMediaPlayer{this};
     player_->setLoops(QMediaPlayer::Infinite);
     video_widget_ = new QVideoWidget{this};
+    video_widget_->setGeometry(rect());
     video_widget_->setVisible(false);
     player_->setVideoOutput(video_widget_);
     update_slide_renderer();

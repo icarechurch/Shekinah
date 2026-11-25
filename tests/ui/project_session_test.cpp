@@ -843,6 +843,105 @@ TEST_CASE("Program Status previews a live song before Audience Output is created
                 .toString() == QStringLiteral("You are good"));
 }
 
+TEST_CASE("opening Audience Window after taking a song slide live displays the live slide") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto image_source = project.root() / "bg.png";
+    QImage image{800, 450, QImage::Format_RGB32};
+    image.fill(Qt::darkCyan);
+    REQUIRE(image.save(QString::fromStdString(image_source.string()), "PNG"));
+
+    const auto song_source = project.root() / "goodness.txt";
+    std::ofstream{song_source} << "# Goodness\n[Verse]\nYou are good\n";
+
+    shekinah::ui::ShekinahWindow window;
+    REQUIRE(window.open_project(project.root() / "Sunday"));
+    const auto asset = window.import_asset_file(image_source);
+    const auto song = window.import_song_file(song_source);
+    REQUIRE(asset);
+    REQUIRE(song);
+    window.library_dock()->add_song(*song);
+    window.library_dock()->show_songs();
+    window.library_dock()->activate_song_row(0);
+    REQUIRE(window.set_slide_background(song->slides[0].id, asset->id));
+    window.show();
+    QTest::qWait(20);
+
+    auto* cue = window.operator_page()->cue_grid()->findChild<QWidget*>(
+        QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[0].id.value)));
+    REQUIRE(cue != nullptr);
+    QTest::mouseClick(cue, Qt::LeftButton, Qt::NoModifier, cue->rect().center());
+
+    auto* window_btn = window.operator_page()->program_status()->findChild<QPushButton*>(
+        QStringLiteral("output-window-btn"));
+    REQUIRE(window_btn != nullptr);
+    QTest::mouseClick(window_btn, Qt::LeftButton);
+    QTest::qWait(20);
+
+    auto* output = window.audience_output();
+    REQUIRE(output->mode() == shekinah::media::OutputMode::movable);
+    REQUIRE(output->program().mode == shekinah::domain::ProgramMode::cue);
+    REQUIRE(output->program().live_cue.has_value());
+    REQUIRE(output->program().live_cue->cue == song->slides[0].id);
+    REQUIRE(output->live_text() == QStringLiteral("You are good"));
+    REQUIRE(output->slide_image_loaded());
+}
+
+TEST_CASE("opening Audience Window after taking a sermon slide or Black live syncs output state") {
+    ensure_qapplication();
+    auto project = TestProject::create();
+    const auto source = project.root() / "Slide 1.png";
+    QImage image{800, 450, QImage::Format_RGB32};
+    image.fill(Qt::blue);
+    REQUIRE(image.save(QString::fromStdString(source.string()), "PNG"));
+
+    SECTION("sermon slide is synced on first open") {
+        shekinah::ui::ShekinahWindow window;
+        REQUIRE(window.open_project(project.root() / "Sunday"));
+        const auto sermon = window.import_sermon_files({source}, "Sunday Message");
+        REQUIRE(sermon);
+        window.library_dock()->add_sermon(*sermon);
+        window.library_dock()->show_sermons();
+        window.library_dock()->activate_sermon_row(0);
+        window.show();
+        QTest::qWait(20);
+
+        auto* cue = window.operator_page()->cue_grid()->findChild<QWidget*>(QStringLiteral("cue-slide-0"));
+        REQUIRE(cue != nullptr);
+        QTest::mouseClick(cue, Qt::LeftButton, Qt::NoModifier, cue->rect().center());
+
+        auto* window_btn = window.operator_page()->program_status()->findChild<QPushButton*>(
+            QStringLiteral("output-window-btn"));
+        REQUIRE(window_btn != nullptr);
+        QTest::mouseClick(window_btn, Qt::LeftButton);
+        QTest::qWait(20);
+
+        auto* output = window.audience_output();
+        REQUIRE(output->program().mode == shekinah::domain::ProgramMode::cue);
+        REQUIRE(output->slide_image_loaded());
+    }
+
+    SECTION("black program mode is synced on first open") {
+        shekinah::ui::ShekinahWindow window;
+        REQUIRE(window.open_project(project.root() / "SundayBlack"));
+        window.show();
+        QTest::qWait(20);
+
+        auto* black = window.operator_page()->program_status()->findChild<QPushButton*>(QStringLiteral("black"));
+        REQUIRE(black != nullptr);
+        QTest::mouseClick(black, Qt::LeftButton);
+
+        auto* window_btn = window.operator_page()->program_status()->findChild<QPushButton*>(
+            QStringLiteral("output-window-btn"));
+        REQUIRE(window_btn != nullptr);
+        QTest::mouseClick(window_btn, Qt::LeftButton);
+        QTest::qWait(20);
+
+        auto* output = window.audience_output();
+        REQUIRE(output->program().mode == shekinah::domain::ProgramMode::black);
+    }
+}
+
 TEST_CASE("a live sermon cue loads its imported PNG into Audience Output") {
     ensure_qapplication();
     auto project = TestProject::create();

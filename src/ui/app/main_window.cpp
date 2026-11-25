@@ -453,6 +453,8 @@ void ShekinahWindow::sync_theme_actions() {
 media::AudienceOutput* ShekinahWindow::audience_output() {
     if (!audience_output_) {
         audience_output_ = std::make_unique<media::AudienceOutput>();
+        audience_output_->present(presentation_.program());
+        present_live_media();
     }
     return audience_output_.get();
 }
