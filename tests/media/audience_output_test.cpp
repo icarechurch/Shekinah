@@ -57,6 +57,29 @@ TEST_CASE("audience output distinguishes clear, black, and live cue states") {
     REQUIRE(output.program().mode == ProgramMode::black);
 }
 
+TEST_CASE("audience output renders clear mode without any text") {
+    ensure_qapplication();
+    AudienceOutput output;
+    output.resize(320, 180);
+    output.present(ProgramState{ProgramMode::clear, std::nullopt});
+
+    QImage rendered{output.size(), QImage::Format_ARGB32_Premultiplied};
+    rendered.fill(Qt::transparent);
+    output.render(&rendered);
+
+    const QColor clear_background{QStringLiteral("#101318")};
+    bool all_background = true;
+    for (int y = 0; y < rendered.height() && all_background; ++y) {
+        for (int x = 0; x < rendered.width(); ++x) {
+            if (rendered.pixelColor(x, y) != clear_background) {
+                all_background = false;
+                break;
+            }
+        }
+    }
+    REQUIRE(all_background);
+}
+
 TEST_CASE("audience output stores and clears live lyric text") {
     ensure_qapplication();
     AudienceOutput output;

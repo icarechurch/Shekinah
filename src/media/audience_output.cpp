@@ -133,29 +133,19 @@ void AudienceOutput::clear_loop_video() {
 void AudienceOutput::paintEvent(QPaintEvent* event) {
     Q_UNUSED(event);
     QPainter painter{this};
-    if (program_.mode == domain::ProgramMode::black) {
+    switch (program_.mode) {
+    case domain::ProgramMode::black:
         painter.fillRect(rect(), Qt::black);
         return;
-    }
-
-    if (program_.mode == domain::ProgramMode::cue) {
+    case domain::ProgramMode::cue:
         slide_renderer_.paint(painter, rect());
+        return;
+    case domain::ProgramMode::clear:
+        painter.fillRect(rect(), QColor{QStringLiteral("#101318")});
         return;
     }
 
-    painter.fillRect(
-        rect(),
-        program_.mode == domain::ProgramMode::clear
-            ? QColor{QStringLiteral("#101318")}
-            : QColor{QStringLiteral("#182337")});
-    painter.setPen(Qt::white);
-    painter.setFont(QFont{QStringLiteral("Segoe UI"), 28});
-    const QString text = program_.mode == domain::ProgramMode::clear
-                             ? QStringLiteral("CLEAR")
-                             : program_.live_cue.has_value()
-                                   ? QString::fromStdString(program_.live_cue->cue.value)
-                                   : QStringLiteral("SHEKINAH");
-    painter.drawText(rect(), Qt::AlignCenter, text);
+    painter.fillRect(rect(), QColor{QStringLiteral("#101318")});
 }
 
 void AudienceOutput::resizeEvent(QResizeEvent* event) {
