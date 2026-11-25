@@ -7,6 +7,8 @@
 #include <QDragLeaveEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>
+#include <QEvent>
+#include <QFontMetrics>
 #include <QGridLayout>
 #include <QFrame>
 #include <QLabel>
@@ -54,10 +56,17 @@ public:
     }
 
     int heightForWidth(int width) const override {
-        return std::max(100, static_cast<int>(std::lround(static_cast<double>(width) * 9.0 / 16.0)) + 32);
+        const int preview_width = std::max(1, width - 4);
+        const int preview_height =
+            static_cast<int>(std::lround(static_cast<double>(preview_width) * 9.0 / 16.0));
+        return std::max(100, preview_height + 36);
     }
 
     bool hasHeightForWidth() const override { return true; }
+
+    QSize sizeHint() const override { return {240, heightForWidth(240)}; }
+
+    QSize minimumSizeHint() const override { return {120, heightForWidth(120)}; }
 
     QRect preview_rect() const {
         constexpr int border = 2;
@@ -131,22 +140,35 @@ protected:
         const QRect footer{2, height() - 34, width() - 4, 32};
         painter.fillRect(footer, CueGridWidget::footer_color_for_section(cue_.section));
         painter.setPen(Qt::white);
+        const int footer_px = std::clamp(width() / 15, 12, 16);
         QFont footer_font = painter.font();
-        footer_font.setPixelSize(18);
+        footer_font.setPixelSize(footer_px);
         footer_font.setBold(true);
         painter.setFont(footer_font);
         const auto number = cue_.number > 0
                                 ? QString::number(cue_.number)
                                 : QString::fromStdString(cue_.id.value);
-        painter.drawText(footer.adjusted(4, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, number);
+        const QFontMetrics num_fm{footer_font};
+        const int number_width = num_fm.horizontalAdvance(number);
+        const QRect number_rect = footer.adjusted(6, 0, -6, 0);
+        painter.drawText(number_rect,
+                         Qt::AlignVCenter | Qt::AlignLeft,
+                         num_fm.elidedText(number, Qt::ElideRight, number_rect.width()));
 
         const auto footer_label = cue_.footer_label.isEmpty() ? cue_.section : cue_.footer_label;
         if (!footer_label.isEmpty()) {
-            QFont label_font = footer_font;
-            label_font.setBold(false);
-            painter.setFont(label_font);
-            painter.drawText(
-                footer.adjusted(32, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, footer_label);
+            const int label_left = 6 + number_width + 8;
+            const QRect label_rect = footer.adjusted(label_left, 0, -6, 0);
+            if (label_rect.width() > 6) {
+                QFont label_font = footer_font;
+                label_font.setBold(false);
+                painter.setFont(label_font);
+                const QFontMetrics label_fm{label_font};
+                painter.drawText(
+                    label_rect,
+                    Qt::AlignVCenter | Qt::AlignLeft,
+                    label_fm.elidedText(footer_label, Qt::ElideRight, label_rect.width()));
+            }
         }
 
         const auto live = property("cue-live").toBool();
@@ -168,14 +190,22 @@ private:
 CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_(new QWidget(this)) {
     auto* outer = new QVBoxLayout(this);
     outer->setContentsMargins(0, 0, 0, 0);
-    empty_state_ = new QWidget{this};
+    empty_scroll_ = new QScrollArea{this};
+    empty_scroll_->setObjectName(QStringLiteral("presentation-empty-scroll"));
+    empty_scroll_->setFrameShape(QFrame::NoFrame);
+    empty_scroll_->setWidgetResizable(true);
+    empty_scroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    empty_scroll_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    empty_state_ = new QWidget{empty_scroll_};
     empty_state_->setObjectName(QStringLiteral("presentation-empty-state"));
     auto* empty_layout = new QVBoxLayout{empty_state_};
-    empty_layout->setContentsMargins(32, 32, 32, 32);
+    empty_layout->setContentsMargins(24, 24, 24, 24);
+    empty_layout->setSpacing(8);
     auto* title = new QLabel{QStringLiteral("Presentation"), empty_state_};
     title->setObjectName(QStringLiteral("presentation-title"));
     title->setAlignment(Qt::AlignCenter);
-    title->setStyleSheet(QStringLiteral("font-size: 24px; font-weight: 600;"));
+    title->setStyleSheet(QStringLiteral("font-size: 22px; font-weight: 600;"));
     auto* message = new QLabel{
         QStringLiteral("Add a Song or Sermon to the Service Order, or create content to begin."),
         empty_state_};
@@ -187,9 +217,11 @@ CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_
     const auto add_action = [&](const QString& label, const QString& name, auto handler) {
         auto* button = new QPushButton{label, empty_state_};
         button->setObjectName(name);
-        button->setMinimumHeight(38);
+        button->setMinimumHeight(34);
+        button->setMaximumWidth(320);
+        button->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         QObject::connect(button, &QPushButton::clicked, this, handler);
-        empty_layout->addWidget(button);
+        empty_layout->addWidget(button, 0, Qt::AlignHCenter);
     };
     add_action(QStringLiteral("New Song"), QStringLiteral("presentation-new-song"), [this] {
         if (new_song_handler_) {
@@ -212,7 +244,9 @@ CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_
         }
     });
     empty_layout->addStretch(1);
-    outer->addWidget(empty_state_);
+    empty_scroll_->setWidget(empty_state_);
+    outer->addWidget(empty_scroll_);
+
     grid_scroll_ = new QScrollArea{this};
     grid_scroll_->setObjectName(QStringLiteral("cue-grid-scroll"));
     grid_scroll_->setFrameShape(QFrame::NoFrame);
@@ -220,9 +254,10 @@ CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_
     grid_scroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     grid_scroll_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     grid_scroll_->setWidget(grid_container_);
+    grid_scroll_->viewport()->installEventFilter(this);
     outer->addWidget(grid_scroll_);
     grid_scroll_->setVisible(false);
-    setMinimumWidth(240);
+    setMinimumWidth(220);
 }
 
 QColor CueGridWidget::footer_color_for_section(const QString& section) {
@@ -240,30 +275,37 @@ QColor CueGridWidget::footer_color_for_section(const QString& section) {
 }
 
 int CueGridWidget::column_count_for_geometry(int viewport_width, int screen_width) {
-    if (viewport_width < 320) {
-        return 1;
-    }
-    if (viewport_width < 520) {
-        return 2;
-    }
+    int screen_columns = 6;
     if (screen_width < 1600) {
-        return 3;
+        screen_columns = 3;
+    } else if (screen_width < 2300) {
+        screen_columns = 4;
+    } else if (screen_width < 3200) {
+        screen_columns = 5;
     }
-    if (screen_width < 2300) {
-        return 4;
+
+    int viewport_columns = 6;
+    if (viewport_width < 360) {
+        viewport_columns = 1;
+    } else if (viewport_width < 560) {
+        viewport_columns = 2;
+    } else if (viewport_width < 800) {
+        viewport_columns = 3;
+    } else if (viewport_width < 1100) {
+        viewport_columns = 4;
+    } else if (viewport_width < 1380) {
+        viewport_columns = 5;
     }
-    if (screen_width < 3200) {
-        return 5;
-    }
-    return 6;
+
+    return std::min(screen_columns, viewport_columns);
 }
 
 void CueGridWidget::set_cues(std::vector<CueView> cues) {
     cues_ = std::move(cues);
     const bool empty = cues_.empty();
-    empty_state_->setVisible(empty);
+    empty_scroll_->setVisible(empty);
     grid_scroll_->setVisible(!empty);
-    rebuild_layout();
+    rebuild_cards();
 }
 
 void CueGridWidget::set_authoring_handlers(std::function<void()> new_song,
@@ -295,40 +337,80 @@ QRect CueGridWidget::visual_rect(const domain::CueId& cue) const {
     return QRect(mapFrom(*card, QPoint{0, 0}), (*card)->size());
 }
 
-void CueGridWidget::resizeEvent(QResizeEvent* event) {
-    QWidget::resizeEvent(event);
-    rebuild_layout();
+bool CueGridWidget::eventFilter(QObject* watched, QEvent* event) {
+    if (grid_scroll_ != nullptr && watched == grid_scroll_->viewport() &&
+        event->type() == QEvent::Resize) {
+        relayout_cards(false);
+    }
+    return QWidget::eventFilter(watched, event);
 }
 
-void CueGridWidget::rebuild_layout() {
+void CueGridWidget::resizeEvent(QResizeEvent* event) {
+    QWidget::resizeEvent(event);
+    relayout_cards(false);
+}
+
+void CueGridWidget::rebuild_cards() {
     if (grid_container_ == nullptr) {
         return;
     }
     if (auto* old_layout = grid_container_->layout(); old_layout != nullptr) {
         while (auto* item = old_layout->takeAt(0)) {
-            if (auto* widget = item->widget(); widget != nullptr) {
-                widget->deleteLater();
-            }
             delete item;
         }
         delete old_layout;
     }
+    for (auto* card : cards_) {
+        card->deleteLater();
+    }
     cards_.clear();
+    cards_.reserve(cues_.size());
+
+    for (const auto& cue : cues_) {
+        auto* card = new CueCard{cue, *this};
+        card->setProperty("cue-id", QString::fromStdString(cue.id.value));
+        card->set_live(live_cue_.has_value() && cue.id == *live_cue_);
+        cards_.push_back(card);
+    }
+    relayout_cards(true);
+}
+
+void CueGridWidget::relayout_cards(bool force) {
+    if (grid_container_ == nullptr) {
+        return;
+    }
+    const int viewport_width =
+        (grid_scroll_ != nullptr && grid_scroll_->viewport()->width() > 0)
+            ? grid_scroll_->viewport()->width()
+            : width();
+    const int screen_width = screen() == nullptr ? 1920 : screen()->size().width();
+    const int columns = column_count_for_geometry(viewport_width, screen_width);
+    if (!force && columns == current_columns_ && grid_container_->layout() != nullptr) {
+        return;
+    }
+    current_columns_ = columns;
+
+    if (auto* old_layout = grid_container_->layout(); old_layout != nullptr) {
+        while (auto* item = old_layout->takeAt(0)) {
+            delete item;
+        }
+        delete old_layout;
+    }
 
     auto* layout = new QGridLayout(grid_container_);
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(8);
-    const int screen_width = screen() == nullptr ? 1920 : screen()->size().width();
-    const int columns = column_count_for_geometry(width(), screen_width);
-    for (std::size_t index = 0; index != cues_.size(); ++index) {
-        auto* card = new CueCard{cues_[index], *this};
-        card->setProperty("cue-id", QString::fromStdString(cues_[index].id.value));
-        card->set_live(live_cue_.has_value() && cues_[index].id == *live_cue_);
-        cards_.push_back(card);
+    for (int col = 0; col < columns; ++col) {
+        layout->setColumnStretch(col, 1);
+    }
+    for (std::size_t index = 0; index != cards_.size(); ++index) {
         const int row = static_cast<int>(index / static_cast<std::size_t>(columns));
         const int column = static_cast<int>(index % static_cast<std::size_t>(columns));
-        layout->addWidget(card, row, column);
+        layout->addWidget(cards_[index], row, column);
     }
+    const int row_count =
+        cards_.empty() ? 0 : static_cast<int>((cards_.size() + static_cast<std::size_t>(columns) - 1) / static_cast<std::size_t>(columns));
+    layout->setRowStretch(row_count, 1);
 }
 
 void CueGridWidget::handle_left_click(const domain::CueId& cue) {

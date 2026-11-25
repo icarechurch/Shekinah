@@ -68,11 +68,13 @@ public:
     [[nodiscard]] QRect visual_rect(const domain::CueId& cue) const;
 
 protected:
+    bool eventFilter(QObject* watched, QEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
 
 private:
     class CueCard;
-    void rebuild_layout();
+    void rebuild_cards();
+    void relayout_cards(bool force);
     void handle_left_click(const domain::CueId& cue);
     void handle_right_click(const domain::CueId& cue, QPoint global_position);
     void handle_asset_drop(const domain::CueId& cue, const domain::AssetId& asset);
@@ -80,11 +82,13 @@ private:
     std::vector<CueView> cues_;
     std::vector<CueCard*> cards_;
     std::optional<domain::CueId> live_cue_;
+    int current_columns_{0};
     TakeLiveHandler take_live_handler_;
     ContextHandler context_handler_;
     AssetDropHandler asset_drop_handler_;
     QWidget* grid_container_{nullptr};
     QScrollArea* grid_scroll_{nullptr};
+    QScrollArea* empty_scroll_{nullptr};
     QWidget* empty_state_{nullptr};
     std::function<void()> new_song_handler_;
     std::function<void()> import_song_handler_;

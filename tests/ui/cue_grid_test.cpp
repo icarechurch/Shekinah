@@ -417,3 +417,68 @@ TEST_CASE("empty Presentation view exposes authoring actions") {
     REQUIRE(import_sermon == 1);
     REQUIRE(import_asset == 1);
 }
+
+TEST_CASE("cue grid caps columns by viewport width on wide screens") {
+    REQUIRE(CueGridWidget::column_count_for_geometry(700, 1920) == 3);
+    REQUIRE(CueGridWidget::column_count_for_geometry(500, 3840) == 2);
+    REQUIRE(CueGridWidget::column_count_for_geometry(320, 3840) == 1);
+    REQUIRE(CueGridWidget::column_count_for_geometry(1000, 2560) == 4);
+}
+
+TEST_CASE("cue grid reflows columns on resize without clipping cards or lyric text") {
+    ensure_qapplication();
+    CueGridWidget grid;
+    std::vector<CueView> cues;
+    for (int number = 1; number <= 6; ++number) {
+        cues.emplace_back(
+            CueId{"cue-" + std::to_string(number)},
+            "Verse 1",
+            QStringLiteral("O DIYOS IKAW\nANG TUNAY NA\nDAKILA SA\nMUNDO"),
+            number);
+    }
+    grid.set_cues(std::move(cues));
+    grid.set_live_cue(CueId{"cue-2"});
+    grid.resize(1050, 520);
+    grid.show();
+    QTest::qWait(30);
+
+    auto* scroll = grid.findChild<QScrollArea*>(QStringLiteral("cue-grid-scroll"));
+    REQUIRE(scroll != nullptr);
+    auto* card1 = grid.findChild<QWidget*>(QStringLiteral("cue-cue-1"));
+    auto* card2 = grid.findChild<QWidget*>(QStringLiteral("cue-cue-2"));
+    auto* card3 = grid.findChild<QWidget*>(QStringLiteral("cue-cue-3"));
+    REQUIRE(card1 != nullptr);
+    REQUIRE(card2 != nullptr);
+    REQUIRE(card3 != nullptr);
+
+    const int wide_card_height = card1->height();
+    REQUIRE(wide_card_height < 260);
+    REQUIRE(card2->property("cue-live").toBool());
+
+    grid.resize(500, 520);
+    QTest::qWait(30);
+    REQUIRE(card2->x() > card1->x());
+    REQUIRE(card3->y() > card1->y());
+    REQUIRE(card2->x() + card2->width() <= scroll->viewport()->width());
+    REQUIRE(card2->property("cue-live").toBool());
+
+    grid.resize(300, 520);
+    QTest::qWait(30);
+    REQUIRE(card2->y() > card1->y());
+    REQUIRE(card1->x() + card1->width() <= scroll->viewport()->width());
+    REQUIRE_FALSE(scroll->horizontalScrollBar()->isVisible());
+
+    QImage card_render{card1->size(), QImage::Format_ARGB32_Premultiplied};
+    card_render.fill(Qt::transparent);
+    card1->render(&card_render);
+    const QColor footer_color = CueGridWidget::footer_color_for_section(QStringLiteral("Verse 1"));
+    const int footer_top = card1->height() - 34;
+    bool clean_footer_top = true;
+    for (int x = 10; x < card1->width() - 10; ++x) {
+        if (card_render.pixelColor(x, footer_top) != footer_color) {
+            clean_footer_top = false;
+            break;
+        }
+    }
+    REQUIRE(clean_footer_top);
+}
