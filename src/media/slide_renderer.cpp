@@ -1,8 +1,10 @@
 #include "shekinah/media/slide_renderer.hpp"
 
-#include <QFontMetrics>
+#include <QFontMetricsF>
+#include <QGuiApplication>
 #include <QImageReader>
 #include <QPainter>
+#include <QTextOption>
 
 #include <algorithm>
 #include <utility>
@@ -10,56 +12,57 @@
 namespace shekinah::media {
 namespace {
 
-struct TextFitResult {
-    int pixel_size{12};
-    bool fits_height{true};
-    bool fits_width{true};
+constexpr int kCanonicalWidth = 1920;
+constexpr int kCanonicalHeight = 1080;
+constexpr int kCanonicalPadX = kCanonicalWidth / 24;
+constexpr int kCanonicalPadY = kCanonicalHeight / 20;
+constexpr int kCanonicalMinFontPx = 24;
+constexpr int kCanonicalMaxFontPx = kCanonicalHeight / 8;
+constexpr QPointF kCanonicalShadowOffset{5.0, 5.0};
+
+struct BuiltTextLayout {
+    std::shared_ptr<QTextLayout> layout;
+    qreal total_height{0.0};
+    qreal max_line_width{0.0};
 };
 
-TextFitResult fit_text_to_rect(const QFont& base_font,
-                               const QRect& text_rect,
-                               const QString& text,
-                               int min_pixel_size,
-                               int max_pixel_size) {
-    const int clamped_max = std::max(min_pixel_size, max_pixel_size);
-    const int avail_w = std::max(1, text_rect.width() - 1);
-    const int avail_h = std::max(1, text_rect.height() - 1);
-    const QRect measure_bounds{0, 0, avail_w, avail_h};
+BuiltTextLayout build_text_layout(const QFont& base_font,
+                                  const QString& text,
+                                  qreal avail_width,
+                                  int pixel_size,
+                                  QTextOption::WrapMode wrap_mode) {
+    QFont font = base_font;
+    font.setPixelSize(pixel_size);
 
-    auto measure_at = [&](int px) {
-        QFont probe = base_font;
-        probe.setPixelSize(px);
-        const QFontMetrics fm{probe};
-        return fm.boundingRect(measure_bounds, Qt::AlignCenter | Qt::TextWordWrap, text);
-    };
+    auto layout = std::make_shared<QTextLayout>(text, font);
+    layout->setCacheEnabled(true);
+    QTextOption option;
+    option.setAlignment(Qt::AlignHCenter);
+    option.setWrapMode(wrap_mode);
+    layout->setTextOption(option);
 
-    int low = min_pixel_size;
-    int high = clamped_max;
-    int best = min_pixel_size;
-    bool any_fit = false;
+    const QFontMetricsF metrics{font};
+    const qreal leading = std::max<qreal>(0.0, metrics.leading());
+    qreal y = 0.0;
+    qreal max_line_width = 0.0;
 
-    while (low <= high) {
-        const int mid = low + (high - low) / 2;
-        const QRect measured = measure_at(mid);
-        if (measured.width() <= avail_w && measured.height() <= avail_h) {
-            best = mid;
-            any_fit = true;
-            low = mid + 1;
-        } else {
-            high = mid - 1;
+    layout->beginLayout();
+    while (true) {
+        QTextLine line = layout->createLine();
+        if (!line.isValid()) {
+            break;
         }
+        line.setLineWidth(avail_width);
+        if (y > 0.0) {
+            y += leading;
+        }
+        line.setPosition(QPointF{0.0, y});
+        y += line.height();
+        max_line_width = std::max(max_line_width, line.naturalTextWidth());
     }
+    layout->endLayout();
 
-    if (any_fit) {
-        return {best, true, true};
-    }
-
-    const QRect min_measured = measure_at(min_pixel_size);
-    return {
-        min_pixel_size,
-        min_measured.height() <= avail_h,
-        min_measured.width() <= avail_w,
-    };
+    return {std::move(layout), y, max_line_width};
 }
 
 }  // namespace
@@ -68,6 +71,10 @@ void SlideRenderer::set_content(SlideRenderData content) {
     content_ = std::move(content);
     background_image_ = {};
     background_image_size_ = {};
+    text_layout_.reset();
+    text_draw_origin_ = {};
+    text_fits_height_ = true;
+    text_layout_ready_ = false;
 }
 
 void SlideRenderer::paint(QPainter& painter, const QRect& viewport) {
@@ -109,41 +116,104 @@ void SlideRenderer::paint(QPainter& painter, const QRect& viewport) {
         painter.fillRect(viewport, QColor{QStringLiteral("#182337")});
     }
 
-    if (content_.show_text && !content_.text.trimmed().isEmpty()) {
-        const bool is_audience = content_.text_mode == SlideTextMode::audience;
-        const int pad_x = is_audience
-            ? std::clamp(viewport.width() / 24, 8, 64)
-            : std::clamp(viewport.width() / 18, 4, 14);
-        const int pad_y = is_audience
-            ? std::clamp(viewport.height() / 20, 6, 54)
-            : std::clamp(viewport.height() / 16, 4, 12);
-        const QRect padded = viewport.adjusted(pad_x, pad_y, -pad_x, -pad_y);
-        const QRect text_rect = (padded.width() >= 12 && padded.height() >= 12) ? padded : viewport;
+    ensure_text_layout();
+    if (text_layout_) {
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setRenderHint(QPainter::TextAntialiasing, true);
 
-        QFont lyric_font = painter.font();
-        lyric_font.setBold(true);
-        const int max_font_size = is_audience
-            ? std::clamp(viewport.height() / 8, 14, 96)
-            : std::clamp(viewport.height() / 8, 8, 18);
-        const int min_font_size = is_audience ? 12 : 6;
-        const QString text = content_.text.trimmed().toUpper();
-        const auto fit = fit_text_to_rect(lyric_font, text_rect, text, min_font_size, max_font_size);
+        const qreal scale = std::min(
+            static_cast<qreal>(viewport.width()) / static_cast<qreal>(kCanonicalWidth),
+            static_cast<qreal>(viewport.height()) / static_cast<qreal>(kCanonicalHeight));
+        const qreal stage_w = static_cast<qreal>(kCanonicalWidth) * scale;
+        const qreal stage_h = static_cast<qreal>(kCanonicalHeight) * scale;
+        const qreal origin_x = static_cast<qreal>(viewport.x()) +
+                               (static_cast<qreal>(viewport.width()) - stage_w) * 0.5;
+        const qreal origin_y = static_cast<qreal>(viewport.y()) +
+                               (static_cast<qreal>(viewport.height()) - stage_h) * 0.5;
 
-        lyric_font.setPixelSize(fit.pixel_size);
-        painter.setFont(lyric_font);
-        int flags = Qt::TextWordWrap;
-        flags |= fit.fits_height ? Qt::AlignCenter : (Qt::AlignTop | Qt::AlignHCenter);
-        if (!fit.fits_width) {
-            flags |= Qt::TextWrapAnywhere;
-        }
+        painter.translate(origin_x, origin_y);
+        painter.scale(scale, scale);
 
-        painter.setClipRect(text_rect);
+        const QRectF clip_rect = text_fits_height_
+            ? QRectF{static_cast<qreal>(kCanonicalPadX),
+                     static_cast<qreal>(kCanonicalPadY),
+                     static_cast<qreal>(kCanonicalWidth - 2 * kCanonicalPadX) + kCanonicalShadowOffset.x(),
+                     static_cast<qreal>(kCanonicalHeight - 2 * kCanonicalPadY) + kCanonicalShadowOffset.y()}
+            : QRectF{static_cast<qreal>(kCanonicalPadX),
+                     static_cast<qreal>(kCanonicalPadY),
+                     static_cast<qreal>(kCanonicalWidth - 2 * kCanonicalPadX),
+                     static_cast<qreal>(kCanonicalHeight - 2 * kCanonicalPadY)};
+        painter.setClipRect(clip_rect);
+
         painter.setPen(QColor{QStringLiteral("#080808")});
-        painter.drawText(text_rect.translated(1, 1), flags, text);
+        text_layout_->draw(&painter, text_draw_origin_ + kCanonicalShadowOffset);
         painter.setPen(Qt::white);
-        painter.drawText(text_rect, flags, text);
+        text_layout_->draw(&painter, text_draw_origin_);
     }
     painter.restore();
+}
+
+void SlideRenderer::ensure_text_layout() {
+    if (text_layout_ready_) {
+        return;
+    }
+    text_layout_ready_ = true;
+
+    const QString trimmed = content_.text.trimmed();
+    if (!content_.show_text || trimmed.isEmpty()) {
+        return;
+    }
+
+    QString normalized = trimmed.toUpper();
+    normalized.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    normalized.replace(QLatin1Char('\r'), QLatin1Char('\n'));
+    normalized.replace(QLatin1Char('\n'), QChar::LineSeparator);
+
+    QFont base_font = QGuiApplication::instance() != nullptr ? QGuiApplication::font() : QFont{};
+    base_font.setBold(true);
+    base_font.setHintingPreference(QFont::PreferNoHinting);
+
+    const qreal avail_w = static_cast<qreal>(kCanonicalWidth - 2 * kCanonicalPadX);
+    const qreal avail_h = static_cast<qreal>(kCanonicalHeight - 2 * kCanonicalPadY);
+
+    int low = kCanonicalMinFontPx;
+    int high = kCanonicalMaxFontPx;
+    BuiltTextLayout best;
+    bool any_fit = false;
+
+    while (low <= high) {
+        const int mid = low + (high - low) / 2;
+        auto candidate = build_text_layout(
+            base_font, normalized, avail_w, mid, QTextOption::WordWrap);
+        if (candidate.max_line_width <= avail_w && candidate.total_height <= avail_h) {
+            best = std::move(candidate);
+            any_fit = true;
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    if (!any_fit) {
+        best = build_text_layout(
+            base_font, normalized, avail_w, kCanonicalMinFontPx, QTextOption::WordWrap);
+        if (best.max_line_width > avail_w) {
+            best = build_text_layout(
+                base_font,
+                normalized,
+                avail_w,
+                kCanonicalMinFontPx,
+                QTextOption::WrapAtWordBoundaryOrAnywhere);
+        }
+    }
+
+    text_fits_height_ = best.total_height <= avail_h;
+    const qreal y_offset = text_fits_height_ ? (avail_h - best.total_height) * 0.5 : 0.0;
+    text_draw_origin_ = QPointF{
+        static_cast<qreal>(kCanonicalPadX),
+        static_cast<qreal>(kCanonicalPadY) + y_offset,
+    };
+    text_layout_ = std::move(best.layout);
 }
 
 void SlideRenderer::ensure_background_image(const QRect& viewport) {

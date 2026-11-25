@@ -8,6 +8,8 @@
 #include <QTemporaryFile>
 
 #include <algorithm>
+#include <cmath>
+#include <utility>
 
 #include "shekinah/media/audience_output.hpp"
 #include "shekinah/media/slide_renderer.hpp"
@@ -157,41 +159,61 @@ TEST_CASE("audience output scales slide text for a church-sized screen") {
     REQUIRE(max_y - min_y + 1 > 140);
 }
 
-TEST_CASE("slide previews keep their compact operator text size") {
+TEST_CASE("cue preview, program preview, and audience output match proportionally across sizes") {
     ensure_qapplication();
-    SlideRenderer renderer;
-    renderer.set_content(SlideRenderData{
-        QStringLiteral("GINAWA MO’NG LAHAT\nPAG-IBIG MO AY TAPAT AT WAGAS"),
-        {},
-        FitMode::cover,
-        true,
-        false,
-    });
-
-    QImage rendered{1920, 1080, QImage::Format_ARGB32_Premultiplied};
-    rendered.fill(QColor{QStringLiteral("#182337")});
-    QPainter painter{&rendered};
-    renderer.paint(painter, rendered.rect());
-
+    const QString lyrics = QStringLiteral(
+        "O DIYOS IKAW ANG TUNAY NA DAKILA SA MUNDO\nIKAW ANG HARING NAGMAHAL NG TULAD KO");
     const QColor background{QStringLiteral("#182337")};
-    int min_x = rendered.width();
-    int max_x = -1;
-    int min_y = rendered.height();
-    int max_y = -1;
-    for (int y = 0; y < rendered.height(); ++y) {
-        for (int x = 0; x < rendered.width(); ++x) {
-            if (rendered.pixelColor(x, y) == background) {
-                continue;
-            }
-            min_x = std::min(min_x, x);
-            max_x = std::max(max_x, x);
-            min_y = std::min(min_y, y);
-            max_y = std::max(max_y, y);
-        }
-    }
 
-    REQUIRE(max_x - min_x + 1 < 500);
-    REQUIRE(max_y - min_y + 1 < 70);
+    auto normalized_bounds = [&](SlideTextMode mode, QSize size) {
+        SlideRenderer renderer;
+        renderer.set_content(SlideRenderData{
+            lyrics,
+            {},
+            FitMode::cover,
+            true,
+            false,
+            mode,
+        });
+        QImage rendered{size, QImage::Format_ARGB32_Premultiplied};
+        rendered.fill(background);
+        QPainter painter{&rendered};
+        renderer.paint(painter, rendered.rect());
+
+        int min_x = rendered.width();
+        int max_x = -1;
+        int min_y = rendered.height();
+        int max_y = -1;
+        for (int y = 0; y < rendered.height(); ++y) {
+            for (int x = 0; x < rendered.width(); ++x) {
+                if (rendered.pixelColor(x, y) == background) {
+                    continue;
+                }
+                min_x = std::min(min_x, x);
+                max_x = std::max(max_x, x);
+                min_y = std::min(min_y, y);
+                max_y = std::max(max_y, y);
+            }
+        }
+        REQUIRE(max_x >= min_x);
+        REQUIRE(max_y >= min_y);
+        return std::pair<double, double>{
+            static_cast<double>(max_x - min_x + 1) / static_cast<double>(size.width()),
+            static_cast<double>(max_y - min_y + 1) / static_cast<double>(size.height()),
+        };
+    };
+
+    const auto cue_card = normalized_bounds(SlideTextMode::preview, QSize{316, 178});
+    const auto program_preview = normalized_bounds(SlideTextMode::preview, QSize{245, 138});
+    const auto audience_hd = normalized_bounds(SlideTextMode::audience, QSize{1920, 1080});
+    const auto audience_window = normalized_bounds(SlideTextMode::audience, QSize{1024, 576});
+
+    REQUIRE(std::abs(cue_card.first - audience_hd.first) < 0.04);
+    REQUIRE(std::abs(cue_card.second - audience_hd.second) < 0.04);
+    REQUIRE(std::abs(program_preview.first - audience_hd.first) < 0.04);
+    REQUIRE(std::abs(program_preview.second - audience_hd.second) < 0.04);
+    REQUIRE(std::abs(audience_window.first - audience_hd.first) < 0.04);
+    REQUIRE(std::abs(audience_window.second - audience_hd.second) < 0.04);
 }
 
 TEST_CASE("slide previews fit multi-line lyrics inside compact cards without edge clipping") {
