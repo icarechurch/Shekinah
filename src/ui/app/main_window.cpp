@@ -39,9 +39,23 @@ namespace {
 
 class WindowResourcePools final : public application::ResourcePools {
 public:
-    void purge_non_live_caches() override {}
+    explicit WindowResourcePools(std::function<void()> purge_callback = {})
+        : purge_callback_(std::move(purge_callback)) {}
+
+    void set_purge_callback(std::function<void()> purge_callback) {
+        purge_callback_ = std::move(purge_callback);
+    }
+
+    void purge_non_live_caches() override {
+        if (purge_callback_) {
+            purge_callback_();
+        }
+    }
     void cancel_queued_work() override {}
     void release_non_active_media() override {}
+
+private:
+    std::function<void()> purge_callback_;
 };
 
 void normalize_song_cue_ids(domain::Song& song) {
@@ -129,25 +143,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         "  border-bottom: 1px solid #111215;"
         "  font-weight: 600;"
         "}"
-        "QWidget#library-dock QListWidget {"
-        "  background-color: #1c1d22;"
-        "  border: 1px solid #2a2c34;"
-        "  border-radius: 4px;"
-        "  color: #e6e8ec;"
-        "  outline: 0;"
-        "}"
-        "QWidget#library-dock QListWidget::item {"
-        "  padding: 5px 8px;"
-        "  border-bottom: 1px solid #23252c;"
-        "}"
-        "QWidget#library-dock QListWidget::item:selected {"
-        "  background-color: #0a84ff;"
-        "  color: #ffffff;"
-        "}"
-        "QWidget#library-dock QListWidget::item:hover {"
-        "  background-color: #272930;"
-        "}"
-        "QWidget#cue-grid QPushButton, QWidget#library-dock QPushButton {"
+        "QWidget#cue-grid QPushButton {"
         "  background-color: #292b32;"
         "  border: 1px solid #383b44;"
         "  border-radius: 4px;"
@@ -155,37 +151,12 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         "  padding: 5px 10px;"
         "  font-weight: 600;"
         "}"
-        "QWidget#cue-grid QPushButton:hover, QWidget#library-dock QPushButton:hover {"
+        "QWidget#cue-grid QPushButton:hover {"
         "  background-color: #343741;"
         "  border-color: #4c515e;"
         "}"
-        "QWidget#cue-grid QPushButton:pressed, QWidget#library-dock QPushButton:pressed {"
+        "QWidget#cue-grid QPushButton:pressed {"
         "  background-color: #1f2127;"
-        "}"
-        "QWidget#library-dock QLineEdit {"
-        "  background-color: #16171b;"
-        "  border: 1px solid #30333c;"
-        "  border-radius: 4px;"
-        "  color: #e6e8ec;"
-        "  padding: 4px 8px;"
-        "}"
-        "QWidget#library-dock QLineEdit:focus {"
-        "  border-color: #0a84ff;"
-        "}"
-        "QWidget#library-dock QTabWidget::pane {"
-        "  border: 1px solid #2a2c34;"
-        "  background-color: #1c1d22;"
-        "}"
-        "QWidget#library-dock QTabBar::tab {"
-        "  background-color: #25272e;"
-        "  color: #a9aeb8;"
-        "  border: 1px solid #16171b;"
-        "  padding: 5px 14px;"
-        "  font-weight: 600;"
-        "}"
-        "QWidget#library-dock QTabBar::tab:selected {"
-        "  background-color: #0a84ff;"
-        "  color: #ffffff;"
         "}"
         "QScrollBar:vertical {"
         "  background: #17181c;"
@@ -217,6 +188,11 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     setCentralWidget(operator_page_);
     configure_operator();
     library_dock_ = new LibraryDockWidget{this};
+    static_cast<WindowResourcePools*>(resource_pools_.get())->set_purge_callback([this] {
+        if (library_dock_ != nullptr) {
+            library_dock_->purge_non_live_caches();
+        }
+    });
     addDockWidget(Qt::BottomDockWidgetArea, library_dock_);
 
     auto* window_menu = menuBar()->addMenu(QStringLiteral("Window"));

@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QListWidget>
 #include <QPushButton>
+#include <QTest>
 
 #include "shekinah/ui/library_dock_widget.hpp"
 
@@ -90,4 +91,36 @@ TEST_CASE("library exposes an Edit Sermon boundary") {
     edit->click();
 
     REQUIRE(edited == shekinah::domain::SermonId{"sermon-a"});
+}
+
+TEST_CASE("library edit buttons disable without selection and quick-add card action adds content") {
+    ensure_qapplication();
+    shekinah::ui::LibraryDockWidget dock;
+    dock.resize(1200, 220);
+    dock.show();
+
+    auto* edit_song = dock.findChild<QPushButton*>(QStringLiteral("edit-song"));
+    auto* edit_sermon = dock.findChild<QPushButton*>(QStringLiteral("edit-sermon"));
+    REQUIRE(edit_song != nullptr);
+    REQUIRE(edit_sermon != nullptr);
+    REQUIRE_FALSE(edit_song->isEnabled());
+    REQUIRE_FALSE(edit_sermon->isEnabled());
+
+    dock.add_song(shekinah::domain::Song{
+        shekinah::domain::SongId{"song-a"}, "Goodness", std::nullopt, {}});
+    dock.show_songs();
+    QTest::qWait(20);
+
+    auto* songs = dock.findChild<QListWidget*>(QStringLiteral("songs-list"));
+    REQUIRE(songs != nullptr);
+    songs->setCurrentRow(0);
+    REQUIRE(edit_song->isEnabled());
+
+    shekinah::domain::ContentRef added = shekinah::domain::ContentRef::sermon("unset");
+    dock.set_add_content_handler([&](shekinah::domain::ContentRef content) { added = std::move(content); });
+    const QRect card = songs->visualItemRect(songs->item(0)).adjusted(3, 3, -3, -3);
+    const QPoint add_pill_center{card.right() - 28, card.center().y()};
+    QTest::mouseClick(songs->viewport(), Qt::LeftButton, Qt::NoModifier, add_pill_center);
+
+    REQUIRE(added == shekinah::domain::ContentRef::song("song-a"));
 }

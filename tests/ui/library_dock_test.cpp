@@ -3,9 +3,12 @@
 #include <QApplication>
 #include <QAbstractItemView>
 #include <QImage>
+#include <QLabel>
 #include <QListView>
 #include <QMimeData>
 #include <QListWidget>
+#include <QPushButton>
+#include <QTest>
 
 #include "test_project.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
@@ -175,4 +178,78 @@ TEST_CASE("library creates bounded thumbnails for image assets") {
     REQUIRE(thumbnail_size.height() <= 94);
     REQUIRE(thumbnail_size.width() >= 160);
     REQUIRE(thumbnail_size.height() >= 90);
+}
+
+TEST_CASE("library segmented tabs, counts, and empty state track active content") {
+    ensure_qapplication();
+    LibraryDockWidget dock;
+    dock.resize(1200, 220);
+    dock.show();
+    QTest::qWait(20);
+
+    auto* total_badge = dock.findChild<QLabel*>(QStringLiteral("library-total-count"));
+    auto* assets_tab = dock.findChild<QPushButton*>(QStringLiteral("library-tab-assets"));
+    auto* songs_tab = dock.findChild<QPushButton*>(QStringLiteral("library-tab-songs"));
+    auto* sermons_tab = dock.findChild<QPushButton*>(QStringLiteral("library-tab-sermons"));
+    auto* empty_overlay = dock.findChild<QWidget*>(QStringLiteral("library-empty-state"));
+    REQUIRE(total_badge != nullptr);
+    REQUIRE(assets_tab != nullptr);
+    REQUIRE(songs_tab != nullptr);
+    REQUIRE(sermons_tab != nullptr);
+    REQUIRE(empty_overlay != nullptr);
+
+    REQUIRE(total_badge->text() == QStringLiteral("0 ITEMS"));
+    REQUIRE(assets_tab->text() == QStringLiteral("Assets (0)"));
+    REQUIRE(empty_overlay->isVisible());
+
+    dock.add_asset(AssetRecord{AssetId{"a-1"}, AssetKind::video, "h1", "media/loop.mp4", 2048});
+    dock.add_song(Song{SongId{"s-1"}, "Goodness", std::nullopt, {Slide{CueId{"c1"}, "Verse", {"Line"}, std::nullopt}}});
+    dock.add_sermon(SermonDeck{SermonId{"d-1"}, "Sunday", {}});
+    QTest::qWait(20);
+
+    REQUIRE(total_badge->text() == QStringLiteral("3 ITEMS"));
+    REQUIRE(assets_tab->text() == QStringLiteral("Assets (1)"));
+    REQUIRE(songs_tab->text() == QStringLiteral("Songs (1)"));
+    REQUIRE(sermons_tab->text() == QStringLiteral("Sermons (1)"));
+    REQUIRE_FALSE(empty_overlay->isVisible());
+
+    songs_tab->click();
+    REQUIRE(dock.current_tab() == LibraryTab::songs);
+    REQUIRE_FALSE(empty_overlay->isVisible());
+
+    sermons_tab->click();
+    REQUIRE(dock.current_tab() == LibraryTab::sermons);
+    REQUIRE_FALSE(empty_overlay->isVisible());
+
+    dock.clear_contents();
+    REQUIRE(total_badge->text() == QStringLiteral("0 ITEMS"));
+    REQUIRE(empty_overlay->isVisible());
+}
+
+TEST_CASE("library caches bounded thumbnails across refreshes and frees them on purge") {
+    ensure_qapplication();
+    const auto project = TestProject::create();
+    const auto media_directory = project.root() / "media";
+    std::filesystem::create_directories(media_directory);
+    const auto image_path = media_directory / "bg.png";
+    QImage image{1920, 1080, QImage::Format_ARGB32};
+    image.fill(Qt::darkBlue);
+    REQUIRE(image.save(QString::fromStdString(image_path.string()), "PNG"));
+
+    LibraryDockWidget dock;
+    dock.set_asset_root(project.root());
+    const AssetRecord record{AssetId{"asset-bg"}, AssetKind::image, "hash-bg", "media/bg.png", 1024};
+    dock.add_asset(record);
+    REQUIRE(dock.cached_thumbnail_count() == 1);
+
+    dock.clear_contents();
+    REQUIRE(dock.cached_thumbnail_count() == 1);
+
+    dock.add_asset(record);
+    auto* list = dock.findChild<QListWidget*>(QStringLiteral("assets-list"));
+    REQUIRE(list != nullptr);
+    REQUIRE_FALSE(list->item(0)->icon().isNull());
+
+    dock.purge_non_live_caches();
+    REQUIRE(dock.cached_thumbnail_count() == 0);
 }
