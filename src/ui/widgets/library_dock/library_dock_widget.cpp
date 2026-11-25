@@ -3,6 +3,7 @@
 #include "shekinah/ui/support/content_drag.hpp"
 #include "shekinah/ui/support/elided_label.hpp"
 #include "shekinah/ui/support/flow_layout.hpp"
+#include "shekinah/ui/support/theme.hpp"
 
 #include <QAbstractItemView>
 #include <QAction>
@@ -217,12 +218,13 @@ public:
         const QString title = index.data(Qt::DisplayRole).toString();
         const QIcon icon = qvariant_cast<QIcon>(index.data(Qt::DecorationRole));
 
-        const QColor card_bg = selected ? QColor{QStringLiteral("#1b314b")}
-                               : hovered ? QColor{QStringLiteral("#262932")}
-                                         : QColor{QStringLiteral("#202229")};
-        const QColor card_border = selected ? QColor{QStringLiteral("#0a84ff")}
-                                   : hovered ? QColor{QStringLiteral("#464b58")}
-                                             : QColor{QStringLiteral("#2c2f38")};
+        const auto& p = ThemeManager::instance().palette();
+        const QColor card_bg = selected ? p.card_selected_bg
+                               : hovered ? p.card_hover_bg
+                                         : p.card_bg;
+        const QColor card_border = selected ? p.accent
+                                   : hovered ? p.border_hover
+                                             : p.border_card;
         painter->setBrush(card_bg);
         painter->setPen(QPen{card_border, selected ? 1.5 : 1.0});
         painter->drawRoundedRect(card, 6.0, 6.0);
@@ -239,7 +241,7 @@ public:
         QPainterPath clip_path;
         clip_path.addRoundedRect(thumb_well, 4.0, 4.0);
         painter->setClipPath(clip_path);
-        painter->fillRect(thumb_well, QColor{QStringLiteral("#111216")});
+        painter->fillRect(thumb_well, p.thumb_well_bg);
 
         if (!icon.isNull()) {
             const QPixmap pixmap = icon.pixmap(thumb_well.size());
@@ -256,7 +258,7 @@ public:
         } else {
             const QColor placeholder_fg = kind == domain::AssetKind::video
                                               ? QColor{QStringLiteral("#a78bfa")}
-                                              : QColor{QStringLiteral("#4c5261")};
+                                              : p.icon_empty;
             const QRect glyph_rect{
                 thumb_well.center().x() - 14,
                 thumb_well.center().y() - 14,
@@ -273,15 +275,14 @@ public:
         // Top-left media kind badge
         const bool is_video = (kind == domain::AssetKind::video);
         const QRect kind_pill{thumb_well.left() + 5, thumb_well.top() + 5, 28, 15};
-        painter->setPen(QPen{is_video ? QColor{167, 139, 250, 110} : QColor{52, 211, 153, 110}, 1.0});
-        painter->setBrush(is_video ? QColor{28, 20, 44, 210} : QColor{10, 28, 22, 210});
+        painter->setPen(QPen{is_video ? p.video_badge_border : p.image_badge_border, 1.0});
+        painter->setBrush(is_video ? p.video_badge_bg : p.image_badge_bg);
         painter->drawRoundedRect(kind_pill, 3.0, 3.0);
         QFont pill_font = option.font;
         pill_font.setPixelSize(8);
         pill_font.setBold(true);
         painter->setFont(pill_font);
-        painter->setPen(is_video ? QColor{QStringLiteral("#c4b5fd")}
-                                 : QColor{QStringLiteral("#6ee7b7")});
+        painter->setPen(is_video ? p.video_badge_fg : p.image_badge_fg);
         painter->drawText(kind_pill, Qt::AlignCenter, is_video ? QStringLiteral("VID") : QStringLiteral("IMG"));
 
         // Top-right size pill
@@ -291,16 +292,16 @@ public:
             const int pill_width = std::clamp(pill_fm.horizontalAdvance(size_text) + 10, 34, 58);
             const QRect size_pill{
                 thumb_well.right() - pill_width - 5, thumb_well.top() + 5, pill_width, 15};
-            painter->setPen(QPen{QColor{60, 65, 78, 150}, 1.0});
-            painter->setBrush(QColor{15, 16, 20, 200});
+            painter->setPen(QPen{p.size_pill_border, 1.0});
+            painter->setBrush(p.size_pill_bg);
             painter->drawRoundedRect(size_pill, 3.0, 3.0);
-            painter->setPen(QColor{QStringLiteral("#cbd0da")});
+            painter->setPen(p.size_pill_fg);
             painter->drawText(size_pill, Qt::AlignCenter, size_text);
         }
         painter->restore();
 
         // Thin thumbnail border
-        painter->setPen(QPen{QColor{QStringLiteral("#292c36")}, 1.0});
+        painter->setPen(QPen{p.thumb_well_border, 1.0});
         painter->setBrush(Qt::NoBrush);
         painter->drawRoundedRect(thumb_well, 4.0, 4.0);
 
@@ -309,8 +310,7 @@ public:
         label_font.setPixelSize(11);
         label_font.setWeight(selected ? QFont::DemiBold : QFont::Medium);
         painter->setFont(label_font);
-        painter->setPen(selected ? QColor{QStringLiteral("#ffffff")}
-                                 : QColor{QStringLiteral("#dfe2e8")});
+        painter->setPen(selected ? p.text_selected : p.text_primary);
         const QRect text_rect{card.left() + 6, thumb_well.bottom() + 4, card.width() - 12, 18};
         const QFontMetrics fm{label_font};
         painter->drawText(text_rect,
@@ -343,12 +343,13 @@ public:
         const bool has_bg = index.data(kHasBgRole).toBool();
         const QString title = index.data(Qt::DisplayRole).toString();
 
-        const QColor card_bg = selected ? QColor{QStringLiteral("#1b314b")}
-                               : hovered ? QColor{QStringLiteral("#262932")}
-                                         : QColor{QStringLiteral("#202229")};
-        const QColor card_border = selected ? QColor{QStringLiteral("#0a84ff")}
-                                   : hovered ? QColor{QStringLiteral("#464b58")}
-                                             : QColor{QStringLiteral("#2c2f38")};
+        const auto& p = ThemeManager::instance().palette();
+        const QColor card_bg = selected ? p.card_selected_bg
+                               : hovered ? p.card_hover_bg
+                                         : p.card_bg;
+        const QColor card_border = selected ? p.accent
+                                   : hovered ? p.border_hover
+                                             : p.border_card;
         painter->setBrush(card_bg);
         painter->setPen(QPen{card_border, selected ? 1.5 : 1.0});
         painter->drawRoundedRect(card, 6.0, 6.0);
@@ -360,10 +361,9 @@ public:
             28.0,
             28.0,
         };
-        const QColor badge_fill = is_song ? QColor{14, 165, 233, 34} : QColor{245, 158, 11, 34};
-        const QColor badge_stroke = is_song ? QColor{56, 189, 248, 75} : QColor{251, 191, 36, 75};
-        const QColor badge_fg = is_song ? QColor{QStringLiteral("#38bdf8")}
-                                        : QColor{QStringLiteral("#fbbf24")};
+        const QColor badge_fill = is_song ? p.song_badge_bg : p.sermon_badge_bg;
+        const QColor badge_stroke = is_song ? p.song_badge_border : p.sermon_badge_border;
+        const QColor badge_fg = is_song ? p.song_badge_fg : p.sermon_badge_fg;
         painter->setPen(QPen{badge_stroke, 1.0});
         painter->setBrush(badge_fill);
         painter->drawRoundedRect(badge_rect, 5.0, 5.0);
@@ -372,15 +372,14 @@ public:
         int right_reserved = 10;
         if (hovered || selected) {
             const QRect add_pill = quick_add_rect_for_card(card);
-            painter->setPen(QPen{selected ? QColor{101, 214, 255, 130} : QColor{76, 82, 98, 180}, 1.0});
-            painter->setBrush(selected ? QColor{10, 132, 255, 65} : QColor{45, 49, 60, 210});
+            painter->setPen(QPen{selected ? p.add_pill_selected_border : p.add_pill_border, 1.0});
+            painter->setBrush(selected ? p.add_pill_selected_bg : p.add_pill_bg);
             painter->drawRoundedRect(add_pill, 4.0, 4.0);
             QFont pill_font = option.font;
             pill_font.setPixelSize(9);
             pill_font.setBold(true);
             painter->setFont(pill_font);
-            painter->setPen(selected ? QColor{QStringLiteral("#dff0ff")}
-                                     : QColor{QStringLiteral("#cfd4de")});
+            painter->setPen(selected ? p.add_pill_selected_fg : p.add_pill_fg);
             painter->drawText(add_pill, Qt::AlignCenter, QStringLiteral("+ Add"));
             right_reserved = 56;
         }
@@ -392,8 +391,7 @@ public:
         title_font.setPixelSize(12);
         title_font.setWeight(selected ? QFont::DemiBold : QFont::Medium);
         painter->setFont(title_font);
-        painter->setPen(selected ? QColor{QStringLiteral("#ffffff")}
-                                 : QColor{QStringLiteral("#e6e8ec")});
+        painter->setPen(selected ? p.text_selected : p.text_primary);
         const QFontMetrics title_fm{title_font};
         const QRect title_rect{text_left, card.top() + 7, text_width, 16};
         painter->drawText(title_rect,
@@ -411,8 +409,7 @@ public:
         QFont sub_font = option.font;
         sub_font.setPixelSize(10);
         painter->setFont(sub_font);
-        painter->setPen(selected ? QColor{QStringLiteral("#a7c7f5")}
-                                 : QColor{QStringLiteral("#868b96")});
+        painter->setPen(selected ? p.text_selected_sub : p.text_muted);
         const QFontMetrics sub_fm{sub_font};
         const QRect sub_rect{text_left, card.top() + 24, text_width, 15};
         painter->drawText(sub_rect,
@@ -521,103 +518,6 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
     setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable |
                 QDockWidget::DockWidgetClosable);
 
-    setStyleSheet(QStringLiteral(
-        "#library-dock {"
-        "  background-color: #18191d;"
-        "  color: #e6e8ec;"
-        "}"
-        "#library-dock-header {"
-        "  background-color: #191a1e;"
-        "  border-top: 1px solid #111215;"
-        "  border-bottom: 1px solid #111215;"
-        "}"
-        "#library-toolbar {"
-        "  background-color: #202228;"
-        "  border-bottom: 1px solid #131417;"
-        "}"
-        "#library-tabs, #asset-filter-bar {"
-        "  background-color: #15161a;"
-        "  border: 1px solid #2b2e37;"
-        "  border-radius: 4px;"
-        "}"
-        "#library-tabs QPushButton, #asset-filter-bar QPushButton {"
-        "  background: transparent;"
-        "  border: none;"
-        "  border-radius: 3px;"
-        "  color: #9ea3ae;"
-        "  font-size: 11px;"
-        "  font-weight: 600;"
-        "  padding: 2px 9px;"
-        "}"
-        "#library-tabs QPushButton:hover, #asset-filter-bar QPushButton:hover {"
-        "  background-color: #25272f;"
-        "  color: #e6e8ec;"
-        "}"
-        "#library-tabs QPushButton:checked {"
-        "  background-color: #0a84ff;"
-        "  color: #ffffff;"
-        "}"
-        "#asset-filter-bar QPushButton:checked {"
-        "  background-color: #2f333e;"
-        "  color: #ffffff;"
-        "}"
-        "#library-dock QLineEdit#library-search {"
-        "  background-color: #15161a;"
-        "  border: 1px solid #2c2f38;"
-        "  border-radius: 4px;"
-        "  color: #e6e8ec;"
-        "  font-size: 11px;"
-        "  padding: 3px 8px;"
-        "}"
-        "#library-dock QLineEdit#library-search:focus {"
-        "  border-color: #0a84ff;"
-        "}"
-        "#library-dock QPushButton[libAction=\"true\"] {"
-        "  background-color: #272930;"
-        "  border: 1px solid #353842;"
-        "  border-radius: 4px;"
-        "  color: #dfe2e7;"
-        "  font-size: 11px;"
-        "  font-weight: 600;"
-        "  padding: 3px 8px;"
-        "}"
-        "#library-dock QPushButton[libAction=\"true\"]:hover {"
-        "  background-color: #32353f;"
-        "  border-color: #4b4f5c;"
-        "}"
-        "#library-dock QPushButton[libAction=\"true\"]:pressed {"
-        "  background-color: #1d1f25;"
-        "}"
-        "#library-dock QPushButton[libAction=\"true\"]:disabled {"
-        "  background-color: #1f2026;"
-        "  border-color: #272930;"
-        "  color: #555965;"
-        "}"
-        "#library-dock QPushButton[libAction=\"true\"][primaryAction=\"true\"] {"
-        "  background-color: #0a84ff;"
-        "  border-color: #2693ff;"
-        "  color: #ffffff;"
-        "}"
-        "#library-dock QPushButton[libAction=\"true\"][primaryAction=\"true\"]:hover {"
-        "  background-color: #2291ff;"
-        "  border-color: #4ca6ff;"
-        "}"
-        "#library-dock QPushButton[libAction=\"true\"][primaryAction=\"true\"]:pressed {"
-        "  background-color: #066fd9;"
-        "}"
-        "#library-dock QListWidget {"
-        "  background-color: #18191e;"
-        "  border: none;"
-        "  color: #e6e8ec;"
-        "  outline: 0;"
-        "  padding: 6px;"
-        "}"
-        "#library-dock QListWidget::item {"
-        "  background: transparent;"
-        "  border: none;"
-        "  padding: 0px;"
-        "}"));
-
     // 1. Sleek custom dock title bar (keeps dock draggable and floatable)
     auto* title_bar = new QWidget{this};
     title_bar->setObjectName(QStringLiteral("library-dock-header"));
@@ -627,24 +527,20 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
     title_layout->setSpacing(6);
 
     auto* title_label = new QLabel{QStringLiteral("LIBRARY"), title_bar};
-    title_label->setStyleSheet(QStringLiteral(
-        "color: #8e929b; font-size: 10px; font-weight: 700; letter-spacing: 1.1px; border: none;"));
+    title_label->setObjectName(QStringLiteral("library-dock-title"));
     title_layout->addWidget(title_label);
 
     header_count_badge_ = new QLabel{QStringLiteral("0 ITEMS"), title_bar};
     header_count_badge_->setObjectName(QStringLiteral("library-total-count"));
     header_count_badge_->setFixedHeight(18);
     header_count_badge_->setAlignment(Qt::AlignCenter);
-    header_count_badge_->setStyleSheet(QStringLiteral(
-        "background-color: #25272e; color: #9ea3ae; border: 1px solid #30333d; "
-        "border-radius: 3px; padding: 0px 6px; font-size: 9px; font-weight: 700;"));
     title_layout->addWidget(header_count_badge_, 0, Qt::AlignVCenter);
 
     auto* hint_label = new ElidedLabel{
         QStringLiteral("Drag Assets to Slides/Orders  ·  Double-click Song/Sermon to add"),
         title_bar};
+    hint_label->setObjectName(QStringLiteral("library-dock-hint"));
     hint_label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    hint_label->setStyleSheet(QStringLiteral("color: #6b707c; font-size: 10px; border: none;"));
     title_layout->addWidget(hint_label, 1);
 
     float_toggle_button_ = new QPushButton{title_bar};
@@ -652,12 +548,7 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
     float_toggle_button_->setFixedSize(20, 20);
     float_toggle_button_->setCursor(Qt::PointingHandCursor);
     float_toggle_button_->setToolTip(QStringLiteral("Float or Dock Library"));
-    float_toggle_button_->setIcon(
-        make_library_icon(LibraryGlyph::float_dock, QColor{QStringLiteral("#9ea3ae")}, 12));
     float_toggle_button_->setIconSize(QSize{12, 12});
-    float_toggle_button_->setStyleSheet(QStringLiteral(
-        "QPushButton { background: transparent; border: none; border-radius: 3px; }"
-        "QPushButton:hover { background-color: #2d3039; }"));
     QObject::connect(float_toggle_button_, &QPushButton::clicked, this, [this] {
         setFloating(!isFloating());
     });
@@ -730,8 +621,8 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
     search_->setFixedHeight(26);
     search_->setMinimumWidth(140);
     search_->setMaximumWidth(230);
-    search_->addAction(
-        make_library_icon(LibraryGlyph::search, QColor{QStringLiteral("#7b808c")}, 12),
+    search_action_ = search_->addAction(
+        make_library_icon(LibraryGlyph::search, ThemeManager::instance().palette().icon_muted, 12),
         QLineEdit::LeadingPosition);
     toolbar_layout->addWidget(search_);
 
@@ -1059,7 +950,6 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
     empty_overlay_ = new QWidget{stack_};
     empty_overlay_->setObjectName(QStringLiteral("library-empty-state"));
     empty_overlay_->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-    empty_overlay_->setStyleSheet(QStringLiteral("background: transparent;"));
     auto* empty_layout = new QVBoxLayout(empty_overlay_);
     empty_layout->setContentsMargins(24, 12, 24, 12);
     empty_layout->setSpacing(4);
@@ -1070,15 +960,14 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
     empty_layout->addWidget(empty_icon_label_);
 
     empty_title_label_ = new QLabel{empty_overlay_};
+    empty_title_label_->setObjectName(QStringLiteral("library-empty-title"));
     empty_title_label_->setAlignment(Qt::AlignCenter);
-    empty_title_label_->setStyleSheet(
-        QStringLiteral("color: #c5c9d2; font-size: 12px; font-weight: 600;"));
     empty_layout->addWidget(empty_title_label_);
 
     empty_hint_label_ = new QLabel{empty_overlay_};
+    empty_hint_label_->setObjectName(QStringLiteral("library-empty-hint"));
     empty_hint_label_->setAlignment(Qt::AlignCenter);
     empty_hint_label_->setWordWrap(true);
-    empty_hint_label_->setStyleSheet(QStringLiteral("color: #777c87; font-size: 11px;"));
     empty_layout->addWidget(empty_hint_label_);
     empty_layout->addStretch(1);
 
@@ -1095,6 +984,9 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
 
     set_tab(LibraryTab::assets, 0);
     update_tab_and_header_state();
+    apply_theme();
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) { apply_theme(); });
 }
 
 void LibraryDockWidget::show_assets() { set_tab(LibraryTab::assets, 0); }
@@ -1378,6 +1270,39 @@ void LibraryDockWidget::update_action_states() {
     refresh_widget_polish(import_asset_button_);
     refresh_widget_polish(new_song_button_);
     refresh_widget_polish(new_sermon_button_);
+
+    const auto& p = ThemeManager::instance().palette();
+    assets_tab_button_->setIcon(make_library_icon(
+        LibraryGlyph::assets_tab,
+        current_tab_ == LibraryTab::assets ? p.tab_active_fg : p.icon_neutral,
+        12));
+    songs_tab_button_->setIcon(make_library_icon(
+        LibraryGlyph::songs_tab,
+        current_tab_ == LibraryTab::songs ? p.tab_active_fg : p.icon_neutral,
+        12));
+    sermons_tab_button_->setIcon(make_library_icon(
+        LibraryGlyph::sermons_tab,
+        current_tab_ == LibraryTab::sermons ? p.tab_active_fg : p.icon_neutral,
+        12));
+
+    import_asset_button_->setIcon(make_library_icon(
+        LibraryGlyph::import_doc,
+        current_tab_ == LibraryTab::assets ? p.text_on_accent : p.icon_neutral,
+        12));
+    new_song_button_->setIcon(make_library_icon(
+        LibraryGlyph::plus,
+        current_tab_ == LibraryTab::songs ? p.text_on_accent : p.icon_neutral,
+        12));
+    import_song_button_->setIcon(make_library_icon(LibraryGlyph::import_doc, p.icon_neutral, 12));
+    edit_song_button_->setIcon(make_library_icon(
+        LibraryGlyph::edit, has_song_selected ? p.icon_neutral : p.text_disabled, 12));
+    new_sermon_button_->setIcon(make_library_icon(
+        LibraryGlyph::plus,
+        current_tab_ == LibraryTab::sermons ? p.text_on_accent : p.icon_neutral,
+        12));
+    import_sermon_button_->setIcon(make_library_icon(LibraryGlyph::import_doc, p.icon_neutral, 12));
+    edit_sermon_button_->setIcon(make_library_icon(
+        LibraryGlyph::edit, has_sermon_selected ? p.icon_neutral : p.text_disabled, 12));
 }
 
 void LibraryDockWidget::update_empty_state() {
@@ -1427,12 +1352,211 @@ void LibraryDockWidget::update_empty_state() {
     }
 
     empty_icon_label_->setPixmap(
-        make_library_icon(glyph, QColor{QStringLiteral("#4f5460")}, 26).pixmap(26, 26));
+        make_library_icon(glyph, ThemeManager::instance().palette().icon_empty, 26).pixmap(26, 26));
     empty_title_label_->setText(title);
     empty_hint_label_->setText(hint);
     layout_empty_overlay();
     empty_overlay_->setVisible(true);
     empty_overlay_->raise();
+}
+
+void LibraryDockWidget::apply_theme() {
+    const auto& p = ThemeManager::instance().palette();
+    setStyleSheet(
+        QStringLiteral(
+            "#library-dock {"
+            "  background-color: %1;"
+            "  color: %2;"
+            "}"
+            "#library-dock-header {"
+            "  background-color: %3;"
+            "  border-top: 1px solid %4;"
+            "  border-bottom: 1px solid %4;"
+            "}"
+            "#library-dock-title {"
+            "  color: %5;"
+            "  font-size: 10px;"
+            "  font-weight: 700;"
+            "  letter-spacing: 1.1px;"
+            "  border: none;"
+            "  background: transparent;"
+            "}"
+            "#library-total-count {"
+            "  background-color: %6;"
+            "  color: %7;"
+            "  border: 1px solid %8;"
+            "  border-radius: 3px;"
+            "  padding: 0px 6px;"
+            "  font-size: 9px;"
+            "  font-weight: 700;"
+            "}"
+            "#library-dock-hint {"
+            "  color: %9;"
+            "  font-size: 10px;"
+            "  border: none;"
+            "  background: transparent;"
+            "}"
+            "#library-float-toggle {"
+            "  background: transparent;"
+            "  border: none;"
+            "  border-radius: 3px;"
+            "}"
+            "#library-float-toggle:hover {"
+            "  background-color: %10;"
+            "}"
+            "#library-toolbar {"
+            "  background-color: %11;"
+            "  border-bottom: 1px solid %12;"
+            "}"
+            "#library-tabs, #asset-filter-bar {"
+            "  background-color: %13;"
+            "  border: 1px solid %14;"
+            "  border-radius: 4px;"
+            "}"
+            "#library-tabs QPushButton, #asset-filter-bar QPushButton {"
+            "  background: transparent;"
+            "  border: none;"
+            "  border-radius: 3px;"
+            "  color: %5;"
+            "  font-size: 11px;"
+            "  font-weight: 600;"
+            "  padding: 2px 9px;"
+            "}"
+            "#library-tabs QPushButton:hover, #asset-filter-bar QPushButton:hover {"
+            "  background-color: %15;"
+            "  color: %2;"
+            "}"
+            "#library-tabs QPushButton:checked {"
+            "  background-color: %16;"
+            "  color: %17;"
+            "}"
+            "#asset-filter-bar QPushButton:checked {"
+            "  background-color: %18;"
+            "  color: %19;"
+            "}"
+            "#library-dock QLineEdit#library-search {"
+            "  background-color: %13;"
+            "  border: 1px solid %14;"
+            "  border-radius: 4px;"
+            "  color: %2;"
+            "  font-size: 11px;"
+            "  padding: 3px 8px;"
+            "}"
+            "#library-dock QLineEdit#library-search:focus {"
+            "  border-color: %16;"
+            "}"
+            "#library-dock QPushButton[libAction=\"true\"] {"
+            "  background-color: %20;"
+            "  border: 1px solid %21;"
+            "  border-radius: 4px;"
+            "  color: %22;"
+            "  font-size: 11px;"
+            "  font-weight: 600;"
+            "  padding: 3px 8px;"
+            "}"
+            "#library-dock QPushButton[libAction=\"true\"]:hover {"
+            "  background-color: %23;"
+            "  border-color: %24;"
+            "}"
+            "#library-dock QPushButton[libAction=\"true\"]:pressed {"
+            "  background-color: %25;"
+            "}"
+            "#library-dock QPushButton[libAction=\"true\"]:disabled {"
+            "  background-color: %26;"
+            "  border-color: %27;"
+            "  color: %28;"
+            "}"
+            "#library-dock QPushButton[libAction=\"true\"][primaryAction=\"true\"] {"
+            "  background-color: %16;"
+            "  border-color: %29;"
+            "  color: %17;"
+            "}"
+            "#library-dock QPushButton[libAction=\"true\"][primaryAction=\"true\"]:hover {"
+            "  background-color: %30;"
+            "  border-color: %31;"
+            "}"
+            "#library-dock QPushButton[libAction=\"true\"][primaryAction=\"true\"]:pressed {"
+            "  background-color: %32;"
+            "}"
+            "#library-dock QListWidget {"
+            "  background-color: %1;"
+            "  border: none;"
+            "  color: %2;"
+            "  outline: 0;"
+            "  padding: 6px;"
+            "}"
+            "#library-dock QListWidget::item {"
+            "  background: transparent;"
+            "  border: none;"
+            "  padding: 0px;"
+            "}"
+            "#library-empty-state { background: transparent; }"
+            "#library-empty-title {"
+            "  color: %22;"
+            "  font-size: 12px;"
+            "  font-weight: 600;"
+            "  background: transparent;"
+            "}"
+            "#library-empty-hint {"
+            "  color: %9;"
+            "  font-size: 11px;"
+            "  background: transparent;"
+            "}")
+            .arg(p.window_bg.name(),               // %1
+                 p.text_primary.name(),           // %2
+                 p.header_bg.name(),              // %3
+                 p.border_strong.name(),          // %4
+                 p.text_muted.name(),             // %5
+                 p.badge_bg.name(),               // %6
+                 p.badge_fg.name(),               // %7
+                 p.badge_border.name(),           // %8
+                 p.text_subtle.name(),            // %9
+                 p.menu_hover_bg.name(),          // %10
+                 p.toolbar_bg.name(),             // %11
+                 p.border_mid.name(),             // %12
+                 p.input_bg.name(),               // %13
+                 p.border_subtle.name(),          // %14
+                 p.list_hover_bg.name(),          // %15
+                 p.accent.name(),                 // %16
+                 p.text_on_accent.name(),         // %17
+                 p.button_hover_bg.name(),        // %18
+                 p.text_primary.name(),           // %19
+                 p.button_alt_bg.name(),          // %20
+                 p.button_alt_border.name(),      // %21
+                 p.text_secondary.name(),         // %22
+                 p.button_hover_bg.name(),        // %23
+                 p.button_hover_border.name(),    // %24
+                 p.button_pressed_bg.name(),      // %25
+                 p.button_disabled_bg.name(),     // %26
+                 p.button_disabled_border.name(), // %27
+                 p.text_disabled.name(),          // %28
+                 p.accent_border.name(),          // %29
+                 p.accent_hover.name(),           // %30
+                 p.accent_hover_border.name(),    // %31
+                 p.accent_pressed.name()));       // %32
+
+    shared_video_icon_ = make_library_icon(
+        LibraryGlyph::video_media, QColor{QStringLiteral("#a78bfa")}, 32);
+    for (int i = 0; i < assets_->count(); ++i) {
+        auto* item = assets_->item(i);
+        if (item != nullptr &&
+            static_cast<domain::AssetKind>(item->data(kAssetKindRole).toInt()) ==
+                domain::AssetKind::video) {
+            item->setIcon(shared_video_icon_);
+        }
+    }
+    if (float_toggle_button_ != nullptr) {
+        float_toggle_button_->setIcon(
+            make_library_icon(LibraryGlyph::float_dock, p.icon_muted, 12));
+    }
+    if (search_action_ != nullptr) {
+        search_action_->setIcon(make_library_icon(LibraryGlyph::search, p.icon_muted, 12));
+    }
+    update_action_states();
+    update_empty_state();
+    assets_->viewport()->update();
+    songs_->viewport()->update();
+    sermons_->viewport()->update();
 }
 
 void LibraryDockWidget::layout_empty_overlay() {

@@ -1,5 +1,7 @@
 #include "shekinah/ui/sermon_editor_dialog.hpp"
 
+#include "shekinah/ui/support/theme.hpp"
+
 #include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -56,6 +58,16 @@ SermonEditorDialog::SermonEditorDialog(QWidget* parent) : QDialog(parent) {
                      &QDialog::reject);
     layout->addWidget(buttons);
     resize(680, 520);
+
+    apply_theme();
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) { apply_theme(); });
+}
+
+void SermonEditorDialog::apply_theme() {
+    const auto& p = ThemeManager::instance().palette();
+    setPalette(ThemeManager::build_qpalette(p));
+    setStyleSheet(ThemeManager::dialog_stylesheet(p));
 }
 
 void SermonEditorDialog::set_title(QString title) { title_->setText(std::move(title)); }

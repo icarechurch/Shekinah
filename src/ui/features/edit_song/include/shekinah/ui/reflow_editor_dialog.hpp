@@ -27,6 +27,7 @@ public:
     [[nodiscard]] int thumbnail_count() const noexcept;
 
 private:
+    void apply_theme();
     void refresh_thumbnails();
 
     domain::SongId song_id_;

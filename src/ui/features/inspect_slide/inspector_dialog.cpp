@@ -1,5 +1,7 @@
 #include "shekinah/ui/inspector_dialog.hpp"
 
+#include "shekinah/ui/support/theme.hpp"
+
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QLabel>
@@ -47,6 +49,16 @@ InspectorDialog::InspectorDialog(QWidget* parent) : QDialog(parent) {
                      &QDialog::hide);
     layout->addWidget(buttons);
     resize(420, 360);
+
+    apply_theme();
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) { apply_theme(); });
+}
+
+void InspectorDialog::apply_theme() {
+    const auto& p = ThemeManager::instance().palette();
+    setPalette(ThemeManager::build_qpalette(p));
+    setStyleSheet(ThemeManager::dialog_stylesheet(p));
 }
 
 void InspectorDialog::show_inspector(domain::ContentRef content, domain::CueId cue) {

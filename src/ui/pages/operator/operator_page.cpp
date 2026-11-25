@@ -5,6 +5,7 @@
 #include "shekinah/ui/program_status_widget.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 #include "shekinah/ui/support/elided_label.hpp"
+#include "shekinah/ui/support/theme.hpp"
 
 #include <QAction>
 #include <QHBoxLayout>
@@ -38,22 +39,17 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     auto* presentation_header = new QWidget{center_pane};
     presentation_header->setObjectName(QStringLiteral("presentation-section"));
     presentation_header->setFixedHeight(26);
-    presentation_header->setStyleSheet(QStringLiteral(
-        "#presentation-section { background-color: #191a1e; border-bottom: 1px solid #111215; }"));
     auto* presentation_header_layout = new QHBoxLayout(presentation_header);
     presentation_header_layout->setContentsMargins(10, 0, 10, 0);
     presentation_header_layout->setSpacing(8);
 
     auto* presentation_title = new QLabel{QStringLiteral("PRESENTATION"), presentation_header};
-    presentation_title->setStyleSheet(QStringLiteral(
-        "color: #8e929b; font-size: 10px; font-weight: 700; letter-spacing: 1.1px; border: none;"));
+    presentation_title->setObjectName(QStringLiteral("presentation-section-title"));
     presentation_header_layout->addWidget(presentation_title);
 
     presentation_item_label_ = new ElidedLabel{QString{}, presentation_header};
     presentation_item_label_->setObjectName(QStringLiteral("presentation-active-item"));
     presentation_item_label_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    presentation_item_label_->setStyleSheet(QStringLiteral(
-        "color: #d7dae0; font-size: 11px; font-weight: 600; border: none;"));
     presentation_item_label_->setVisible(false);
     presentation_header_layout->addWidget(presentation_item_label_, 1);
     center_layout->addWidget(presentation_header);
@@ -82,6 +78,45 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     workspace->setSizes({248, 712, 320});
     layout->addWidget(workspace, 1);
     inspector_ = new InspectorDialog{this};
+
+    apply_theme();
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) { apply_theme(); });
+}
+
+void OperatorPage::apply_theme() {
+    const auto& p = ThemeManager::instance().palette();
+    setStyleSheet(
+        QStringLiteral(
+            "#operator-page, #presentation-pane {"
+            "  background-color: %1;"
+            "  color: %2;"
+            "}"
+            "#presentation-section {"
+            "  background-color: %3;"
+            "  border-bottom: 1px solid %4;"
+            "}"
+            "#presentation-section-title {"
+            "  color: %5;"
+            "  font-size: 10px;"
+            "  font-weight: 700;"
+            "  letter-spacing: 1.1px;"
+            "  border: none;"
+            "  background: transparent;"
+            "}"
+            "#presentation-active-item {"
+            "  color: %6;"
+            "  font-size: 11px;"
+            "  font-weight: 600;"
+            "  border: none;"
+            "  background: transparent;"
+            "}")
+            .arg(p.window_bg.name(),
+                 p.text_primary.name(),
+                 p.header_bg.name(),
+                 p.border_strong.name(),
+                 p.text_muted.name(),
+                 p.text_secondary.name()));
 }
 
 void OperatorPage::set_service_order(std::vector<ServiceOrderView> items) {

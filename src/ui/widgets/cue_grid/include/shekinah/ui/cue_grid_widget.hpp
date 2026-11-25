@@ -73,6 +73,7 @@ protected:
 
 private:
     class CueCard;
+    void apply_theme();
     void rebuild_cards();
     void relayout_cards(bool force);
     void handle_left_click(const domain::CueId& cue);

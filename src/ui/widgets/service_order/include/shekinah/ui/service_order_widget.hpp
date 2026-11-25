@@ -61,6 +61,7 @@ public:
     [[nodiscard]] const std::vector<ServiceOrderView>& items() const noexcept { return items_; }
 
 private:
+    void apply_theme();
     void apply_filter();
     void update_controls_state();
     void update_empty_state();
@@ -79,6 +80,7 @@ private:
     QPushButton* remove_button_{nullptr};
     QLineEdit* filter_input_{nullptr};
     QWidget* empty_overlay_{nullptr};
+    QLabel* empty_icon_label_{nullptr};
     QLabel* empty_title_label_{nullptr};
     QLabel* empty_hint_label_{nullptr};
     std::vector<ServiceOrderView> items_;

@@ -1,6 +1,7 @@
 #include "shekinah/ui/reflow_editor_dialog.hpp"
 
 #include "shekinah/ui/reflow_text_edit.hpp"
+#include "shekinah/ui/support/theme.hpp"
 
 #include <QListWidget>
 #include <QDialogButtonBox>
@@ -56,6 +57,16 @@ ReflowEditorDialog::ReflowEditorDialog(QWidget* parent) : QDialog(parent) {
     layout->addWidget(actions);
     editor_->set_document_changed_handler([this] { refresh_thumbnails(); });
     resize(920, 600);
+
+    apply_theme();
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) { apply_theme(); });
+}
+
+void ReflowEditorDialog::apply_theme() {
+    const auto& p = ThemeManager::instance().palette();
+    setPalette(ThemeManager::build_qpalette(p));
+    setStyleSheet(ThemeManager::dialog_stylesheet(p));
 }
 
 void ReflowEditorDialog::set_text(std::string text) {

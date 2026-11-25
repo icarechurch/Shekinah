@@ -35,6 +35,7 @@ public:
     [[nodiscard]] const domain::CueId& requested_cue() const noexcept { return cue_; }
 
 private:
+    void apply_theme();
     void emit_save();
 
     domain::ContentRef content_{domain::ContentRef::song("selected")};

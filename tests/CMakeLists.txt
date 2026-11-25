@@ -54,6 +54,7 @@ add_executable(shekinah_ui_tests
     ui/reflow_editor_dialog_test.cpp
     ui/sermon_editor_dialog_test.cpp
     ui/service_order_widget_test.cpp
+    ui/theme_test.cpp
 )
 target_include_directories(shekinah_ui_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/support)
 target_link_libraries(shekinah_ui_tests PRIVATE shekinah_ui Qt6::Test Catch2::Catch2WithMain)

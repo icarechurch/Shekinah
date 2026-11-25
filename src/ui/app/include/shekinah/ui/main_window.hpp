@@ -12,6 +12,7 @@
 #include "shekinah/application/presentation_service.hpp"
 #include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
+#include "shekinah/ui/support/theme.hpp"
 
 namespace shekinah::storage {
 class ProjectStore;
@@ -27,6 +28,7 @@ namespace shekinah::media {
 class AudienceOutput;
 }
 
+class QActionGroup;
 class QTimer;
 
 namespace shekinah::ui {
@@ -53,6 +55,8 @@ public:
 
     [[nodiscard]] OperatorPage* operator_page() const noexcept { return operator_page_; }
     [[nodiscard]] LibraryDockWidget* library_dock() const noexcept { return library_dock_; }
+    void set_theme(ThemeId id);
+    [[nodiscard]] ThemeId theme() const noexcept;
 
 private:
     OperatorPage* operator_page_{nullptr};
@@ -64,9 +68,12 @@ private:
     std::unique_ptr<application::ResourcePools> resource_pools_;
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
     QTimer* resource_timer_{nullptr};
+    QActionGroup* theme_actions_{nullptr};
     int next_content_id_{1};
     application::PresentationService presentation_;
 
+    void apply_theme();
+    void sync_theme_actions();
     void configure_operator();
     void refresh_library();
     void refresh_service_order();

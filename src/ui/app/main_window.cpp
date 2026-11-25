@@ -17,6 +17,7 @@
 #include "shekinah/ui/sermon_editor_dialog.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 
+#include <QActionGroup>
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QKeySequence>
@@ -100,80 +101,6 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     setObjectName(QStringLiteral("shekinah-window"));
     setWindowTitle(QStringLiteral("Shekinah"));
     resize(1280, 720);
-    setStyleSheet(QStringLiteral(
-        "QMainWindow, QWidget#operator-page {"
-        "  background-color: #18191d;"
-        "  color: #e6e8ec;"
-        "}"
-        "QMenuBar {"
-        "  background-color: #202127;"
-        "  color: #d7dae0;"
-        "  border-bottom: 1px solid #111215;"
-        "}"
-        "QMenuBar::item {"
-        "  background: transparent;"
-        "  padding: 4px 10px;"
-        "}"
-        "QMenuBar::item:selected {"
-        "  background-color: #2d3038;"
-        "}"
-        "QMenu {"
-        "  background-color: #22242a;"
-        "  color: #e6e8ec;"
-        "  border: 1px solid #353842;"
-        "}"
-        "QMenu::item:selected {"
-        "  background-color: #0a84ff;"
-        "  color: #ffffff;"
-        "}"
-        "QSplitter::handle {"
-        "  background-color: #111215;"
-        "}"
-        "QSplitter::handle:hover {"
-        "  background-color: #0a84ff;"
-        "}"
-        "QDockWidget {"
-        "  color: #e6e8ec;"
-        "  titlebar-close-icon: none;"
-        "}"
-        "QDockWidget::title {"
-        "  background-color: #23252b;"
-        "  padding: 5px 8px;"
-        "  border-top: 1px solid #111215;"
-        "  border-bottom: 1px solid #111215;"
-        "  font-weight: 600;"
-        "}"
-        "QWidget#cue-grid QPushButton {"
-        "  background-color: #292b32;"
-        "  border: 1px solid #383b44;"
-        "  border-radius: 4px;"
-        "  color: #e6e8ec;"
-        "  padding: 5px 10px;"
-        "  font-weight: 600;"
-        "}"
-        "QWidget#cue-grid QPushButton:hover {"
-        "  background-color: #343741;"
-        "  border-color: #4c515e;"
-        "}"
-        "QWidget#cue-grid QPushButton:pressed {"
-        "  background-color: #1f2127;"
-        "}"
-        "QScrollBar:vertical {"
-        "  background: #17181c;"
-        "  width: 8px;"
-        "  margin: 0;"
-        "}"
-        "QScrollBar::handle:vertical {"
-        "  background: #353842;"
-        "  border-radius: 4px;"
-        "  min-height: 24px;"
-        "}"
-        "QScrollBar::handle:vertical:hover {"
-        "  background: #4b4f5c;"
-        "}"
-        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
-        "  height: 0px;"
-        "}"));
 
     resource_pools_ = std::make_unique<WindowResourcePools>();
     resource_governor_ = std::make_unique<application::ResourceGovernor>(*resource_pools_);
@@ -337,9 +264,191 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
                                 presentation_.black();
                                 update_program_status();
                             });
+
+    auto* view_menu = menuBar()->addMenu(QStringLiteral("View"));
+    view_menu->setObjectName(QStringLiteral("view-menu"));
+    auto* theme_menu = view_menu->addMenu(QStringLiteral("Theme"));
+    theme_menu->setObjectName(QStringLiteral("theme-menu"));
+    theme_actions_ = new QActionGroup{this};
+    theme_actions_->setExclusive(true);
+    for (const auto& info : ThemeManager::available_themes()) {
+        auto* action = theme_menu->addAction(info.label);
+        action->setObjectName(QStringLiteral("theme-%1").arg(info.key));
+        action->setCheckable(true);
+        action->setData(static_cast<int>(info.id));
+        action->setStatusTip(info.description);
+        theme_actions_->addAction(action);
+        QObject::connect(action, &QAction::triggered, this, [this, id = info.id] {
+            set_theme(id);
+        });
+        if (info.id == ThemeId::system) {
+            theme_menu->addSeparator();
+        }
+    }
+
+    apply_theme();
+    sync_theme_actions();
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) {
+                         apply_theme();
+                         sync_theme_actions();
+                     });
 }
 
 ShekinahWindow::~ShekinahWindow() = default;
+
+void ShekinahWindow::set_theme(ThemeId id) {
+    ThemeManager::instance().set_theme(id);
+}
+
+ThemeId ShekinahWindow::theme() const noexcept {
+    return ThemeManager::instance().current_theme_id();
+}
+
+void ShekinahWindow::apply_theme() {
+    const auto& p = ThemeManager::instance().palette();
+    setPalette(ThemeManager::build_qpalette(p));
+    setStyleSheet(
+        QStringLiteral(
+            "QMainWindow, QWidget#operator-page {"
+            "  background-color: %1;"
+            "  color: %2;"
+            "}"
+            "QMenuBar {"
+            "  background-color: %3;"
+            "  color: %4;"
+            "  border-bottom: 1px solid %5;"
+            "}"
+            "QMenuBar::item {"
+            "  background: transparent;"
+            "  padding: 4px 10px;"
+            "}"
+            "QMenuBar::item:selected {"
+            "  background-color: %6;"
+            "}"
+            "QMenu {"
+            "  background-color: %7;"
+            "  color: %2;"
+            "  border: 1px solid %8;"
+            "}"
+            "QMenu::item {"
+            "  padding: 5px 22px 5px 12px;"
+            "}"
+            "QMenu::item:selected {"
+            "  background-color: %9;"
+            "  color: %10;"
+            "}"
+            "QMenu::separator {"
+            "  height: 1px;"
+            "  background: %8;"
+            "  margin: 4px 8px;"
+            "}"
+            "QSplitter::handle {"
+            "  background-color: %5;"
+            "}"
+            "QSplitter::handle:hover {"
+            "  background-color: %9;"
+            "}"
+            "QDockWidget {"
+            "  color: %2;"
+            "  titlebar-close-icon: none;"
+            "}"
+            "QDockWidget::title {"
+            "  background-color: %11;"
+            "  padding: 5px 8px;"
+            "  border-top: 1px solid %5;"
+            "  border-bottom: 1px solid %5;"
+            "  font-weight: 600;"
+            "}"
+            "QScrollBar:vertical {"
+            "  background: %12;"
+            "  width: 8px;"
+            "  margin: 0;"
+            "}"
+            "QScrollBar::handle:vertical {"
+            "  background: %13;"
+            "  border-radius: 4px;"
+            "  min-height: 24px;"
+            "}"
+            "QScrollBar::handle:vertical:hover {"
+            "  background: %14;"
+            "}"
+            "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
+            "  height: 0px;"
+            "}"
+            "QScrollBar:horizontal {"
+            "  background: %12;"
+            "  height: 8px;"
+            "  margin: 0;"
+            "}"
+            "QScrollBar::handle:horizontal {"
+            "  background: %13;"
+            "  border-radius: 4px;"
+            "  min-width: 24px;"
+            "}"
+            "QScrollBar::handle:horizontal:hover {"
+            "  background: %14;"
+            "}"
+            "QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {"
+            "  width: 0px;"
+            "}"
+            "QToolTip {"
+            "  background-color: %7;"
+            "  color: %2;"
+            "  border: 1px solid %8;"
+            "  padding: 3px 6px;"
+            "}"
+            "QMessageBox, QInputDialog {"
+            "  background-color: %1;"
+            "  color: %2;"
+            "}"
+            "QMessageBox QLabel, QInputDialog QLabel {"
+            "  color: %2;"
+            "  background: transparent;"
+            "}"
+            "QMessageBox QPushButton, QInputDialog QPushButton {"
+            "  background-color: %15;"
+            "  border: 1px solid %16;"
+            "  border-radius: 4px;"
+            "  color: %2;"
+            "  padding: 5px 12px;"
+            "  font-weight: 600;"
+            "}"
+            "QMessageBox QPushButton:hover, QInputDialog QPushButton:hover {"
+            "  background-color: %17;"
+            "  border-color: %18;"
+            "}")
+            .arg(p.window_bg.name(),               // %1
+                 p.text_primary.name(),            // %2
+                 p.menubar_bg.name(),              // %3
+                 p.text_secondary.name(),          // %4
+                 p.border_strong.name(),           // %5
+                 p.menu_hover_bg.name(),           // %6
+                 p.menu_bg.name(),                 // %7
+                 p.border_subtle.name(),           // %8
+                 p.accent.name(),                  // %9
+                 p.text_on_accent.name(),          // %10
+                 p.header_bg.name(),               // %11
+                 p.scrollbar_track.name(),         // %12
+                 p.scrollbar_handle.name(),        // %13
+                 p.scrollbar_handle_hover.name(),  // %14
+                 p.button_bg.name(),               // %15
+                 p.button_border.name(),           // %16
+                 p.button_hover_bg.name(),         // %17
+                 p.button_hover_border.name()));   // %18
+}
+
+void ShekinahWindow::sync_theme_actions() {
+    if (theme_actions_ == nullptr) {
+        return;
+    }
+    const int current = static_cast<int>(ThemeManager::instance().current_theme_id());
+    for (auto* action : theme_actions_->actions()) {
+        if (action != nullptr && action->data().toInt() == current) {
+            action->setChecked(true);
+        }
+    }
+}
 
 media::AudienceOutput* ShekinahWindow::audience_output() {
     if (!audience_output_) {

@@ -2,6 +2,7 @@
 
 #include "shekinah/media/slide_renderer.hpp"
 #include "shekinah/ui/support/asset_drag.hpp"
+#include "shekinah/ui/support/theme.hpp"
 
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
@@ -132,8 +133,9 @@ protected:
     }
 
     void paintEvent(QPaintEvent*) override {
+        const auto& p = ThemeManager::instance().palette();
         QPainter painter{this};
-        painter.fillRect(rect(), QColor{QStringLiteral("#121212")});
+        painter.fillRect(rect(), p.cue_card_bg);
         const auto preview = preview_rect();
         slide_renderer_.paint(painter, preview);
 
@@ -174,9 +176,9 @@ protected:
         const auto live = property("cue-live").toBool();
         const auto drop_target = property("cue-drop-target").toBool();
         painter.setPen(QPen{drop_target
-                                ? QColor{QStringLiteral("#65d6ff")}
-                                : live ? QColor{QStringLiteral("#087cff")}
-                                       : QColor{QStringLiteral("#303030")},
+                                ? p.drop_highlight
+                                : live ? p.accent
+                                       : p.cue_card_border,
                             static_cast<qreal>(drop_target || live ? 2 : 1)});
         painter.drawRect(rect().adjusted(1, 1, -2, -2));
     }
@@ -205,10 +207,10 @@ CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_
     auto* title = new QLabel{QStringLiteral("Presentation"), empty_state_};
     title->setObjectName(QStringLiteral("presentation-title"));
     title->setAlignment(Qt::AlignCenter);
-    title->setStyleSheet(QStringLiteral("font-size: 22px; font-weight: 600;"));
     auto* message = new QLabel{
         QStringLiteral("Add a Song or Sermon to the Service Order, or create content to begin."),
         empty_state_};
+    message->setObjectName(QStringLiteral("presentation-empty-message"));
     message->setAlignment(Qt::AlignCenter);
     message->setWordWrap(true);
     empty_layout->addStretch(1);
@@ -258,6 +260,65 @@ CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_
     outer->addWidget(grid_scroll_);
     grid_scroll_->setVisible(false);
     setMinimumWidth(220);
+
+    apply_theme();
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) { apply_theme(); });
+}
+
+void CueGridWidget::apply_theme() {
+    const auto& p = ThemeManager::instance().palette();
+    setStyleSheet(
+        QStringLiteral(
+            "QWidget#cue-grid { background-color: %1; }"
+            "QScrollArea#presentation-empty-scroll, QScrollArea#cue-grid-scroll,"
+            "QWidget#presentation-empty-state {"
+            "  background-color: %1;"
+            "  color: %2;"
+            "}"
+            "QLabel#presentation-title {"
+            "  color: %2;"
+            "  font-size: 22px;"
+            "  font-weight: 600;"
+            "  background: transparent;"
+            "}"
+            "QLabel#presentation-empty-message {"
+            "  color: %3;"
+            "  background: transparent;"
+            "}"
+            "QWidget#cue-grid QPushButton {"
+            "  background-color: %4;"
+            "  border: 1px solid %5;"
+            "  border-radius: 4px;"
+            "  color: %2;"
+            "  padding: 5px 10px;"
+            "  font-weight: 600;"
+            "}"
+            "QWidget#cue-grid QPushButton:hover {"
+            "  background-color: %6;"
+            "  border-color: %7;"
+            "}"
+            "QWidget#cue-grid QPushButton:pressed {"
+            "  background-color: %8;"
+            "}")
+            .arg(p.window_bg.name(),
+                 p.text_primary.name(),
+                 p.text_muted.name(),
+                 p.button_bg.name(),
+                 p.button_border.name(),
+                 p.button_hover_bg.name(),
+                 p.button_hover_border.name(),
+                 p.button_pressed_bg.name()));
+    if (grid_container_ != nullptr) {
+        grid_container_->setStyleSheet(
+            QStringLiteral("background-color: %1;").arg(p.window_bg.name()));
+    }
+    for (auto* card : cards_) {
+        if (card != nullptr) {
+            card->update();
+        }
+    }
+    update();
 }
 
 QColor CueGridWidget::footer_color_for_section(const QString& section) {

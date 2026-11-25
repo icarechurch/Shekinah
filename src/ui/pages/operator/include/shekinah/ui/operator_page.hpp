@@ -70,6 +70,8 @@ public:
     QMenu* create_context_menu(const domain::CueId& cue);
 
 private:
+    void apply_theme();
+
     ServiceOrderWidget* service_order_{nullptr};
     CueGridWidget* cue_grid_{nullptr};
     ProgramStatusWidget* program_status_{nullptr};

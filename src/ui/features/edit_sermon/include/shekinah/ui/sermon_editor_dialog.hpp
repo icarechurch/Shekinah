@@ -21,6 +21,7 @@ public:
     [[nodiscard]] int file_count() const noexcept;
 
 private:
+    void apply_theme();
     void add_files();
     void move_current(int direction);
     void remove_current();

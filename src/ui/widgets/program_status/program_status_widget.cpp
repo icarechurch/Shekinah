@@ -3,6 +3,7 @@
 #include "shekinah/media/slide_renderer.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
 #include "shekinah/ui/support/elided_label.hpp"
+#include "shekinah/ui/support/theme.hpp"
 
 #include <QAbstractItemView>
 #include <QFrame>
@@ -210,20 +211,21 @@ public:
 
 protected:
     void paintEvent(QPaintEvent*) override {
+        const auto& p = ThemeManager::instance().palette();
         QPainter painter{this};
         painter.setRenderHint(QPainter::Antialiasing, true);
         const QRect bounds = rect();
 
         if (mode_ == domain::ProgramMode::black) {
-            painter.fillRect(bounds, QColor{QStringLiteral("#040506")});
-            painter.setPen(QColor{QStringLiteral("#3f434d")});
+            painter.fillRect(bounds, p.preview_black_bg);
+            painter.setPen(p.preview_black_text);
             QFont font = painter.font();
             font.setPixelSize(11);
             font.setBold(true);
             font.setLetterSpacing(QFont::AbsoluteSpacing, 2.0);
             painter.setFont(font);
             painter.drawText(bounds, Qt::AlignCenter, QStringLiteral("BLACKOUT"));
-            painter.setPen(QPen{QColor{QStringLiteral("#d9383a")}, 1.5});
+            painter.setPen(QPen{p.danger_border, 1.5});
             painter.drawRect(bounds.adjusted(1, 1, -1, -1));
             return;
         }
@@ -233,10 +235,10 @@ protected:
         if (has_preview_content) {
             renderer_.paint(painter, bounds);
         } else {
-            painter.fillRect(bounds, QColor{QStringLiteral("#08090c")});
-            painter.setPen(QColor{QStringLiteral("#23262e")});
+            painter.fillRect(bounds, p.preview_well_bg);
+            painter.setPen(p.preview_well_border);
             painter.drawRect(bounds.adjusted(6, 6, -7, -7));
-            painter.setPen(QColor{QStringLiteral("#424652")});
+            painter.setPen(p.preview_well_text);
             QFont font = painter.font();
             font.setPixelSize(10);
             font.setBold(true);
@@ -246,20 +248,22 @@ protected:
         }
 
         if (mode_ == domain::ProgramMode::cue) {
-            painter.setPen(QPen{QColor{QStringLiteral("#0a84ff")}, 1.5});
+            painter.setPen(QPen{p.accent, 1.5});
             painter.drawRect(bounds.adjusted(1, 1, -1, -1));
             const QRect badge{8, 8, 42, 16};
             painter.setPen(Qt::NoPen);
-            painter.setBrush(QColor{10, 132, 255, 220});
+            QColor live_badge_bg = p.accent;
+            live_badge_bg.setAlpha(220);
+            painter.setBrush(live_badge_bg);
             painter.drawRoundedRect(badge, 3, 3);
-            painter.setPen(Qt::white);
+            painter.setPen(p.text_on_accent);
             QFont badge_font = painter.font();
             badge_font.setPixelSize(9);
             badge_font.setBold(true);
             painter.setFont(badge_font);
             painter.drawText(badge, Qt::AlignCenter, QStringLiteral("LIVE"));
         } else {
-            painter.setPen(QPen{QColor{QStringLiteral("#262830")}, 1.0});
+            painter.setPen(QPen{p.border_subtle, 1.0});
             painter.drawRect(bounds.adjusted(0, 0, -1, -1));
         }
     }
@@ -301,15 +305,13 @@ QWidget* make_section_header(const QString& title,
                              QLabel** title_out = nullptr) {
     auto* bar = new QWidget{parent};
     bar->setObjectName(QStringLiteral("drawer-section-header"));
+    bar->setProperty("sectionHeader", true);
     bar->setFixedHeight(24);
-    bar->setStyleSheet(QStringLiteral(
-        "background: #2b2d33; border-top: 1px solid #16171b; border-bottom: 1px solid #16171b;"));
     auto* row = new QHBoxLayout(bar);
     row->setContentsMargins(8, 0, 6, 0);
     row->setSpacing(4);
     auto* label = new QLabel{title, bar};
-    label->setStyleSheet(QStringLiteral(
-        "color: #b8bcc4; font-size: 10px; font-weight: 700; letter-spacing: 0.8px; border: none;"));
+    label->setProperty("sectionTitle", true);
     row->addWidget(label);
     row->addStretch(1);
     if (trailing_widget != nullptr) {
@@ -325,73 +327,6 @@ QWidget* make_section_header(const QString& title,
 
 ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     setObjectName(QStringLiteral("program-status"));
-    setStyleSheet(QStringLiteral(
-        "#program-status {"
-        "  background-color: #1e1f24;"
-        "  border-left: 1px solid #111215;"
-        "  color: #e6e8ec;"
-        "}"
-        "#program-status QPushButton#rail-btn,"
-        "#program-status QPushButton[rail=\"true\"] {"
-        "  background-color: #1b1c20;"
-        "  border: none;"
-        "  border-bottom: 1px solid #262830;"
-        "  border-radius: 0px;"
-        "  padding: 0px;"
-        "}"
-        "#program-status QPushButton[rail=\"true\"]:hover {"
-        "  background-color: #282a31;"
-        "}"
-        "#program-status QPushButton[rail=\"true\"]:checked {"
-        "  background-color: #0a84ff;"
-        "}"
-        "#program-status QPushButton#global-btn,"
-        "#program-status QWidget#global-controls QPushButton {"
-        "  background-color: #292b32;"
-        "  border: 1px solid #383b44;"
-        "  border-radius: 4px;"
-        "  color: #e8eaed;"
-        "  font-size: 10px;"
-        "  font-weight: 600;"
-        "  padding: 4px 4px;"
-        "  min-height: 24px;"
-        "}"
-        "#program-status QWidget#global-controls QPushButton:hover {"
-        "  background-color: #343741;"
-        "  border-color: #4b4f5b;"
-        "}"
-        "#program-status QWidget#global-controls QPushButton:pressed {"
-        "  background-color: #1f2127;"
-        "}"
-        "#program-status QListWidget {"
-        "  background-color: #1a1b1f;"
-        "  border: none;"
-        "  color: #dfe2e7;"
-        "  font-size: 11px;"
-        "  outline: 0;"
-        "}"
-        "#program-status QListWidget::item {"
-        "  padding: 5px 8px;"
-        "  border-bottom: 1px solid #23252b;"
-        "}"
-        "#program-status QListWidget::item:selected {"
-        "  background-color: #27446b;"
-        "  color: #ffffff;"
-        "}"
-        "#program-status QListWidget::item:hover {"
-        "  background-color: #24262c;"
-        "}"
-        "#program-status QLineEdit {"
-        "  background-color: #16171a;"
-        "  border: 1px solid #30333b;"
-        "  border-radius: 4px;"
-        "  color: #e8eaed;"
-        "  font-size: 11px;"
-        "  padding: 3px 8px;"
-        "}"
-        "#program-status QLineEdit:focus {"
-        "  border-color: #0a84ff;"
-        "}"));
 
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -401,16 +336,12 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     auto* header_bar = new QWidget{this};
     header_bar->setObjectName(QStringLiteral("program-header-bar"));
     header_bar->setFixedHeight(26);
-    header_bar->setStyleSheet(QStringLiteral(
-        "background-color: #191a1e; border-bottom: 1px solid #111215;"));
     auto* header_layout = new QHBoxLayout(header_bar);
     header_layout->setContentsMargins(10, 0, 8, 0);
     header_layout->setSpacing(6);
 
     auto* heading = new QLabel{QStringLiteral("PROGRAM STATUS"), header_bar};
     heading->setObjectName(QStringLiteral("program-status-title"));
-    heading->setStyleSheet(QStringLiteral(
-        "color: #8e929b; font-size: 10px; font-weight: 700; letter-spacing: 1.1px; border: none;"));
     header_layout->addWidget(heading);
     header_layout->addStretch(1);
 
@@ -424,7 +355,6 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     // 2. Monitor + Circular Clear-All + Vertical Quick-Action Rail
     auto* monitor_row = new QWidget{this};
     monitor_row->setObjectName(QStringLiteral("monitor-row"));
-    monitor_row->setStyleSheet(QStringLiteral("background-color: #121316;"));
     auto* monitor_layout = new QHBoxLayout(monitor_row);
     monitor_layout->setContentsMargins(6, 6, 0, 6);
     monitor_layout->setSpacing(4);
@@ -436,6 +366,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
 
     // Floating-style circular Clear All button between preview and rail (ProPresenter hallmark)
     auto* clear_gutter = new QWidget{monitor_row};
+    clear_gutter->setObjectName(QStringLiteral("clear-gutter"));
     clear_gutter->setFixedWidth(22);
     auto* gutter_layout = new QVBoxLayout(clear_gutter);
     gutter_layout->setContentsMargins(0, 0, 0, 0);
@@ -445,16 +376,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     quick_clear_button_->setFixedSize(20, 20);
     quick_clear_button_->setCursor(Qt::PointingHandCursor);
     quick_clear_button_->setToolTip(QStringLiteral("Clear All Output (Esc)"));
-    quick_clear_button_->setIcon(make_glyph_icon(IconGlyph::clear_all, QColor{QStringLiteral("#141518")}, 12));
     quick_clear_button_->setIconSize(QSize{12, 12});
-    quick_clear_button_->setStyleSheet(QStringLiteral(
-        "QPushButton#quick-clear-all {"
-        "  background-color: #e6e8ec;"
-        "  border: 1px solid #141518;"
-        "  border-radius: 10px;"
-        "}"
-        "QPushButton#quick-clear-all:hover { background-color: #ffffff; }"
-        "QPushButton#quick-clear-all:pressed { background-color: #bfc4cd; }"));
     QObject::connect(quick_clear_button_, &QPushButton::clicked, this, [this] {
         if (clear_handler_) {
             clear_handler_();
@@ -468,15 +390,12 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     auto* rail = new QWidget{monitor_row};
     rail->setObjectName(QStringLiteral("program-action-rail"));
     rail->setFixedWidth(34);
-    rail->setStyleSheet(QStringLiteral(
-        "background-color: #1b1c20; border-left: 1px solid #111215;"));
     auto* rail_layout = new QVBoxLayout(rail);
     rail_layout->setContentsMargins(0, 0, 0, 0);
     rail_layout->setSpacing(0);
 
     const auto add_rail_button = [&](const QString& name,
                                      const QString& tooltip,
-                                     IconGlyph glyph,
                                      bool checkable,
                                      auto handler) -> QPushButton* {
         auto* btn = new QPushButton{rail};
@@ -486,7 +405,6 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
         btn->setCursor(Qt::PointingHandCursor);
         btn->setToolTip(tooltip);
         btn->setFixedSize(34, 28);
-        btn->setIcon(make_glyph_icon(glyph, QColor{QStringLiteral("#c5c9d2")}, 15));
         btn->setIconSize(QSize{15, 15});
         QObject::connect(btn, &QPushButton::clicked, this, handler);
         rail_layout->addWidget(btn);
@@ -495,28 +413,28 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
 
     rail_clear_button_ = add_rail_button(
         QStringLiteral("rail-clear-cue"), QStringLiteral("Clear Live Slide (Esc)"),
-        IconGlyph::slide, false, [this] {
+        false, [this] {
             if (clear_handler_) {
                 clear_handler_();
             }
         });
     rail_background_button_ = add_rail_button(
         QStringLiteral("rail-background"), QStringLiteral("Set Background on Live Cue"),
-        IconGlyph::media_image, false, [this] {
+        false, [this] {
             if (choose_background_handler_) {
                 choose_background_handler_();
             }
         });
     rail_black_button_ = add_rail_button(
         QStringLiteral("rail-blackout"), QStringLiteral("Blackout Audience Output (B)"),
-        IconGlyph::blackout, true, [this] {
+        true, [this] {
             if (black_handler_) {
                 black_handler_();
             }
         });
     rail_audience_button_ = add_rail_button(
         QStringLiteral("rail-audience"), QStringLiteral("Show Audience Output Window"),
-        IconGlyph::display, true, [this] {
+        true, [this] {
             if (output_visible_) {
                 if (hide_output_handler_) {
                     hide_output_handler_();
@@ -527,7 +445,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
         });
     rail_inspector_button_ = add_rail_button(
         QStringLiteral("rail-inspector"), QStringLiteral("Open Slide Inspector"),
-        IconGlyph::sliders, false, [this] {
+        false, [this] {
             if (inspect_live_handler_) {
                 inspect_live_handler_();
             }
@@ -540,20 +458,12 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     auto* screen_bar = new QWidget{this};
     screen_bar->setObjectName(QStringLiteral("screen-selector-bar"));
     screen_bar->setFixedHeight(26);
-    screen_bar->setStyleSheet(QStringLiteral(
-        "#screen-selector-bar {"
-        "  background-color: #24252a;"
-        "  border-top: 1px solid #131417;"
-        "  border-bottom: 1px solid #131417;"
-        "}"));
     auto* screen_layout = new QHBoxLayout(screen_bar);
     screen_layout->setContentsMargins(8, 0, 8, 0);
     screen_layout->setSpacing(4);
 
     output_target_label_ = new ElidedLabel{QStringLiteral("Output: Monitor 2"), screen_bar};
     output_target_label_->setObjectName(QStringLiteral("output-target"));
-    output_target_label_->setStyleSheet(QStringLiteral(
-        "color: #d7dae0; font-size: 11px; font-weight: 600; border: none;"));
     screen_layout->addWidget(output_target_label_);
 
     screen_menu_button_ = new QPushButton{screen_bar};
@@ -561,12 +471,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     screen_menu_button_->setFixedSize(18, 18);
     screen_menu_button_->setCursor(Qt::PointingHandCursor);
     screen_menu_button_->setToolTip(QStringLiteral("Select Audience Output Display"));
-    screen_menu_button_->setIcon(
-        make_glyph_icon(IconGlyph::chevron_down, QColor{QStringLiteral("#9ca1ab")}, 12));
     screen_menu_button_->setIconSize(QSize{12, 12});
-    screen_menu_button_->setStyleSheet(QStringLiteral(
-        "QPushButton { background: transparent; border: none; border-radius: 3px; }"
-        "QPushButton:hover { background: #32353d; }"));
     QObject::connect(screen_menu_button_, &QPushButton::clicked, this, [this] { open_screen_menu(); });
     screen_layout->addWidget(screen_menu_button_);
     screen_layout->addStretch(1);
@@ -574,15 +479,12 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     audience_mode_label_ = new ElidedLabel{QStringLiteral("Audience full-screen"), screen_bar};
     audience_mode_label_->setObjectName(QStringLiteral("audience-mode"));
     audience_mode_label_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    audience_mode_label_->setStyleSheet(QStringLiteral(
-        "color: #8e929b; font-size: 10px; border: none;"));
     screen_layout->addWidget(audience_mode_label_);
     layout->addWidget(screen_bar);
 
     // 4. Layer Status Strip + Live Cue Identifier (cue_label_ MUST stay above global_controls_)
     auto* status_strip = new QWidget{this};
     status_strip->setObjectName(QStringLiteral("program-status-strip"));
-    status_strip->setStyleSheet(QStringLiteral("background-color: #1c1d22;"));
     auto* status_layout = new QVBoxLayout(status_strip);
     status_layout->setContentsMargins(8, 6, 8, 6);
     status_layout->setSpacing(4);
@@ -590,26 +492,23 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     auto* indicator_row = new QHBoxLayout;
     indicator_row->setSpacing(10);
     indicator_row->addStretch(1);
-    const auto make_indicator = [&](const QString& name, const QString& tip, IconGlyph glyph) {
+    const auto make_indicator = [&](const QString& name, const QString& tip) {
         auto* btn = new QPushButton{status_strip};
         btn->setObjectName(name);
+        btn->setProperty("statusIndicator", true);
         btn->setToolTip(tip);
         btn->setFixedSize(26, 20);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setIcon(make_glyph_icon(glyph, QColor{QStringLiteral("#6d727d")}, 14));
         btn->setIconSize(QSize{14, 14});
-        btn->setStyleSheet(QStringLiteral(
-            "QPushButton { background: transparent; border: none; border-radius: 3px; }"
-            "QPushButton:hover { background: #292b33; }"));
         indicator_row->addWidget(btn);
         return btn;
     };
     status_screen_indicator_ = make_indicator(
-        QStringLiteral("indicator-screen"), QStringLiteral("Slide Layer Status"), IconGlyph::slide);
+        QStringLiteral("indicator-screen"), QStringLiteral("Slide Layer Status"));
     status_media_indicator_ = make_indicator(
-        QStringLiteral("indicator-media"), QStringLiteral("Background Media Status"), IconGlyph::media_image);
+        QStringLiteral("indicator-media"), QStringLiteral("Background Media Status"));
     status_audience_indicator_ = make_indicator(
-        QStringLiteral("indicator-audience"), QStringLiteral("Toggle Audience Output Window"), IconGlyph::display);
+        QStringLiteral("indicator-audience"), QStringLiteral("Toggle Audience Output Window"));
     QObject::connect(status_screen_indicator_, &QPushButton::clicked, this, [this] {
         set_active_tab(0);
     });
@@ -628,7 +527,6 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     cue_label_->setObjectName(QStringLiteral("program-cue"));
     cue_label_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     cue_label_->setAlignment(Qt::AlignCenter);
-    cue_label_->setStyleSheet(QStringLiteral("color: #8e929b; font-size: 11px; font-weight: 500;"));
     status_layout->addWidget(cue_label_);
     layout->addWidget(status_strip);
 
@@ -639,27 +537,20 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     slide_progress_->setFixedHeight(3);
     slide_progress_->setRange(0, 100);
     slide_progress_->setValue(0);
-    slide_progress_->setStyleSheet(QStringLiteral(
-        "QProgressBar { background-color: #131417; border: none; }"
-        "QProgressBar::chunk { background-color: #0a84ff; }"));
     layout->addWidget(slide_progress_);
 
     global_controls_ = new QWidget{this};
     global_controls_->setObjectName(QStringLiteral("global-controls"));
-    global_controls_->setStyleSheet(QStringLiteral(
-        "#global-controls { background-color: #1c1d22; border-bottom: 1px solid #111215; }"));
     auto* controls = new QHBoxLayout(global_controls_);
     controls->setContentsMargins(6, 6, 6, 8);
     controls->setSpacing(4);
 
     const auto add_control = [&](const QString& label,
                                  const QString& object_name,
-                                 IconGlyph glyph,
                                  auto handler) -> QPushButton* {
         auto* button = new QPushButton{label, global_controls_};
         button->setObjectName(object_name);
         button->setCursor(Qt::PointingHandCursor);
-        button->setIcon(make_glyph_icon(glyph, QColor{QStringLiteral("#d2d6de")}, 11));
         button->setIconSize(QSize{11, 11});
         QObject::connect(button, &QPushButton::clicked, this, handler);
         controls->addWidget(button, 1);
@@ -667,25 +558,25 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     };
 
     previous_button_ = add_control(
-        QStringLiteral("Previous"), QStringLiteral("previous"), IconGlyph::previous, [this] {
+        QStringLiteral("Previous"), QStringLiteral("previous"), [this] {
             if (previous_handler_) {
                 previous_handler_();
             }
         });
     next_button_ = add_control(
-        QStringLiteral("Next"), QStringLiteral("next"), IconGlyph::next, [this] {
+        QStringLiteral("Next"), QStringLiteral("next"), [this] {
             if (next_handler_) {
                 next_handler_();
             }
         });
     clear_button_ = add_control(
-        QStringLiteral("Clear"), QStringLiteral("clear"), IconGlyph::clear_layer, [this] {
+        QStringLiteral("Clear"), QStringLiteral("clear"), [this] {
             if (clear_handler_) {
                 clear_handler_();
             }
         });
     black_button_ = add_control(
-        QStringLiteral("Black"), QStringLiteral("black"), IconGlyph::blackout, [this] {
+        QStringLiteral("Black"), QStringLiteral("black"), [this] {
             if (black_handler_) {
                 black_handler_();
             }
@@ -696,31 +587,28 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     auto* tab_bar = new QWidget{this};
     tab_bar->setObjectName(QStringLiteral("drawer-tab-bar"));
     tab_bar->setFixedHeight(28);
-    tab_bar->setStyleSheet(QStringLiteral(
-        "#drawer-tab-bar { background-color: #292b31; border-bottom: 1px solid #121316; }"));
     auto* tab_layout = new QHBoxLayout(tab_bar);
     tab_layout->setContentsMargins(0, 0, 0, 0);
     tab_layout->setSpacing(1);
 
-    const auto add_tab = [&](const QString& name, const QString& tip, IconGlyph glyph, int idx) {
+    const auto add_tab = [&](const QString& name, const QString& tip, int idx) {
         auto* btn = new QPushButton{tab_bar};
         btn->setObjectName(name);
         btn->setToolTip(tip);
         btn->setCursor(Qt::PointingHandCursor);
         btn->setCheckable(true);
         btn->setFixedHeight(27);
-        btn->setIcon(make_glyph_icon(glyph, QColor{QStringLiteral("#e8eaed")}, 15));
         btn->setIconSize(QSize{15, 15});
         QObject::connect(btn, &QPushButton::clicked, this, [this, idx] { set_active_tab(idx); });
         tab_layout->addWidget(btn, 1);
         return btn;
     };
     tab_live_button_ = add_tab(
-        QStringLiteral("tab-live"), QStringLiteral("Live & Next Slide"), IconGlyph::layers, 0);
+        QStringLiteral("tab-live"), QStringLiteral("Live & Next Slide"), 0);
     tab_screens_button_ = add_tab(
-        QStringLiteral("tab-screens"), QStringLiteral("Screens & Diagnostics"), IconGlyph::display, 1);
+        QStringLiteral("tab-screens"), QStringLiteral("Screens & Diagnostics"), 1);
     tab_cues_button_ = add_tab(
-        QStringLiteral("tab-cues"), QStringLiteral("Active Item Cues"), IconGlyph::list, 2);
+        QStringLiteral("tab-cues"), QStringLiteral("Active Item Cues"), 2);
     layout->addWidget(tab_bar);
 
     // 7. Stacked Drawer Pages
@@ -738,21 +626,17 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     live_scroll->setWidgetResizable(true);
     live_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     live_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    live_scroll->setStyleSheet(QStringLiteral("background-color: #1d1e23;"));
 
     auto* live_page = new QWidget{live_scroll};
     live_page->setObjectName(QStringLiteral("drawer-page-live"));
-    live_page->setStyleSheet(QStringLiteral("background-color: #1d1e23;"));
     auto* live_page_layout = new QVBoxLayout(live_page);
     live_page_layout->setContentsMargins(0, 0, 0, 0);
     live_page_layout->setSpacing(0);
 
     live_edit_button_ = new QPushButton{QStringLiteral("Inspect"), live_page};
     live_edit_button_->setObjectName(QStringLiteral("live-inspect-button"));
+    live_edit_button_->setProperty("linkAction", true);
     live_edit_button_->setCursor(Qt::PointingHandCursor);
-    live_edit_button_->setStyleSheet(QStringLiteral(
-        "QPushButton { background: transparent; border: none; color: #8ec5ff; font-size: 10px; font-weight: 600; padding: 2px 4px; }"
-        "QPushButton:hover { color: #ffffff; }"));
     QObject::connect(live_edit_button_, &QPushButton::clicked, this, [this] {
         if (inspect_live_handler_) {
             inspect_live_handler_();
@@ -762,7 +646,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
         make_section_header(QStringLiteral("LIVE SLIDE"), live_page, live_edit_button_));
 
     auto* live_card = new QWidget{live_page};
-    live_card->setStyleSheet(QStringLiteral("background-color: #191a1f;"));
+    live_card->setObjectName(QStringLiteral("live-card"));
     auto* live_card_layout = new QVBoxLayout(live_card);
     live_card_layout->setContentsMargins(10, 8, 10, 8);
     live_card_layout->setSpacing(6);
@@ -771,21 +655,15 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     meta_row->setSpacing(6);
     live_section_badge_ = new QLabel{QStringLiteral("IDLE"), live_card};
     live_section_badge_->setObjectName(QStringLiteral("live-section-badge"));
-    live_section_badge_->setStyleSheet(QStringLiteral(
-        "background-color: #2b2d34; color: #b6bac4; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;"));
     meta_row->addWidget(live_section_badge_);
 
     live_item_title_label_ = new ElidedLabel{QStringLiteral("Ready for service"), live_card};
     live_item_title_label_->setObjectName(QStringLiteral("live-item-title"));
     live_item_title_label_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    live_item_title_label_->setStyleSheet(QStringLiteral(
-        "color: #e6e8ec; font-size: 11px; font-weight: 600;"));
     meta_row->addWidget(live_item_title_label_, 1);
 
     live_slide_counter_label_ = new QLabel{QStringLiteral("--"), live_card};
     live_slide_counter_label_->setObjectName(QStringLiteral("live-slide-counter"));
-    live_slide_counter_label_->setStyleSheet(QStringLiteral(
-        "color: #8e929b; font-size: 10px; font-weight: 600;"));
     meta_row->addWidget(live_slide_counter_label_);
     live_card_layout->addLayout(meta_row);
 
@@ -795,8 +673,6 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     live_lyrics_label_->setObjectName(QStringLiteral("live-lyrics-preview"));
     live_lyrics_label_->setMinimumWidth(0);
     live_lyrics_label_->setWordWrap(true);
-    live_lyrics_label_->setStyleSheet(QStringLiteral(
-        "color: #9ea3ae; font-size: 11px; background-color: #141519; border: 1px solid #25272f; border-radius: 4px; padding: 6px 8px;"));
     live_card_layout->addWidget(live_lyrics_label_);
 
     auto* bg_row = new QHBoxLayout;
@@ -804,15 +680,11 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     live_asset_label_ = new ElidedLabel{QStringLiteral("Background: None"), live_card};
     live_asset_label_->setObjectName(QStringLiteral("live-asset-label"));
     live_asset_label_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    live_asset_label_->setStyleSheet(QStringLiteral("color: #8e929b; font-size: 10px;"));
     bg_row->addWidget(live_asset_label_, 1);
 
     live_bg_button_ = new QPushButton{QStringLiteral("Set Bg"), live_card};
     live_bg_button_->setObjectName(QStringLiteral("live-set-bg-button"));
     live_bg_button_->setCursor(Qt::PointingHandCursor);
-    live_bg_button_->setStyleSheet(QStringLiteral(
-        "QPushButton { background: #262830; border: 1px solid #363944; border-radius: 3px; color: #cfd3dc; font-size: 10px; padding: 2px 7px; }"
-        "QPushButton:hover { background: #31343e; }"));
     QObject::connect(live_bg_button_, &QPushButton::clicked, this, [this] {
         if (choose_background_handler_) {
             choose_background_handler_();
@@ -822,24 +694,21 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     live_card_layout->addLayout(bg_row);
     live_page_layout->addWidget(live_card);
 
-    auto* next_btn = new QPushButton{live_page};
-    next_btn->setObjectName(QStringLiteral("next-up-header-button"));
-    next_btn->setCursor(Qt::PointingHandCursor);
-    next_btn->setToolTip(QStringLiteral("Advance to Next Cue (PgDn)"));
-    next_btn->setIcon(make_glyph_icon(IconGlyph::arrow_right, QColor{QStringLiteral("#b8bcc4")}, 13));
-    next_btn->setIconSize(QSize{13, 13});
-    next_btn->setStyleSheet(QStringLiteral(
-        "QPushButton { background: transparent; border: none; padding: 2px; }"
-        "QPushButton:hover { background: #3a3d46; border-radius: 3px; }"));
-    QObject::connect(next_btn, &QPushButton::clicked, this, [this] {
+    next_up_header_button_ = new QPushButton{live_page};
+    next_up_header_button_->setObjectName(QStringLiteral("next-up-header-button"));
+    next_up_header_button_->setCursor(Qt::PointingHandCursor);
+    next_up_header_button_->setToolTip(QStringLiteral("Advance to Next Cue (PgDn)"));
+    next_up_header_button_->setIconSize(QSize{13, 13});
+    QObject::connect(next_up_header_button_, &QPushButton::clicked, this, [this] {
         if (next_handler_) {
             next_handler_();
         }
     });
-    live_page_layout->addWidget(make_section_header(QStringLiteral("NEXT UP"), live_page, next_btn));
+    live_page_layout->addWidget(
+        make_section_header(QStringLiteral("NEXT UP"), live_page, next_up_header_button_));
 
     next_up_card_ = new QWidget{live_page};
-    next_up_card_->setStyleSheet(QStringLiteral("background-color: #1b1c21;"));
+    next_up_card_->setObjectName(QStringLiteral("next-up-card"));
     auto* next_layout = new QVBoxLayout(next_up_card_);
     next_layout->setContentsMargins(10, 8, 10, 8);
     next_layout->setSpacing(6);
@@ -847,8 +716,6 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     auto* next_meta = new QHBoxLayout;
     next_section_badge_ = new QLabel{QStringLiteral("STANDBY"), next_up_card_};
     next_section_badge_->setObjectName(QStringLiteral("next-section-badge"));
-    next_section_badge_->setStyleSheet(QStringLiteral(
-        "background-color: #272930; color: #9ea3ae; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;"));
     next_meta->addWidget(next_section_badge_);
     next_meta->addStretch(1);
     next_layout->addLayout(next_meta);
@@ -859,15 +726,11 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     next_summary_label_->setObjectName(QStringLiteral("next-summary-label"));
     next_summary_label_->setMinimumWidth(0);
     next_summary_label_->setWordWrap(true);
-    next_summary_label_->setStyleSheet(QStringLiteral("color: #9ea3ae; font-size: 11px;"));
     next_layout->addWidget(next_summary_label_);
 
     next_up_action_button_ = new QPushButton{QStringLiteral("Show Audience Window"), next_up_card_};
     next_up_action_button_->setObjectName(QStringLiteral("next-up-action-button"));
     next_up_action_button_->setCursor(Qt::PointingHandCursor);
-    next_up_action_button_->setStyleSheet(QStringLiteral(
-        "QPushButton { background-color: #282a32; border: 1px solid #383b46; border-radius: 5px; color: #e2e5ea; font-size: 11px; font-weight: 600; padding: 6px 10px; }"
-        "QPushButton:hover { background-color: #32353f; border-color: #0a84ff; }"));
     QObject::connect(next_up_action_button_, &QPushButton::clicked, this, [this] {
         if (current_program_.mode == domain::ProgramMode::cue && !live_details_.next_summary.isEmpty()) {
             if (next_handler_) {
@@ -892,20 +755,16 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     screens_scroll->setWidgetResizable(true);
     screens_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     screens_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    screens_scroll->setStyleSheet(QStringLiteral("background-color: #1d1e23;"));
 
     auto* screens_page = new QWidget{screens_scroll};
     screens_page->setObjectName(QStringLiteral("drawer-page-screens"));
-    screens_page->setStyleSheet(QStringLiteral("background-color: #1d1e23;"));
     auto* screens_layout = new QVBoxLayout(screens_page);
     screens_layout->setContentsMargins(0, 0, 0, 0);
     screens_layout->setSpacing(0);
 
     auto* refresh_screens_btn = new QPushButton{QStringLiteral("Refresh"), screens_page};
+    refresh_screens_btn->setProperty("linkAction", true);
     refresh_screens_btn->setCursor(Qt::PointingHandCursor);
-    refresh_screens_btn->setStyleSheet(QStringLiteral(
-        "QPushButton { background: transparent; border: none; color: #8ec5ff; font-size: 10px; font-weight: 600; padding: 2px 4px; }"
-        "QPushButton:hover { color: #ffffff; }"));
     QObject::connect(refresh_screens_btn, &QPushButton::clicked, this, [this] {
         refresh_screens_list();
     });
@@ -929,7 +788,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     screens_layout->addWidget(screens_list_, 1);
 
     auto* screen_actions = new QWidget{screens_page};
-    screen_actions->setStyleSheet(QStringLiteral("background-color: #1a1b1f;"));
+    screen_actions->setObjectName(QStringLiteral("screen-actions-bar"));
     auto* screen_actions_layout = new QHBoxLayout(screen_actions);
     screen_actions_layout->setContentsMargins(8, 6, 8, 6);
     screen_actions_layout->setSpacing(6);
@@ -937,10 +796,8 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     const auto add_screen_btn = [&](const QString& label, const QString& name, auto handler) {
         auto* btn = new QPushButton{label, screen_actions};
         btn->setObjectName(name);
+        btn->setProperty("screenAction", true);
         btn->setCursor(Qt::PointingHandCursor);
-        btn->setStyleSheet(QStringLiteral(
-            "QPushButton { background: #282a32; border: 1px solid #383b44; border-radius: 4px; color: #e2e5ea; font-size: 10px; font-weight: 600; padding: 4px 6px; }"
-            "QPushButton:hover { background: #333640; }"));
         QObject::connect(btn, &QPushButton::clicked, this, handler);
         screen_actions_layout->addWidget(btn, 1);
     };
@@ -971,7 +828,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
 
     screens_layout->addWidget(make_section_header(QStringLiteral("RESOURCE GOVERNOR"), screens_page));
     auto* mem_panel = new QWidget{screens_page};
-    mem_panel->setStyleSheet(QStringLiteral("background-color: #191a1f;"));
+    mem_panel->setObjectName(QStringLiteral("memory-panel"));
     auto* mem_layout = new QVBoxLayout(mem_panel);
     mem_layout->setContentsMargins(10, 8, 10, 10);
     mem_layout->setSpacing(6);
@@ -981,7 +838,6 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     memory_status_label_->setObjectName(QStringLiteral("memory-status-label"));
     memory_status_label_->setMinimumWidth(0);
     memory_status_label_->setWordWrap(true);
-    memory_status_label_->setStyleSheet(QStringLiteral("color: #b8bcc4; font-size: 10px;"));
     mem_layout->addWidget(memory_status_label_);
 
     memory_bar_ = new QProgressBar{mem_panel};
@@ -990,9 +846,6 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     memory_bar_->setFixedHeight(6);
     memory_bar_->setRange(0, 300);
     memory_bar_->setValue(0);
-    memory_bar_->setStyleSheet(QStringLiteral(
-        "QProgressBar { background-color: #121316; border: 1px solid #282b33; border-radius: 3px; }"
-        "QProgressBar::chunk { background-color: #22e58a; border-radius: 2px; }"));
     mem_layout->addWidget(memory_bar_);
     screens_layout->addWidget(mem_panel);
     screens_scroll->setWidget(screens_page);
@@ -1001,7 +854,6 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     // --- Page 2: Active Item Cues + Filter ---
     auto* cues_page = new QWidget{drawer_stack_};
     cues_page->setObjectName(QStringLiteral("drawer-page-cues"));
-    cues_page->setStyleSheet(QStringLiteral("background-color: #1d1e23;"));
     auto* cues_layout = new QVBoxLayout(cues_page);
     cues_layout->setContentsMargins(0, 0, 0, 0);
     cues_layout->setSpacing(0);
@@ -1027,8 +879,6 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
 
     auto* filter_bar = new QWidget{cues_page};
     filter_bar->setObjectName(QStringLiteral("cues-filter-bar"));
-    filter_bar->setStyleSheet(QStringLiteral(
-        "background-color: #23252a; border-top: 1px solid #131417;"));
     auto* filter_layout = new QHBoxLayout(filter_bar);
     filter_layout->setContentsMargins(8, 5, 8, 5);
     filter_layout->setSpacing(6);
@@ -1044,7 +894,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     filter_layout->addWidget(cues_filter_input_, 1);
 
     auto* shortcut_hint = new ElidedLabel{QStringLiteral("PgUp/Dn · Esc · B"), filter_bar};
-    shortcut_hint->setStyleSheet(QStringLiteral("color: #777c87; font-size: 10px; border: none;"));
+    shortcut_hint->setObjectName(QStringLiteral("quick-cues-shortcut-hint"));
     filter_layout->addWidget(shortcut_hint);
     cues_layout->addWidget(filter_bar);
     drawer_stack_->addWidget(cues_page);
@@ -1053,7 +903,9 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
 
     refresh_screens_list();
     set_active_tab(0);
-    update_status_chrome();
+    apply_theme();
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) { apply_theme(); });
 }
 
 void ProgramStatusWidget::set_program_title(QString title) {
@@ -1086,6 +938,7 @@ void ProgramStatusWidget::set_program(const domain::ProgramState& program) {
 
 void ProgramStatusWidget::set_live_details(LiveSlideDetails details) {
     live_details_ = std::move(details);
+    const auto& p = ThemeManager::instance().palette();
 
     const bool has_live =
         current_program_.mode == domain::ProgramMode::cue && current_program_.live_cue.has_value();
@@ -1094,8 +947,9 @@ void ProgramStatusWidget::set_live_details(LiveSlideDetails details) {
         live_section_badge_->setText(
             current_program_.mode == domain::ProgramMode::black ? QStringLiteral("BLACK")
                                                                 : QStringLiteral("IDLE"));
-        live_section_badge_->setStyleSheet(QStringLiteral(
-            "background-color: #2b2d34; color: #b6bac4; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;"));
+        live_section_badge_->setStyleSheet(
+            QStringLiteral("background-color: %1; color: %2; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;")
+                .arg(p.badge_bg.name(), p.badge_fg.name()));
         live_item_title_label_->setText(
             active_item_title_.isEmpty() ? QStringLiteral("Ready for service") : active_item_title_);
         live_slide_counter_label_->setText(QStringLiteral("--"));
@@ -1159,8 +1013,9 @@ void ProgramStatusWidget::set_live_details(LiveSlideDetails details) {
         next_up_action_button_->setText(QStringLiteral("Go to Next Slide"));
     } else {
         next_section_badge_->setText(has_live ? QStringLiteral("END") : QStringLiteral("STANDBY"));
-        next_section_badge_->setStyleSheet(QStringLiteral(
-            "background-color: #272930; color: #9ea3ae; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;"));
+        next_section_badge_->setStyleSheet(
+            QStringLiteral("background-color: %1; color: %2; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;")
+                .arg(p.badge_bg.name(), p.badge_fg.name()));
         next_summary_label_->setText(
             has_live
                 ? QStringLiteral("End of current presentation item.")
@@ -1205,17 +1060,20 @@ void ProgramStatusWidget::set_output_status(QString target_name, QString mode_la
 }
 
 void ProgramStatusWidget::set_memory_status(std::size_t working_set_bytes, bool live_media_admitted) {
+    last_working_set_bytes_ = working_set_bytes;
+    last_live_media_admitted_ = live_media_admitted;
+    const auto& p = ThemeManager::instance().palette();
     const double mb = static_cast<double>(working_set_bytes) / (1024.0 * 1024.0);
     const int mb_int = static_cast<int>(std::lround(mb));
     memory_bar_->setValue(std::clamp(mb_int, 0, 300));
     const QString chunk_color = !live_media_admitted
-                                    ? QStringLiteral("#ff5a5f")
-                                    : (mb >= 220.0 ? QStringLiteral("#f5a623") : QStringLiteral("#22e58a"));
+                                    ? p.danger_fg.name()
+                                    : (mb >= 220.0 ? p.warning_fg.name() : p.live_fg.name());
     memory_bar_->setStyleSheet(
         QStringLiteral(
-            "QProgressBar { background-color: #121316; border: 1px solid #282b33; border-radius: 3px; }"
-            "QProgressBar::chunk { background-color: %1; border-radius: 2px; }")
-            .arg(chunk_color));
+            "QProgressBar { background-color: %1; border: 1px solid %2; border-radius: 3px; }"
+            "QProgressBar::chunk { background-color: %3; border-radius: 2px; }")
+            .arg(p.input_bg.name(), p.border_subtle.name(), chunk_color));
     memory_status_label_->setText(
         QStringLiteral("Memory: %1 MB / 270 MB · %2")
             .arg(mb, 0, 'f', 1)
@@ -1229,8 +1087,10 @@ bool ProgramStatusWidget::global_controls_below_status() const noexcept {
 
 void ProgramStatusWidget::set_active_tab(int index) {
     const int clamped = std::clamp(index, 0, drawer_stack_->count() - 1);
+    active_tab_ = clamped;
     drawer_stack_->setCurrentIndex(clamped);
 
+    const auto& p = ThemeManager::instance().palette();
     const std::pair<QPushButton*, IconGlyph> tabs[] = {
         {tab_live_button_, IconGlyph::layers},
         {tab_screens_button_, IconGlyph::display},
@@ -1241,11 +1101,13 @@ void ProgramStatusWidget::set_active_tab(int index) {
         auto* btn = tabs[i].first;
         btn->setChecked(active);
         btn->setStyleSheet(active
-                               ? QStringLiteral("background-color: #0a84ff; border: none;")
-                               : QStringLiteral("background-color: #2f3138; border: none;"));
+                               ? QStringLiteral("background-color: %1; border: none;")
+                                     .arg(p.tab_active_bg.name())
+                               : QStringLiteral("background-color: %1; border: none;")
+                                     .arg(p.tab_inactive_bg.name()));
         btn->setIcon(make_glyph_icon(
             tabs[i].second,
-            active ? QColor{Qt::white} : QColor{QStringLiteral("#c5c9d2")},
+            active ? p.tab_active_fg : p.tab_inactive_fg,
             15));
     }
     if (clamped == 1) {
@@ -1254,21 +1116,39 @@ void ProgramStatusWidget::set_active_tab(int index) {
 }
 
 void ProgramStatusWidget::update_status_chrome() {
+    const auto& p = ThemeManager::instance().palette();
+    const auto rgba_css = [](const QColor& c) {
+        return QStringLiteral("rgba(%1, %2, %3, %4)")
+            .arg(c.red())
+            .arg(c.green())
+            .arg(c.blue())
+            .arg(c.alphaF(), 0, 'f', 2);
+    };
+
     switch (current_program_.mode) {
     case domain::ProgramMode::cue:
-        mode_label_->setStyleSheet(QStringLiteral(
-            "background-color: rgba(34, 229, 138, 0.16); color: #22e58a; border: 1px solid rgba(34, 229, 138, 0.45); border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700;"));
-        cue_label_->setStyleSheet(QStringLiteral("color: #f1f3f5; font-size: 11px; font-weight: 600;"));
+        mode_label_->setStyleSheet(
+            QStringLiteral("background-color: %1; color: %2; border: 1px solid %3; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700;")
+                .arg(rgba_css(p.live_pill_bg), p.live_fg.name(), rgba_css(p.live_pill_border)));
+        cue_label_->setStyleSheet(
+            QStringLiteral("color: %1; font-size: 11px; font-weight: 600; background: transparent;")
+                .arg(p.text_primary.name()));
         break;
     case domain::ProgramMode::black:
-        mode_label_->setStyleSheet(QStringLiteral(
-            "background-color: rgba(217, 56, 58, 0.22); color: #ff6b6d; border: 1px solid rgba(217, 56, 58, 0.55); border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700;"));
-        cue_label_->setStyleSheet(QStringLiteral("color: #ff8e8f; font-size: 11px; font-weight: 600;"));
+        mode_label_->setStyleSheet(
+            QStringLiteral("background-color: %1; color: %2; border: 1px solid %3; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700;")
+                .arg(rgba_css(p.danger_pill_bg), p.danger_soft_fg.name(), rgba_css(p.danger_pill_border)));
+        cue_label_->setStyleSheet(
+            QStringLiteral("color: %1; font-size: 11px; font-weight: 600; background: transparent;")
+                .arg(p.danger_soft_fg.name()));
         break;
     case domain::ProgramMode::clear:
-        mode_label_->setStyleSheet(QStringLiteral(
-            "background-color: #262830; color: #22e58a; border: 1px solid #353844; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700;"));
-        cue_label_->setStyleSheet(QStringLiteral("color: #22e58a; font-size: 11px; font-weight: 500;"));
+        mode_label_->setStyleSheet(
+            QStringLiteral("background-color: %1; color: %2; border: 1px solid %3; border-radius: 3px; padding: 1px 6px; font-size: 10px; font-weight: 700;")
+                .arg(p.live_clear_bg.name(), p.live_fg.name(), p.live_clear_border.name()));
+        cue_label_->setStyleSheet(
+            QStringLiteral("color: %1; font-size: 11px; font-weight: 500; background: transparent;")
+                .arg(p.live_fg.name()));
         break;
     }
 
@@ -1277,26 +1157,353 @@ void ProgramStatusWidget::update_status_chrome() {
     rail_black_button_->setChecked(is_black);
     rail_audience_button_->setChecked(output_visible_);
 
+    rail_clear_button_->setIcon(make_glyph_icon(IconGlyph::slide, p.rail_icon, 15));
+    rail_background_button_->setIcon(make_glyph_icon(IconGlyph::media_image, p.rail_icon, 15));
+    rail_black_button_->setIcon(
+        make_glyph_icon(IconGlyph::blackout, is_black ? p.text_on_accent : p.rail_icon, 15));
+    rail_audience_button_->setIcon(
+        make_glyph_icon(IconGlyph::display, output_visible_ ? p.text_on_accent : p.rail_icon, 15));
+    rail_inspector_button_->setIcon(make_glyph_icon(IconGlyph::sliders, p.rail_icon, 15));
+
     status_screen_indicator_->setIcon(make_glyph_icon(
         IconGlyph::slide,
-        is_live ? QColor{QStringLiteral("#0a84ff")}
-                : is_black ? QColor{QStringLiteral("#ff5a5f")}
-                           : QColor{QStringLiteral("#6d727d")},
+        is_live ? p.accent : is_black ? p.danger_fg : p.icon_dim,
         14));
     status_media_indicator_->setIcon(make_glyph_icon(
         IconGlyph::media_image,
-        (is_live && live_details_.has_background) ? QColor{QStringLiteral("#0a84ff")}
-                                                 : QColor{QStringLiteral("#6d727d")},
+        (is_live && live_details_.has_background) ? p.accent : p.icon_dim,
         14));
     status_audience_indicator_->setIcon(make_glyph_icon(
         IconGlyph::display,
-        output_visible_ ? QColor{QStringLiteral("#0a84ff")} : QColor{QStringLiteral("#6d727d")},
+        output_visible_ ? p.accent : p.icon_dim,
         14));
 
     black_button_->setStyleSheet(
         is_black
-            ? QStringLiteral("background-color: #7d2326; border-color: #d9383a; color: #ffffff;")
+            ? QStringLiteral("background-color: %1; border-color: %2; color: #ffffff;")
+                  .arg(p.danger_bg.name(), p.danger_border.name())
             : QString{});
+    black_button_->setIcon(
+        make_glyph_icon(IconGlyph::blackout, is_black ? QColor{Qt::white} : p.icon_neutral, 11));
+}
+
+void ProgramStatusWidget::apply_theme() {
+    const auto& p = ThemeManager::instance().palette();
+    setStyleSheet(
+        QStringLiteral(
+            "#program-status {"
+            "  background-color: %1;"
+            "  border-left: 1px solid %2;"
+            "  color: %3;"
+            "}"
+            "#program-header-bar {"
+            "  background-color: %4;"
+            "  border-bottom: 1px solid %2;"
+            "}"
+            "#program-status-title {"
+            "  color: %5;"
+            "  font-size: 10px;"
+            "  font-weight: 700;"
+            "  letter-spacing: 1.1px;"
+            "  border: none;"
+            "  background: transparent;"
+            "}"
+            "#monitor-row {"
+            "  background-color: %6;"
+            "}"
+            "#clear-gutter { background: transparent; }"
+            "QPushButton#quick-clear-all {"
+            "  background-color: %7;"
+            "  border: 1px solid %8;"
+            "  border-radius: 10px;"
+            "}"
+            "QPushButton#quick-clear-all:hover { background-color: %9; }"
+            "QPushButton#quick-clear-all:pressed { background-color: %10; }"
+            "#program-action-rail {"
+            "  background-color: %11;"
+            "  border-left: 1px solid %2;"
+            "}"
+            "#program-status QPushButton[rail=\"true\"] {"
+            "  background-color: %11;"
+            "  border: none;"
+            "  border-bottom: 1px solid %12;"
+            "  border-radius: 0px;"
+            "  padding: 0px;"
+            "}"
+            "#program-status QPushButton[rail=\"true\"]:hover {"
+            "  background-color: %13;"
+            "}"
+            "#program-status QPushButton[rail=\"true\"]:checked {"
+            "  background-color: %14;"
+            "}"
+            "#screen-selector-bar {"
+            "  background-color: %15;"
+            "  border-top: 1px solid %16;"
+            "  border-bottom: 1px solid %16;"
+            "}"
+            "#output-target {"
+            "  color: %17;"
+            "  font-size: 11px;"
+            "  font-weight: 600;"
+            "  border: none;"
+            "  background: transparent;"
+            "}"
+            "#audience-mode {"
+            "  color: %5;"
+            "  font-size: 10px;"
+            "  border: none;"
+            "  background: transparent;"
+            "}"
+            "#screen-menu-button {"
+            "  background: transparent;"
+            "  border: none;"
+            "  border-radius: 3px;"
+            "}"
+            "#screen-menu-button:hover { background: %18; }"
+            "#program-status-strip { background-color: %19; }"
+            "#program-status QPushButton[statusIndicator=\"true\"] {"
+            "  background: transparent;"
+            "  border: none;"
+            "  border-radius: 3px;"
+            "}"
+            "#program-status QPushButton[statusIndicator=\"true\"]:hover {"
+            "  background: %18;"
+            "}"
+            "#slide-progress {"
+            "  background-color: %20;"
+            "  border: none;"
+            "}"
+            "#slide-progress::chunk { background-color: %14; }"
+            "#global-controls {"
+            "  background-color: %19;"
+            "  border-bottom: 1px solid %2;"
+            "}"
+            "#program-status QWidget#global-controls QPushButton {"
+            "  background-color: %21;"
+            "  border: 1px solid %22;"
+            "  border-radius: 4px;"
+            "  color: %3;"
+            "  font-size: 10px;"
+            "  font-weight: 600;"
+            "  padding: 4px 4px;"
+            "  min-height: 24px;"
+            "}"
+            "#program-status QWidget#global-controls QPushButton:hover {"
+            "  background-color: %23;"
+            "  border-color: %24;"
+            "}"
+            "#program-status QWidget#global-controls QPushButton:pressed {"
+            "  background-color: %25;"
+            "}"
+            "#drawer-tab-bar {"
+            "  background-color: %26;"
+            "  border-bottom: 1px solid %2;"
+            "}"
+            "#drawer-page-live-scroll, #drawer-page-live,"
+            "#drawer-page-screens-scroll, #drawer-page-screens,"
+            "#drawer-page-cues {"
+            "  background-color: %27;"
+            "}"
+            "#program-status QWidget[sectionHeader=\"true\"] {"
+            "  background-color: %28;"
+            "  border-top: 1px solid %16;"
+            "  border-bottom: 1px solid %16;"
+            "}"
+            "#program-status QLabel[sectionTitle=\"true\"] {"
+            "  color: %17;"
+            "  font-size: 10px;"
+            "  font-weight: 700;"
+            "  letter-spacing: 0.8px;"
+            "  border: none;"
+            "  background: transparent;"
+            "}"
+            "#program-status QPushButton[linkAction=\"true\"] {"
+            "  background: transparent;"
+            "  border: none;"
+            "  color: %29;"
+            "  font-size: 10px;"
+            "  font-weight: 600;"
+            "  padding: 2px 4px;"
+            "}"
+            "#program-status QPushButton[linkAction=\"true\"]:hover {"
+            "  color: %30;"
+            "}"
+            "#live-card, #memory-panel {"
+            "  background-color: %4;"
+            "}"
+            "#next-up-card {"
+            "  background-color: %31;"
+            "}"
+            "#screen-actions-bar {"
+            "  background-color: %32;"
+            "}"
+            "#live-item-title {"
+            "  color: %3;"
+            "  font-size: 11px;"
+            "  font-weight: 600;"
+            "  background: transparent;"
+            "}"
+            "#live-slide-counter, #live-asset-label {"
+            "  color: %5;"
+            "  font-size: 10px;"
+            "  font-weight: 600;"
+            "  background: transparent;"
+            "}"
+            "#live-lyrics-preview {"
+            "  color: %17;"
+            "  font-size: 11px;"
+            "  background-color: %20;"
+            "  border: 1px solid %33;"
+            "  border-radius: 4px;"
+            "  padding: 6px 8px;"
+            "}"
+            "#live-set-bg-button {"
+            "  background: %21;"
+            "  border: 1px solid %22;"
+            "  border-radius: 3px;"
+            "  color: %17;"
+            "  font-size: 10px;"
+            "  padding: 2px 7px;"
+            "}"
+            "#live-set-bg-button:hover { background: %23; }"
+            "#next-up-header-button {"
+            "  background: transparent;"
+            "  border: none;"
+            "  padding: 2px;"
+            "}"
+            "#next-up-header-button:hover {"
+            "  background: %18;"
+            "  border-radius: 3px;"
+            "}"
+            "#next-summary-label {"
+            "  color: %5;"
+            "  font-size: 11px;"
+            "  background: transparent;"
+            "}"
+            "#next-up-action-button {"
+            "  background-color: %21;"
+            "  border: 1px solid %22;"
+            "  border-radius: 5px;"
+            "  color: %3;"
+            "  font-size: 11px;"
+            "  font-weight: 600;"
+            "  padding: 6px 10px;"
+            "}"
+            "#next-up-action-button:hover {"
+            "  background-color: %23;"
+            "  border-color: %14;"
+            "}"
+            "#program-status QPushButton[screenAction=\"true\"] {"
+            "  background: %21;"
+            "  border: 1px solid %22;"
+            "  border-radius: 4px;"
+            "  color: %3;"
+            "  font-size: 10px;"
+            "  font-weight: 600;"
+            "  padding: 4px 6px;"
+            "}"
+            "#program-status QPushButton[screenAction=\"true\"]:hover {"
+            "  background: %23;"
+            "}"
+            "#memory-status-label {"
+            "  color: %17;"
+            "  font-size: 10px;"
+            "  background: transparent;"
+            "}"
+            "#cues-filter-bar {"
+            "  background-color: %34;"
+            "  border-top: 1px solid %16;"
+            "}"
+            "#quick-cues-shortcut-hint {"
+            "  color: %35;"
+            "  font-size: 10px;"
+            "  border: none;"
+            "  background: transparent;"
+            "}"
+            "#program-status QListWidget {"
+            "  background-color: %32;"
+            "  border: none;"
+            "  color: %17;"
+            "  font-size: 11px;"
+            "  outline: 0;"
+            "}"
+            "#program-status QListWidget::item {"
+            "  padding: 5px 8px;"
+            "  border-bottom: 1px solid %36;"
+            "}"
+            "#program-status QListWidget::item:selected {"
+            "  background-color: %37;"
+            "  color: %38;"
+            "}"
+            "#program-status QListWidget::item:hover {"
+            "  background-color: %39;"
+            "}"
+            "#program-status QLineEdit {"
+            "  background-color: %20;"
+            "  border: 1px solid %33;"
+            "  border-radius: 4px;"
+            "  color: %3;"
+            "  font-size: 11px;"
+            "  padding: 3px 8px;"
+            "}"
+            "#program-status QLineEdit:focus {"
+            "  border-color: %14;"
+            "}")
+            .arg(p.status_panel_bg.name(),     // %1
+                 p.border_strong.name(),       // %2
+                 p.text_primary.name(),        // %3
+                 p.header_bg.name(),           // %4
+                 p.text_muted.name(),          // %5
+                 p.monitor_row_bg.name(),      // %6
+                 p.quick_clear_bg.name(),      // %7
+                 p.quick_clear_border.name(),  // %8
+                 p.quick_clear_hover_bg.name(),// %9
+                 p.quick_clear_pressed_bg.name(),// %10
+                 p.rail_bg.name(),             // %11
+                 p.rail_border.name(),         // %12
+                 p.rail_hover_bg.name(),       // %13
+                 p.accent.name(),              // %14
+                 p.toolbar_bg.name(),          // %15
+                 p.border_mid.name(),          // %16
+                 p.text_secondary.name(),      // %17
+                 p.menu_hover_bg.name(),       // %18
+                 p.toolbar_bg.name(),          // %19
+                 p.input_alt_bg.name(),        // %20
+                 p.button_bg.name(),           // %21
+                 p.button_border.name(),       // %22
+                 p.button_hover_bg.name(),     // %23
+                 p.button_hover_border.name(), // %24
+                 p.button_pressed_bg.name(),   // %25
+                 p.tab_bar_bg.name(),          // %26
+                 p.panel_alt_bg.name(),        // %27
+                 p.sub_header_bg.name(),       // %28
+                 p.text_link.name(),           // %29
+                 p.text_link_hover.name(),     // %30
+                 p.panel_bg.name(),            // %31
+                 p.list_bg.name(),             // %32
+                 p.border_subtle.name(),       // %33
+                 p.filter_bar_bg.name(),       // %34
+                 p.text_subtle.name(),         // %35
+                 p.border_divider.name(),      // %36
+                 p.list_selected_bg.name(),    // %37
+                 p.text_selected.name(),       // %38
+                 p.list_hover_bg.name()));     // %39
+
+    quick_clear_button_->setIcon(make_glyph_icon(IconGlyph::clear_all, p.quick_clear_fg, 12));
+    screen_menu_button_->setIcon(make_glyph_icon(IconGlyph::chevron_down, p.icon_muted, 12));
+    previous_button_->setIcon(make_glyph_icon(IconGlyph::previous, p.icon_neutral, 11));
+    next_button_->setIcon(make_glyph_icon(IconGlyph::next, p.icon_neutral, 11));
+    clear_button_->setIcon(make_glyph_icon(IconGlyph::clear_layer, p.icon_neutral, 11));
+    if (next_up_header_button_ != nullptr) {
+        next_up_header_button_->setIcon(make_glyph_icon(IconGlyph::arrow_right, p.icon_muted, 13));
+    }
+
+    set_active_tab(active_tab_);
+    set_live_details(live_details_);
+    set_memory_status(last_working_set_bytes_, last_live_media_admitted_);
+    if (slide_preview_ != nullptr) {
+        slide_preview_->update();
+    }
 }
 
 void ProgramStatusWidget::refresh_screens_list() {

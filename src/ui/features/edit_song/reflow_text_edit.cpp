@@ -1,5 +1,7 @@
 #include "shekinah/ui/reflow_text_edit.hpp"
 
+#include "shekinah/ui/support/theme.hpp"
+
 #include <QKeyEvent>
 #include <QTextCharFormat>
 
@@ -13,6 +15,8 @@ ReflowTextEdit::ReflowTextEdit(QWidget* parent) : QPlainTextEdit(parent) {
     QObject::connect(this, &QPlainTextEdit::textChanged, this, [this] {
         synchronize_document_text();
     });
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) { rebuild_markers(); });
 }
 
 void ReflowTextEdit::set_text(std::string text) {
@@ -142,6 +146,7 @@ void ReflowTextEdit::synchronize_document_text() {
 }
 
 void ReflowTextEdit::rebuild_markers() {
+    const auto& p = ThemeManager::instance().palette();
     break_markers_.clear();
     for (const auto& slide_break : document_.breaks()) {
         QTextCursor cursor = textCursor();
@@ -150,7 +155,8 @@ void ReflowTextEdit::rebuild_markers() {
         cursor.setPosition(std::min(position + 1, static_cast<int>(toPlainText().size())), QTextCursor::KeepAnchor);
         QTextEdit::ExtraSelection marker;
         marker.cursor = cursor;
-        marker.format.setBackground(QColor{QStringLiteral("#f4c95d")});
+        marker.format.setBackground(p.reflow_break_bg);
+        marker.format.setForeground(p.reflow_break_fg);
         marker.format.setProperty(QTextFormat::FullWidthSelection, true);
         break_markers_.push_back(marker);
     }

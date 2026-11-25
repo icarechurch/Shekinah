@@ -79,6 +79,7 @@ public:
     }
 
 private:
+    void apply_theme();
     void set_active_tab(int index);
     void update_status_chrome();
     void refresh_screens_list();
@@ -119,6 +120,7 @@ private:
     QLabel* live_asset_label_{nullptr};
     QPushButton* live_edit_button_{nullptr};
     QPushButton* live_bg_button_{nullptr};
+    QPushButton* next_up_header_button_{nullptr};
     QWidget* next_up_card_{nullptr};
     QLabel* next_section_badge_{nullptr};
     QLabel* next_summary_label_{nullptr};
@@ -137,6 +139,9 @@ private:
     std::vector<QuickCueItem> item_cues_;
     QString active_item_title_;
     bool output_visible_{false};
+    int active_tab_{0};
+    std::size_t last_working_set_bytes_{0};
+    bool last_live_media_admitted_{true};
 
     std::function<void()> previous_handler_;
     std::function<void()> next_handler_;

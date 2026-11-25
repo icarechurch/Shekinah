@@ -2,6 +2,7 @@
 #include "shekinah/ui/support/asset_drag.hpp"
 #include "shekinah/ui/support/content_drag.hpp"
 #include "shekinah/ui/support/elided_label.hpp"
+#include "shekinah/ui/support/theme.hpp"
 
 #include <QAbstractItemView>
 #include <QDragEnterEvent>
@@ -167,33 +168,35 @@ public:
         const int ordinal = index.data(kOrdinalRole).toInt();
         const QString title = index.data(Qt::DisplayRole).toString();
 
+        const auto& p = ThemeManager::instance().palette();
+
         // Row background
-        QColor bg_color{QStringLiteral("#1b1c21")};
+        QColor bg_color{p.panel_bg};
         if (drop_target) {
-            bg_color = QColor{QStringLiteral("#183244")};
+            bg_color = p.card_drop_bg;
         } else if (selected) {
-            bg_color = QColor{QStringLiteral("#1d324d")};
+            bg_color = p.order_selected_bg;
         } else if (hovered) {
-            bg_color = QColor{QStringLiteral("#23252d")};
+            bg_color = p.list_hover_bg;
         }
         painter->fillRect(bounds, bg_color);
 
         // Bottom hairline divider
-        painter->setPen(QColor{QStringLiteral("#24262e")});
+        painter->setPen(p.border_divider);
         painter->drawLine(bounds.bottomLeft(), bounds.bottomRight());
 
         // Left status / selection accent bar
         if (is_live) {
             painter->fillRect(QRect{bounds.left(), bounds.top() + 3, 3, bounds.height() - 6},
-                              QColor{QStringLiteral("#22e58a")});
+                              p.live_fg);
         } else if (selected) {
             painter->fillRect(QRect{bounds.left(), bounds.top() + 3, 3, bounds.height() - 6},
-                              QColor{QStringLiteral("#0a84ff")});
+                              p.accent);
         }
 
         // Drop target highlight outline
         if (drop_target) {
-            painter->setPen(QPen{QColor{QStringLiteral("#65d6ff")}, 1.5});
+            painter->setPen(QPen{p.drop_highlight, 1.5});
             painter->drawRoundedRect(bounds.adjusted(2, 2, -2, -2), 4.0, 4.0);
         }
 
@@ -205,10 +208,9 @@ public:
             26.0,
         };
         const bool is_song = (kind == domain::ContentKind::song);
-        const QColor badge_fill = is_song ? QColor{14, 165, 233, 34} : QColor{245, 158, 11, 34};
-        const QColor badge_fg = is_song ? QColor{QStringLiteral("#38bdf8")}
-                                        : QColor{QStringLiteral("#fbbf24")};
-        painter->setPen(QPen{is_song ? QColor{56, 189, 248, 70} : QColor{251, 191, 36, 70}, 1.0});
+        const QColor badge_fill = is_song ? p.song_badge_bg : p.sermon_badge_bg;
+        const QColor badge_fg = is_song ? p.song_badge_fg : p.sermon_badge_fg;
+        painter->setPen(QPen{is_song ? p.song_badge_border : p.sermon_badge_border, 1.0});
         painter->setBrush(badge_fill);
         painter->drawRoundedRect(badge_rect, 5.0, 5.0);
         draw_badge_glyph(*painter, badge_rect, kind, badge_fg);
@@ -218,14 +220,14 @@ public:
         int right_occupied = right_padding;
         if (is_live) {
             const QRect live_pill{bounds.right() - 40, bounds.top() + (bounds.height() - 16) / 2, 32, 16};
-            painter->setPen(QPen{QColor{34, 229, 138, 120}, 1.0});
-            painter->setBrush(QColor{34, 229, 138, 42});
+            painter->setPen(QPen{p.live_pill_border, 1.0});
+            painter->setBrush(p.live_pill_bg);
             painter->drawRoundedRect(live_pill, 3.0, 3.0);
             QFont pill_font = option.font;
             pill_font.setPixelSize(9);
             pill_font.setBold(true);
             painter->setFont(pill_font);
-            painter->setPen(QColor{QStringLiteral("#22e58a")});
+            painter->setPen(p.live_fg);
             painter->drawText(live_pill, Qt::AlignCenter, QStringLiteral("LIVE"));
             right_occupied = 46;
         } else if (ordinal > 0) {
@@ -234,8 +236,7 @@ public:
             ord_font.setPixelSize(10);
             ord_font.setWeight(QFont::Medium);
             painter->setFont(ord_font);
-            painter->setPen(selected ? QColor{QStringLiteral("#9ec5ff")}
-                                     : QColor{QStringLiteral("#5c616d")});
+            painter->setPen(selected ? p.text_selected_sub : p.text_subtle);
             const QRect ord_rect{bounds.right() - 28, bounds.top(), 20, bounds.height()};
             painter->drawText(ord_rect, Qt::AlignVCenter | Qt::AlignRight, ord_text);
             right_occupied = 32;
@@ -249,8 +250,7 @@ public:
         title_font.setPixelSize(12);
         title_font.setWeight(selected || is_live ? QFont::DemiBold : QFont::Medium);
         painter->setFont(title_font);
-        painter->setPen(selected || is_live ? QColor{QStringLiteral("#ffffff")}
-                                            : QColor{QStringLiteral("#e6e8ec")});
+        painter->setPen(selected || is_live ? p.text_selected : p.text_primary);
         const QFontMetrics title_fm{title_font};
         const QString elided_title = title_fm.elidedText(title, Qt::ElideRight, text_width);
         const QRect title_rect{text_left, bounds.top() + 7, text_width, 16};
@@ -273,9 +273,9 @@ public:
         sub_font.setPixelSize(10);
         painter->setFont(sub_font);
         painter->setPen(drop_target
-                            ? QColor{QStringLiteral("#65d6ff")}
-                            : selected ? QColor{QStringLiteral("#a7c7f5")}
-                                       : QColor{QStringLiteral("#868b96")});
+                            ? p.drop_highlight
+                            : selected ? p.text_selected_sub
+                                       : p.text_muted);
         const QFontMetrics sub_fm{sub_font};
         const QString elided_sub = sub_fm.elidedText(subtitle, Qt::ElideRight, text_width);
         const QRect sub_rect{text_left, bounds.top() + 24, text_width, 15};
@@ -441,7 +441,7 @@ protected:
         if (content_drop_active_) {
             QPainter p{viewport()};
             p.setRenderHint(QPainter::Antialiasing, true);
-            p.setPen(QPen{QColor{QStringLiteral("#0a84ff")}, 2.0});
+            p.setPen(QPen{ThemeManager::instance().palette().accent, 2.0});
             p.drawRoundedRect(viewport()->rect().adjusted(2, 2, -2, -2), 4.0, 4.0);
         }
     }
@@ -519,54 +519,6 @@ private:
 
 ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     setObjectName(QStringLiteral("service-order"));
-    setStyleSheet(QStringLiteral(
-        "#service-order {"
-        "  background-color: #1b1c21;"
-        "  border-right: 1px solid #111215;"
-        "  color: #e6e8ec;"
-        "}"
-        "#service-order QListWidget#service-order-list {"
-        "  background-color: #1b1c21;"
-        "  border: none;"
-        "  outline: 0;"
-        "}"
-        "#service-order QPushButton[orderTool=\"true\"] {"
-        "  background-color: #272930;"
-        "  border: 1px solid #353842;"
-        "  border-radius: 4px;"
-        "  color: #dfe2e7;"
-        "  font-size: 11px;"
-        "  font-weight: 600;"
-        "  padding: 2px 6px;"
-        "}"
-        "#service-order QPushButton[orderTool=\"true\"]:hover {"
-        "  background-color: #32353f;"
-        "  border-color: #4b4f5c;"
-        "}"
-        "#service-order QPushButton[orderTool=\"true\"]:pressed {"
-        "  background-color: #1d1f25;"
-        "}"
-        "#service-order QPushButton[orderTool=\"true\"]:disabled {"
-        "  background-color: #1f2026;"
-        "  border-color: #272930;"
-        "  color: #555965;"
-        "}"
-        "#service-order QPushButton#service-order-remove:hover:enabled {"
-        "  background-color: #5b2226;"
-        "  border-color: #9f3338;"
-        "  color: #ffffff;"
-        "}"
-        "#service-order QLineEdit#service-order-filter {"
-        "  background-color: #15161a;"
-        "  border: 1px solid #2c2f38;"
-        "  border-radius: 4px;"
-        "  color: #e8eaed;"
-        "  font-size: 11px;"
-        "  padding: 3px 8px;"
-        "}"
-        "#service-order QLineEdit#service-order-filter:focus {"
-        "  border-color: #0a84ff;"
-        "}"));
 
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -576,16 +528,12 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     auto* header_bar = new QWidget{this};
     header_bar->setObjectName(QStringLiteral("service-order-header"));
     header_bar->setFixedHeight(26);
-    header_bar->setStyleSheet(QStringLiteral(
-        "#service-order-header { background-color: #191a1e; border-bottom: 1px solid #111215; }"));
     auto* header_layout = new QHBoxLayout(header_bar);
     header_layout->setContentsMargins(10, 0, 6, 0);
     header_layout->setSpacing(6);
 
     auto* title_label = new ElidedLabel{QStringLiteral("SERVICE ORDER"), header_bar};
     title_label->setObjectName(QStringLiteral("service-order-title"));
-    title_label->setStyleSheet(QStringLiteral(
-        "color: #8e929b; font-size: 10px; font-weight: 700; letter-spacing: 1.1px; border: none;"));
     header_layout->addWidget(title_label);
     header_layout->addStretch(1);
 
@@ -593,9 +541,6 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     count_badge_->setObjectName(QStringLiteral("service-order-count"));
     count_badge_->setFixedHeight(18);
     count_badge_->setAlignment(Qt::AlignCenter);
-    count_badge_->setStyleSheet(QStringLiteral(
-        "background-color: #25272e; color: #9ea3ae; border: 1px solid #30333d; "
-        "border-radius: 3px; padding: 0px 6px; font-size: 9px; font-weight: 700;"));
     header_layout->addWidget(count_badge_, 0, Qt::AlignVCenter);
 
     add_button_ = new QPushButton{header_bar};
@@ -603,12 +548,7 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     add_button_->setFixedSize(20, 20);
     add_button_->setCursor(Qt::PointingHandCursor);
     add_button_->setToolTip(QStringLiteral("New or Import Presentation Item"));
-    add_button_->setIcon(make_order_icon(OrderGlyph::plus, QColor{QStringLiteral("#c5c9d2")}, 13));
     add_button_->setIconSize(QSize{13, 13});
-    add_button_->setStyleSheet(QStringLiteral(
-        "QPushButton { background: transparent; border: none; border-radius: 3px; }"
-        "QPushButton:hover { background-color: #2d3039; }"
-        "QPushButton:disabled { opacity: 0.4; }"));
     add_button_->setEnabled(false);
     QObject::connect(add_button_, &QPushButton::clicked, this, [this] { open_add_menu(); });
     header_layout->addWidget(add_button_);
@@ -630,30 +570,26 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     empty_overlay_ = new QWidget{list_->viewport()};
     empty_overlay_->setObjectName(QStringLiteral("service-order-empty-state"));
     empty_overlay_->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-    empty_overlay_->setStyleSheet(QStringLiteral("background: transparent;"));
     auto* empty_layout = new QVBoxLayout(empty_overlay_);
     empty_layout->setContentsMargins(18, 24, 18, 24);
     empty_layout->setSpacing(6);
     empty_layout->addStretch(1);
 
-    auto* empty_icon = new QLabel{empty_overlay_};
-    empty_icon->setAlignment(Qt::AlignCenter);
-    empty_icon->setPixmap(
-        make_order_icon(OrderGlyph::empty_stack, QColor{QStringLiteral("#4f5460")}, 28).pixmap(28, 28));
-    empty_layout->addWidget(empty_icon);
+    empty_icon_label_ = new QLabel{empty_overlay_};
+    empty_icon_label_->setAlignment(Qt::AlignCenter);
+    empty_layout->addWidget(empty_icon_label_);
 
     empty_title_label_ = new QLabel{QStringLiteral("Service Order Empty"), empty_overlay_};
+    empty_title_label_->setObjectName(QStringLiteral("service-order-empty-title"));
     empty_title_label_->setAlignment(Qt::AlignCenter);
-    empty_title_label_->setStyleSheet(
-        QStringLiteral("color: #c5c9d2; font-size: 12px; font-weight: 600;"));
     empty_layout->addWidget(empty_title_label_);
 
     empty_hint_label_ = new QLabel{
         QStringLiteral("Drag a Song or Sermon here, or double-click an item in the Library below."),
         empty_overlay_};
+    empty_hint_label_->setObjectName(QStringLiteral("service-order-empty-hint"));
     empty_hint_label_->setAlignment(Qt::AlignCenter);
     empty_hint_label_->setWordWrap(true);
-    empty_hint_label_->setStyleSheet(QStringLiteral("color: #777c87; font-size: 11px;"));
     empty_layout->addWidget(empty_hint_label_);
     empty_layout->addStretch(1);
 
@@ -703,11 +639,6 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     auto* controls_bar = new QWidget{this};
     controls_bar->setObjectName(QStringLiteral("service-order-controls"));
     controls_bar->setFixedHeight(32);
-    controls_bar->setStyleSheet(QStringLiteral(
-        "#service-order-controls {"
-        "  background-color: #202228;"
-        "  border-top: 1px solid #131417;"
-        "}"));
     auto* controls = new QHBoxLayout(controls_bar);
     controls->setContentsMargins(6, 4, 6, 4);
     controls->setSpacing(4);
@@ -718,8 +649,6 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     move_up_button_->setFixedSize(28, 24);
     move_up_button_->setCursor(Qt::PointingHandCursor);
     move_up_button_->setToolTip(QStringLiteral("Move Item Up (Alt+Up)"));
-    move_up_button_->setIcon(
-        make_order_icon(OrderGlyph::chevron_up, QColor{QStringLiteral("#dfe2e7")}, 13));
     move_up_button_->setIconSize(QSize{13, 13});
 
     move_down_button_ = new QPushButton{controls_bar};
@@ -728,8 +657,6 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     move_down_button_->setFixedSize(28, 24);
     move_down_button_->setCursor(Qt::PointingHandCursor);
     move_down_button_->setToolTip(QStringLiteral("Move Item Down (Alt+Down)"));
-    move_down_button_->setIcon(
-        make_order_icon(OrderGlyph::chevron_down, QColor{QStringLiteral("#dfe2e7")}, 13));
     move_down_button_->setIconSize(QSize{13, 13});
 
     edit_button_ = new QPushButton{controls_bar};
@@ -738,8 +665,6 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     edit_button_->setFixedSize(28, 24);
     edit_button_->setCursor(Qt::PointingHandCursor);
     edit_button_->setToolTip(QStringLiteral("Edit Selected Song or Sermon (Ctrl+Enter)"));
-    edit_button_->setIcon(
-        make_order_icon(OrderGlyph::edit, QColor{QStringLiteral("#dfe2e7")}, 13));
     edit_button_->setIconSize(QSize{13, 13});
 
     remove_button_ = new QPushButton{QStringLiteral("Remove"), controls_bar};
@@ -748,8 +673,6 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     remove_button_->setFixedHeight(24);
     remove_button_->setCursor(Qt::PointingHandCursor);
     remove_button_->setToolTip(QStringLiteral("Remove Selected Item from Service Order (Del)"));
-    remove_button_->setIcon(
-        make_order_icon(OrderGlyph::trash, QColor{QStringLiteral("#d98b8e")}, 12));
     remove_button_->setIconSize(QSize{12, 12});
 
     QObject::connect(move_up_button_, &QPushButton::clicked, this, [this] { move_selected(-1); });
@@ -768,11 +691,6 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     auto* filter_bar = new QWidget{this};
     filter_bar->setObjectName(QStringLiteral("service-order-filter-bar"));
     filter_bar->setFixedHeight(32);
-    filter_bar->setStyleSheet(QStringLiteral(
-        "#service-order-filter-bar {"
-        "  background-color: #23252a;"
-        "  border-top: 1px solid #131417;"
-        "}"));
     auto* filter_layout = new QHBoxLayout(filter_bar);
     filter_layout->setContentsMargins(6, 4, 6, 4);
     filter_layout->setSpacing(0);
@@ -785,8 +703,157 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     filter_layout->addWidget(filter_input_);
     layout->addWidget(filter_bar);
 
+    apply_theme();
+    QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
+                     [this](ThemeId) { apply_theme(); });
+
     update_empty_state();
     update_controls_state();
+}
+
+void ServiceOrderWidget::apply_theme() {
+    const auto& p = ThemeManager::instance().palette();
+    setStyleSheet(
+        QStringLiteral(
+            "#service-order {"
+            "  background-color: %1;"
+            "  border-right: 1px solid %2;"
+            "  color: %3;"
+            "}"
+            "#service-order-header {"
+            "  background-color: %4;"
+            "  border-bottom: 1px solid %2;"
+            "}"
+            "#service-order-title {"
+            "  color: %5;"
+            "  font-size: 10px;"
+            "  font-weight: 700;"
+            "  letter-spacing: 1.1px;"
+            "  border: none;"
+            "  background: transparent;"
+            "}"
+            "#service-order-count {"
+            "  background-color: %6;"
+            "  color: %7;"
+            "  border: 1px solid %8;"
+            "  border-radius: 3px;"
+            "  padding: 0px 6px;"
+            "  font-size: 9px;"
+            "  font-weight: 700;"
+            "}"
+            "#service-order-add {"
+            "  background: transparent;"
+            "  border: none;"
+            "  border-radius: 3px;"
+            "}"
+            "#service-order-add:hover {"
+            "  background-color: %9;"
+            "}"
+            "#service-order-add:disabled {"
+            "  opacity: 0.4;"
+            "}"
+            "#service-order QListWidget#service-order-list {"
+            "  background-color: %1;"
+            "  border: none;"
+            "  outline: 0;"
+            "}"
+            "#service-order-empty-state { background: transparent; }"
+            "#service-order-empty-title {"
+            "  color: %10;"
+            "  font-size: 12px;"
+            "  font-weight: 600;"
+            "  background: transparent;"
+            "}"
+            "#service-order-empty-hint {"
+            "  color: %11;"
+            "  font-size: 11px;"
+            "  background: transparent;"
+            "}"
+            "#service-order-controls {"
+            "  background-color: %12;"
+            "  border-top: 1px solid %13;"
+            "}"
+            "#service-order-filter-bar {"
+            "  background-color: %14;"
+            "  border-top: 1px solid %13;"
+            "}"
+            "#service-order QPushButton[orderTool=\"true\"] {"
+            "  background-color: %15;"
+            "  border: 1px solid %16;"
+            "  border-radius: 4px;"
+            "  color: %17;"
+            "  font-size: 11px;"
+            "  font-weight: 600;"
+            "  padding: 2px 6px;"
+            "}"
+            "#service-order QPushButton[orderTool=\"true\"]:hover {"
+            "  background-color: %18;"
+            "  border-color: %19;"
+            "}"
+            "#service-order QPushButton[orderTool=\"true\"]:pressed {"
+            "  background-color: %20;"
+            "}"
+            "#service-order QPushButton[orderTool=\"true\"]:disabled {"
+            "  background-color: %21;"
+            "  border-color: %22;"
+            "  color: %23;"
+            "}"
+            "#service-order QPushButton#service-order-remove:hover:enabled {"
+            "  background-color: %24;"
+            "  border-color: %25;"
+            "  color: %26;"
+            "}"
+            "#service-order QLineEdit#service-order-filter {"
+            "  background-color: %27;"
+            "  border: 1px solid %28;"
+            "  border-radius: 4px;"
+            "  color: %3;"
+            "  font-size: 11px;"
+            "  padding: 3px 8px;"
+            "}"
+            "#service-order QLineEdit#service-order-filter:focus {"
+            "  border-color: %29;"
+            "}")
+            .arg(p.panel_bg.name(),               // %1
+                 p.border_strong.name(),          // %2
+                 p.text_primary.name(),           // %3
+                 p.header_bg.name(),              // %4
+                 p.text_muted.name(),             // %5
+                 p.badge_bg.name(),               // %6
+                 p.badge_fg.name(),               // %7
+                 p.badge_border.name(),           // %8
+                 p.menu_hover_bg.name(),          // %9
+                 p.text_secondary.name(),         // %10
+                 p.text_subtle.name(),            // %11
+                 p.toolbar_bg.name(),             // %12
+                 p.border_mid.name(),             // %13
+                 p.filter_bar_bg.name(),          // %14
+                 p.button_alt_bg.name(),          // %15
+                 p.button_alt_border.name(),      // %16
+                 p.text_secondary.name(),         // %17
+                 p.button_hover_bg.name(),        // %18
+                 p.button_hover_border.name(),    // %19
+                 p.button_pressed_bg.name(),      // %20
+                 p.button_disabled_bg.name(),     // %21
+                 p.button_disabled_border.name(), // %22
+                 p.text_disabled.name(),          // %23
+                 p.danger_hover_bg.name(),        // %24
+                 p.danger_hover_border.name(),    // %25
+                 p.danger_text_on_bg.name(),      // %26
+                 p.input_bg.name(),               // %27
+                 p.border_subtle.name(),          // %28
+                 p.accent.name()));               // %29
+
+    add_button_->setIcon(make_order_icon(OrderGlyph::plus, p.icon_neutral, 13));
+    empty_icon_label_->setPixmap(
+        make_order_icon(OrderGlyph::empty_stack, p.icon_empty, 28).pixmap(28, 28));
+    move_up_button_->setIcon(make_order_icon(OrderGlyph::chevron_up, p.icon_neutral, 13));
+    move_down_button_->setIcon(make_order_icon(OrderGlyph::chevron_down, p.icon_neutral, 13));
+    edit_button_->setIcon(make_order_icon(OrderGlyph::edit, p.icon_neutral, 13));
+    remove_button_->setIcon(make_order_icon(OrderGlyph::trash, p.danger_icon, 12));
+    if (list_ != nullptr && list_->viewport() != nullptr) {
+        list_->viewport()->update();
+    }
 }
 
 void ServiceOrderWidget::set_items(std::vector<ServiceOrderView> items) {

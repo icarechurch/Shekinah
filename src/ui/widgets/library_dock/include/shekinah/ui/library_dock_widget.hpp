@@ -11,6 +11,7 @@
 #include <optional>
 #include <utility>
 
+class QAction;
 class QButtonGroup;
 class QLabel;
 class QLineEdit;
@@ -70,6 +71,7 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
+    void apply_theme();
     void set_tab(LibraryTab tab, int index);
     void apply_filter();
     void apply_filter_to_asset(QListWidgetItem* item, const QString& query) const;
@@ -93,6 +95,7 @@ private:
     QPushButton* sermons_tab_button_{nullptr};
 
     QLineEdit* search_{nullptr};
+    QAction* search_action_{nullptr};
     QWidget* asset_filter_bar_{nullptr};
     QButtonGroup* asset_filter_group_{nullptr};
     QPushButton* filter_all_button_{nullptr};
