@@ -177,4 +177,4 @@ The GitHub Actions workflow builds and tests both debug and release configuratio
 
 ## License
 
-No license file or license declaration is currently present in this repository. Licensing information will be added by the project maintainers.
+Shekinah is released under the [MIT License](LICENSE).
