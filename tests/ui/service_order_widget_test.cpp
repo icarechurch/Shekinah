@@ -9,6 +9,7 @@
 #include <QPushButton>
 #include <QTest>
 
+#include "qt_drag_event_position.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 #include "shekinah/ui/support/asset_drag.hpp"
 #include "shekinah/ui/support/content_drag.hpp"
@@ -90,9 +91,10 @@ TEST_CASE("service order reports an asset dropped on a Song row") {
     widget.show();
     QTest::qWait(20);
     auto* mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-1"});
-    const auto position = list->visualItemRect(list->item(0)).center();
+    const auto point = list->visualItemRect(list->item(0)).center();
+    const auto position = test_support::drag_event_position(point);
     REQUIRE(list->acceptDrops());
-    REQUIRE(list->visualItemRect(list->item(0)).contains(position));
+    REQUIRE(list->visualItemRect(list->item(0)).contains(point));
     REQUIRE(shekinah::ui::asset_id_from_mime_data(mime).has_value());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(list->viewport(), &enter);
@@ -124,7 +126,8 @@ TEST_CASE("service order reports reusable content drops as presentation referenc
     auto* list = widget.findChild<QListWidget*>(QStringLiteral("service-order-list"));
     REQUIRE(list != nullptr);
     auto* mime = shekinah::ui::make_content_mime_data(ContentRef::song("song-2"));
-    const auto position = list->visualItemRect(list->item(0)).center();
+    const auto position = test_support::drag_event_position(
+        list->visualItemRect(list->item(0)).center());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(list->viewport(), &enter);
     REQUIRE(enter.isAccepted());

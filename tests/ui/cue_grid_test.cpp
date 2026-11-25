@@ -7,14 +7,13 @@
 #include <QDropEvent>
 #include <QImage>
 #include <QMimeData>
-#include <QPointF>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QTemporaryDir>
 #include <QTest>
-#include <QtGlobal>
 
+#include "qt_drag_event_position.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
 #include "shekinah/ui/support/asset_drag.hpp"
 
@@ -22,12 +21,6 @@ using namespace shekinah::domain;
 using namespace shekinah::ui;
 
 namespace {
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 12, 0)
-using DragPosition = QPointF;
-#else
-using DragPosition = QPoint;
-#endif
 
 QApplication& ensure_qapplication() {
     static int argc = 1;
@@ -125,7 +118,7 @@ TEST_CASE("cue card accepts an asset drop and reports its cue") {
     auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-cue-1"));
     REQUIRE(card != nullptr);
     auto* mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-1"});
-    const DragPosition position{card->rect().center()};
+    const auto position = test_support::drag_event_position(card->rect().center());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(card, &enter);
     REQUIRE(enter.isAccepted());
@@ -154,7 +147,7 @@ TEST_CASE("cue card ignores unsupported asset drops") {
     auto* card = grid.findChild<QWidget*>(QStringLiteral("cue-cue-1"));
     REQUIRE(card != nullptr);
     QMimeData unsupported;
-    const DragPosition position{card->rect().center()};
+    const auto position = test_support::drag_event_position(card->rect().center());
     QDragEnterEvent enter{position, Qt::CopyAction, &unsupported, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(card, &enter);
     REQUIRE_FALSE(enter.isAccepted());
@@ -178,7 +171,7 @@ TEST_CASE("cue card marks a valid asset drag target and clears it after drop") {
     REQUIRE(card != nullptr);
     REQUIRE_FALSE(card->property("cue-drop-target").toBool());
     auto* mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-1"});
-    const DragPosition position{card->rect().center()};
+    const auto position = test_support::drag_event_position(card->rect().center());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(card, &enter);
 

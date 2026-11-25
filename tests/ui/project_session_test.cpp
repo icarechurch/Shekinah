@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <fstream>
 
+#include "qt_drag_event_position.hpp"
 #include "test_project.hpp"
 #include "shekinah/media/audience_output.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
@@ -275,7 +276,8 @@ TEST_CASE("dragging a Song into Presentations creates a removable reference") {
 
     auto* mime = shekinah::ui::make_content_mime_data(
         shekinah::domain::ContentRef::song(song->id.value));
-    const auto position = presentations->viewport()->rect().center();
+    const auto position =
+        test_support::drag_event_position(presentations->viewport()->rect().center());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(presentations->viewport(), &enter);
     QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
@@ -390,7 +392,8 @@ TEST_CASE("asset dropped on a Song row sets its default background") {
         QStringLiteral("service-order-list"));
     REQUIRE(list != nullptr);
     auto* mime = shekinah::ui::make_asset_mime_data(asset->id);
-    const auto position = list->visualItemRect(list->item(0)).center();
+    const auto position = test_support::drag_event_position(
+        list->visualItemRect(list->item(0)).center());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(list->viewport(), &enter);
     QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
@@ -481,7 +484,7 @@ TEST_CASE("removing a Song asset clears its range and refreshes live output") {
 
     const auto drop_asset = [&](QWidget* target, const shekinah::domain::AssetId& asset_id) {
         auto* mime = shekinah::ui::make_asset_mime_data(asset_id);
-        const auto position = target->rect().center();
+        const auto position = test_support::drag_event_position(target->rect().center());
         QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
         QApplication::sendEvent(target, &enter);
         QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
@@ -576,7 +579,8 @@ TEST_CASE("asset dropped on a non-selected Song row updates that Song") {
     REQUIRE(list != nullptr);
     REQUIRE(list->count() == 2);
     auto* mime = shekinah::ui::make_asset_mime_data(asset->id);
-    const auto position = list->visualItemRect(list->item(1)).center();
+    const auto position = test_support::drag_event_position(
+        list->visualItemRect(list->item(1)).center());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(list->viewport(), &enter);
     QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
@@ -625,7 +629,7 @@ TEST_CASE("asset dropped on a Song slide applies through the following slides") 
         QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[1].id.value)));
     REQUIRE(target != nullptr);
     auto* mime = shekinah::ui::make_asset_mime_data(asset->id);
-    const auto position = target->rect().center();
+    const auto position = test_support::drag_event_position(target->rect().center());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(target, &enter);
     QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
@@ -692,7 +696,7 @@ TEST_CASE("asset slide drops refresh the live preview") {
     REQUIRE(output->program().live_cue->cue == song->slides[1].id);
 
     auto* mime = shekinah::ui::make_asset_mime_data(asset->id);
-    const auto position = live->rect().center();
+    const auto position = test_support::drag_event_position(live->rect().center());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(live, &enter);
     QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
@@ -756,7 +760,7 @@ TEST_CASE("forward Song slide backgrounds survive a project reopen") {
             QStringLiteral("cue-%1").arg(QString::fromStdString(song->slides[1].id.value)));
         REQUIRE(target != nullptr);
         auto* mime = shekinah::ui::make_asset_mime_data(asset->id);
-        const auto position = target->rect().center();
+        const auto position = test_support::drag_event_position(target->rect().center());
         QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
         QApplication::sendEvent(target, &enter);
         QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};

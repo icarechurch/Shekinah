@@ -10,6 +10,7 @@
 #include <QSplitter>
 #include <QTest>
 
+#include "qt_drag_event_position.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
@@ -128,7 +129,8 @@ TEST_CASE("operator page forwards both asset drop surfaces") {
         QStringLiteral("service-order-list"));
     REQUIRE(list != nullptr);
     auto* order_mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-order"});
-    const auto order_position = list->visualItemRect(list->item(0)).center();
+    const auto order_position = test_support::drag_event_position(
+        list->visualItemRect(list->item(0)).center());
     QDragEnterEvent order_enter{
         order_position, Qt::CopyAction, order_mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(list->viewport(), &order_enter);
@@ -143,7 +145,7 @@ TEST_CASE("operator page forwards both asset drop surfaces") {
     auto* card = page.cue_grid()->findChild<QWidget*>(QStringLiteral("cue-cue-1"));
     REQUIRE(card != nullptr);
     auto* cue_mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-cue"});
-    const auto cue_position = card->rect().center();
+    const auto cue_position = test_support::drag_event_position(card->rect().center());
     QDragEnterEvent cue_enter{cue_position, Qt::CopyAction, cue_mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(card, &cue_enter);
     QDragMoveEvent cue_move{cue_position, Qt::CopyAction, cue_mime, Qt::LeftButton, Qt::NoModifier};
@@ -174,7 +176,8 @@ TEST_CASE("operator page forwards reusable content drops and removal") {
         QStringLiteral("service-order-list"));
     REQUIRE(list != nullptr);
     auto* mime = shekinah::ui::make_content_mime_data(ContentRef::song("song-2"));
-    const auto position = list->visualItemRect(list->item(0)).center();
+    const auto position = test_support::drag_event_position(
+        list->visualItemRect(list->item(0)).center());
     QDragEnterEvent enter{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
     QApplication::sendEvent(list->viewport(), &enter);
     QDragMoveEvent move{position, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
