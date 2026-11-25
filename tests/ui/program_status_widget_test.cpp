@@ -2,7 +2,11 @@
 
 #include <QApplication>
 #include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QProgressBar>
 #include <QPushButton>
+#include <QStackedWidget>
 #include <QTest>
 
 #include "shekinah/ui/program_status_widget.hpp"
@@ -79,4 +83,122 @@ TEST_CASE("Program Status exposes the right-side output panel") {
     REQUIRE(widget.findChild<QLabel*>(QStringLiteral("audience-mode"))->text() ==
             QStringLiteral("Audience full-screen"));
     REQUIRE(widget.findChild<QWidget*>(QStringLiteral("global-controls")) != nullptr);
+}
+
+TEST_CASE("Program Status quick-action rail and clear-all button dispatch handlers") {
+    ensure_qapplication();
+    ProgramStatusWidget widget;
+    int clear_calls = 0;
+    int black_calls = 0;
+    int bg_calls = 0;
+    int inspect_calls = 0;
+    int movable_calls = 0;
+
+    widget.set_clear_handler([&] { ++clear_calls; });
+    widget.set_black_handler([&] { ++black_calls; });
+    widget.set_choose_background_handler([&] { ++bg_calls; });
+    widget.set_inspect_live_handler([&] { ++inspect_calls; });
+    widget.set_show_movable_handler([&] { ++movable_calls; });
+
+    widget.findChild<QPushButton*>(QStringLiteral("quick-clear-all"))->click();
+    widget.findChild<QPushButton*>(QStringLiteral("rail-clear-cue"))->click();
+    widget.findChild<QPushButton*>(QStringLiteral("rail-blackout"))->click();
+    widget.findChild<QPushButton*>(QStringLiteral("rail-background"))->click();
+    widget.findChild<QPushButton*>(QStringLiteral("rail-inspector"))->click();
+    widget.findChild<QPushButton*>(QStringLiteral("rail-audience"))->click();
+
+    REQUIRE(clear_calls == 2);
+    REQUIRE(black_calls == 1);
+    REQUIRE(bg_calls == 1);
+    REQUIRE(inspect_calls == 1);
+    REQUIRE(movable_calls == 1);
+}
+
+TEST_CASE("Program Status segmented tabs switch drawer views and keep controls below status") {
+    ensure_qapplication();
+    ProgramStatusWidget widget;
+    widget.resize(320, 700);
+    widget.show();
+    QTest::qWait(20);
+
+    auto* stack = widget.findChild<QStackedWidget*>(QStringLiteral("drawer-stack"));
+    REQUIRE(stack != nullptr);
+    REQUIRE(stack->currentIndex() == 0);
+
+    widget.findChild<QPushButton*>(QStringLiteral("tab-screens"))->click();
+    REQUIRE(stack->currentIndex() == 1);
+
+    widget.findChild<QPushButton*>(QStringLiteral("tab-cues"))->click();
+    REQUIRE(stack->currentIndex() == 2);
+
+    widget.findChild<QPushButton*>(QStringLiteral("tab-live"))->click();
+    REQUIRE(stack->currentIndex() == 0);
+    REQUIRE(widget.global_controls_below_status());
+}
+
+TEST_CASE("Program Status displays live slide metadata, next cue, and memory budget") {
+    ensure_qapplication();
+    ProgramStatusWidget widget;
+    widget.set_program(ProgramState{
+        ProgramMode::cue,
+        CueRef{ContentRef::song("song-a"), CueId{"song-a-slide-1"}},
+    });
+    widget.set_live_details(LiveSlideDetails{
+        QStringLiteral("Goodness of God"),
+        QStringLiteral("Chorus"),
+        QStringLiteral("All my life You have been faithful"),
+        QStringLiteral("worship-bg.png"),
+        QStringLiteral("Bridge"),
+        QStringLiteral("Your goodness is running after"),
+        2,
+        4,
+        true,
+        false,
+        FitMode::cover,
+    });
+    widget.set_memory_status(150ULL * 1024ULL * 1024ULL, true);
+
+    REQUIRE(widget.findChild<QLabel*>(QStringLiteral("live-section-badge"))->text() ==
+            QStringLiteral("CHORUS"));
+    REQUIRE(widget.findChild<QLabel*>(QStringLiteral("live-item-title"))->text() ==
+            QStringLiteral("Goodness of God"));
+    REQUIRE(widget.findChild<QLabel*>(QStringLiteral("live-slide-counter"))->text() ==
+            QStringLiteral("2 / 4"));
+    REQUIRE(widget.findChild<QLabel*>(QStringLiteral("live-lyrics-preview"))->text() ==
+            QStringLiteral("All my life You have been faithful"));
+    REQUIRE(widget.findChild<QLabel*>(QStringLiteral("next-section-badge"))->text() ==
+            QStringLiteral("BRIDGE"));
+    REQUIRE(widget.findChild<QLabel*>(QStringLiteral("next-summary-label"))->text() ==
+            QStringLiteral("Your goodness is running after"));
+    REQUIRE(widget.findChild<QProgressBar*>(QStringLiteral("slide-progress"))->value() == 50);
+    REQUIRE(widget.findChild<QProgressBar*>(QStringLiteral("memory-usage-bar"))->value() == 150);
+}
+
+TEST_CASE("Program Status quick cues drawer filters and triggers live cue selection") {
+    ensure_qapplication();
+    ProgramStatusWidget widget;
+    CueId activated;
+    widget.set_take_cue_handler([&](CueId cue) { activated = std::move(cue); });
+    widget.set_item_cues(QStringLiteral("Goodness"),
+                         {
+                             QuickCueItem{CueId{"c1"}, 1, QStringLiteral("Verse"), QStringLiteral("I love You Lord")},
+                             QuickCueItem{CueId{"c2"}, 2, QStringLiteral("Chorus"), QStringLiteral("All my life")},
+                         });
+
+    auto* list = widget.findChild<QListWidget*>(QStringLiteral("quick-cues-list"));
+    auto* filter = widget.findChild<QLineEdit*>(QStringLiteral("quick-cues-filter"));
+    REQUIRE(list != nullptr);
+    REQUIRE(filter != nullptr);
+    REQUIRE(list->count() == 2);
+
+    filter->setText(QStringLiteral("Chorus"));
+    REQUIRE(list->item(0)->isHidden());
+    REQUIRE_FALSE(list->item(1)->isHidden());
+
+    widget.findChild<QPushButton*>(QStringLiteral("tab-cues"))->click();
+    widget.show();
+    QTest::qWait(20);
+    const auto item_rect = list->visualItemRect(list->item(1));
+    QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, item_rect.center());
+    REQUIRE(activated == CueId{"c2"});
 }
