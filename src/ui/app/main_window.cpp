@@ -16,6 +16,7 @@
 #include "shekinah/ui/reflow_editor_dialog.hpp"
 #include "shekinah/ui/sermon_editor_dialog.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
+#include "shekinah/ui/support/app_icon.hpp"
 
 #include <QActionGroup>
 #include <QFileDialog>
@@ -100,6 +101,7 @@ QString join_slide_lines(const std::vector<std::string>& lines) {
 ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     setObjectName(QStringLiteral("shekinah-window"));
     setWindowTitle(QStringLiteral("Shekinah"));
+    setWindowIcon(app_icon());
     resize(1280, 720);
 
     resource_pools_ = std::make_unique<WindowResourcePools>();
@@ -453,6 +455,7 @@ void ShekinahWindow::sync_theme_actions() {
 media::AudienceOutput* ShekinahWindow::audience_output() {
     if (!audience_output_) {
         audience_output_ = std::make_unique<media::AudienceOutput>();
+        audience_output_->setWindowIcon(app_icon());
         audience_output_->present(presentation_.program());
         present_live_media();
     }

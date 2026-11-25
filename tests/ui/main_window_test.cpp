@@ -5,6 +5,7 @@
 #include <QKeySequence>
 #include <QTest>
 
+#include "shekinah/media/audience_output.hpp"
 #include "shekinah/ui/main_window.hpp"
 
 using namespace shekinah::ui;
@@ -25,6 +26,9 @@ TEST_CASE("main window composes the operator page and bottom Library dock") {
     ensure_qapplication();
     ShekinahWindow window;
     REQUIRE(window.windowTitle() == QStringLiteral("Shekinah"));
+    REQUIRE_FALSE(window.windowIcon().isNull());
+    REQUIRE_FALSE(window.windowIcon().pixmap(64, 64).isNull());
+    REQUIRE_FALSE(window.audience_output()->windowIcon().isNull());
     REQUIRE(window.centralWidget()->objectName() == QStringLiteral("operator-page"));
     REQUIRE(window.findChild<QWidget*>(QStringLiteral("library-dock")) != nullptr);
     REQUIRE(window.findChild<QAction*>(QStringLiteral("show-audience-output")) != nullptr);

@@ -32,6 +32,10 @@ enable_testing()
 add_executable(shekinah_app
     src/ui/app/main.cpp
 )
+if (WIN32)
+    enable_language(RC)
+    target_sources(shekinah_app PRIVATE assets/icons/shekinah.rc)
+endif()
 target_link_libraries(shekinah_app PRIVATE Qt6::Widgets Qt6::Multimedia shekinah_ui)
 
 add_subdirectory(src/core/domain)

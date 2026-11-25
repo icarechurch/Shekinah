@@ -5,8 +5,11 @@ add_library(shekinah_ui STATIC
     features/edit_sermon/sermon_editor_dialog.cpp
     features/inspect_slide/inspector_dialog.cpp
     pages/operator/operator_page.cpp
+    support/app_icon.cpp
+    support/include/shekinah/ui/support/app_icon.hpp
     support/include/shekinah/ui/support/theme.hpp
     support/theme.cpp
+    ${PROJECT_SOURCE_DIR}/assets/icons/shekinah.qrc
     widgets/library_dock/library_dock_widget.cpp
     widgets/program_status/program_status_widget.cpp
     widgets/service_order/service_order_widget.cpp

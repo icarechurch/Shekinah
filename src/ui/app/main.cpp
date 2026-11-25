@@ -5,10 +5,12 @@
 #include <filesystem>
 
 #include "shekinah/ui/main_window.hpp"
+#include "shekinah/ui/support/app_icon.hpp"
 #include "shekinah/ui/support/theme.hpp"
 
 int main(int argc, char* argv[]) {
     QApplication application(argc, argv);
+    application.setWindowIcon(shekinah::ui::app_icon());
     QSettings settings{QStringLiteral("Shekinah"), QStringLiteral("Shekinah")};
     shekinah::ui::ThemeManager::instance().load_from_settings(settings);
     QObject::connect(&shekinah::ui::ThemeManager::instance(),
