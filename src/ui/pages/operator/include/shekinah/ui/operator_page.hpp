@@ -12,6 +12,7 @@
 
 class QListWidget;
 class QMenu;
+class QScreen;
 
 namespace shekinah::ui {
 
@@ -51,6 +52,11 @@ public:
     void set_next_handler(std::function<void()> handler);
     void set_clear_handler(std::function<void()> handler);
     void set_black_handler(std::function<void()> handler);
+    void set_show_screen_handler(std::function<void(QScreen*)> handler);
+    void set_show_movable_handler(std::function<void()> handler);
+    void set_hide_output_handler(std::function<void()> handler);
+    void set_inspect_live_handler(std::function<void()> handler);
+    void set_choose_background_handler(std::function<void()> handler);
     [[nodiscard]] ServiceOrderWidget* service_order_widget() const noexcept { return service_order_; }
     [[nodiscard]] CueGridWidget* cue_grid() const noexcept { return cue_grid_; }
     [[nodiscard]] ProgramStatusWidget* program_status() const noexcept { return program_status_; }

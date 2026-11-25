@@ -23,6 +23,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QScreen>
 #include <QStringList>
 #include <QTimer>
 
@@ -68,12 +69,140 @@ application::SongReflowDocument reflow_document_for_song(const domain::Song& son
     return application::SongReflowDocument{std::move(text), std::move(breaks)};
 }
 
+QString join_slide_lines(const std::vector<std::string>& lines) {
+    std::ostringstream out;
+    for (std::size_t index = 0; index != lines.size(); ++index) {
+        if (index != 0) {
+            out << '\n';
+        }
+        out << lines[index];
+    }
+    return QString::fromStdString(out.str());
+}
+
 }  // namespace
 
 ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     setObjectName(QStringLiteral("shekinah-window"));
     setWindowTitle(QStringLiteral("Shekinah"));
     resize(1280, 720);
+    setStyleSheet(QStringLiteral(
+        "QMainWindow, QWidget#operator-page {"
+        "  background-color: #18191d;"
+        "  color: #e6e8ec;"
+        "}"
+        "QMenuBar {"
+        "  background-color: #202127;"
+        "  color: #d7dae0;"
+        "  border-bottom: 1px solid #111215;"
+        "}"
+        "QMenuBar::item {"
+        "  background: transparent;"
+        "  padding: 4px 10px;"
+        "}"
+        "QMenuBar::item:selected {"
+        "  background-color: #2d3038;"
+        "}"
+        "QMenu {"
+        "  background-color: #22242a;"
+        "  color: #e6e8ec;"
+        "  border: 1px solid #353842;"
+        "}"
+        "QMenu::item:selected {"
+        "  background-color: #0a84ff;"
+        "  color: #ffffff;"
+        "}"
+        "QSplitter::handle {"
+        "  background-color: #111215;"
+        "}"
+        "QSplitter::handle:hover {"
+        "  background-color: #0a84ff;"
+        "}"
+        "QDockWidget {"
+        "  color: #e6e8ec;"
+        "  titlebar-close-icon: none;"
+        "}"
+        "QDockWidget::title {"
+        "  background-color: #23252b;"
+        "  padding: 5px 8px;"
+        "  border-top: 1px solid #111215;"
+        "  border-bottom: 1px solid #111215;"
+        "  font-weight: 600;"
+        "}"
+        "QWidget#service-order QListWidget, QWidget#library-dock QListWidget {"
+        "  background-color: #1c1d22;"
+        "  border: 1px solid #2a2c34;"
+        "  border-radius: 4px;"
+        "  color: #e6e8ec;"
+        "  outline: 0;"
+        "}"
+        "QWidget#service-order QListWidget::item, QWidget#library-dock QListWidget::item {"
+        "  padding: 5px 8px;"
+        "  border-bottom: 1px solid #23252c;"
+        "}"
+        "QWidget#service-order QListWidget::item:selected, QWidget#library-dock QListWidget::item:selected {"
+        "  background-color: #0a84ff;"
+        "  color: #ffffff;"
+        "}"
+        "QWidget#service-order QListWidget::item:hover, QWidget#library-dock QListWidget::item:hover {"
+        "  background-color: #272930;"
+        "}"
+        "QWidget#service-order QPushButton, QWidget#cue-grid QPushButton, QWidget#library-dock QPushButton {"
+        "  background-color: #292b32;"
+        "  border: 1px solid #383b44;"
+        "  border-radius: 4px;"
+        "  color: #e6e8ec;"
+        "  padding: 5px 10px;"
+        "  font-weight: 600;"
+        "}"
+        "QWidget#service-order QPushButton:hover, QWidget#cue-grid QPushButton:hover, QWidget#library-dock QPushButton:hover {"
+        "  background-color: #343741;"
+        "  border-color: #4c515e;"
+        "}"
+        "QWidget#service-order QPushButton:pressed, QWidget#cue-grid QPushButton:pressed, QWidget#library-dock QPushButton:pressed {"
+        "  background-color: #1f2127;"
+        "}"
+        "QWidget#library-dock QLineEdit {"
+        "  background-color: #16171b;"
+        "  border: 1px solid #30333c;"
+        "  border-radius: 4px;"
+        "  color: #e6e8ec;"
+        "  padding: 4px 8px;"
+        "}"
+        "QWidget#library-dock QLineEdit:focus {"
+        "  border-color: #0a84ff;"
+        "}"
+        "QWidget#library-dock QTabWidget::pane {"
+        "  border: 1px solid #2a2c34;"
+        "  background-color: #1c1d22;"
+        "}"
+        "QWidget#library-dock QTabBar::tab {"
+        "  background-color: #25272e;"
+        "  color: #a9aeb8;"
+        "  border: 1px solid #16171b;"
+        "  padding: 5px 14px;"
+        "  font-weight: 600;"
+        "}"
+        "QWidget#library-dock QTabBar::tab:selected {"
+        "  background-color: #0a84ff;"
+        "  color: #ffffff;"
+        "}"
+        "QScrollBar:vertical {"
+        "  background: #17181c;"
+        "  width: 8px;"
+        "  margin: 0;"
+        "}"
+        "QScrollBar::handle:vertical {"
+        "  background: #353842;"
+        "  border-radius: 4px;"
+        "  min-height: 24px;"
+        "}"
+        "QScrollBar::handle:vertical:hover {"
+        "  background: #4b4f5c;"
+        "}"
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {"
+        "  height: 0px;"
+        "}"));
 
     resource_pools_ = std::make_unique<WindowResourcePools>();
     resource_governor_ = std::make_unique<application::ResourceGovernor>(*resource_pools_);
@@ -95,6 +224,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     audience_action->setObjectName(QStringLiteral("show-audience-output"));
     QObject::connect(audience_action, &QAction::triggered, this, [this] {
         audience_output()->show_movable();
+        operator_page_->program_status()->set_output_status(
+            QStringLiteral("Output: Window"), QStringLiteral("Audience window"), true);
     });
 
     library_dock_->set_import_asset_handler([this] { import_asset(); });
@@ -236,6 +367,10 @@ void ShekinahWindow::sample_memory_usage(std::size_t working_set_bytes) {
     if (resource_governor_) {
         resource_governor_->on_working_set_sample(working_set_bytes);
     }
+    if (operator_page_ != nullptr && operator_page_->program_status() != nullptr) {
+        operator_page_->program_status()->set_memory_status(
+            last_working_set_bytes(), live_media_admitted());
+    }
 }
 
 std::size_t ShekinahWindow::last_working_set_bytes() const noexcept {
@@ -282,6 +417,44 @@ void ShekinahWindow::configure_operator() {
     operator_page_->set_black_handler([this] {
         presentation_.black();
         update_program_status();
+    });
+    operator_page_->set_show_screen_handler([this](QScreen* screen) {
+        if (screen == nullptr) {
+            return;
+        }
+        audience_output()->show_fullscreen(screen);
+        operator_page_->program_status()->set_output_status(
+            QStringLiteral("Output: %1").arg(screen->name()),
+            QStringLiteral("Audience full-screen"),
+            true);
+    });
+    operator_page_->set_show_movable_handler([this] {
+        audience_output()->show_movable();
+        operator_page_->program_status()->set_output_status(
+            QStringLiteral("Output: Window"),
+            QStringLiteral("Audience window"),
+            true);
+    });
+    operator_page_->set_hide_output_handler([this] {
+        if (audience_output_) {
+            audience_output_->hide();
+        }
+        operator_page_->program_status()->set_output_status(
+            QString{},
+            QStringLiteral("Output hidden"),
+            false);
+    });
+    operator_page_->set_inspect_live_handler([this] {
+        const auto& program = presentation_.program();
+        if (program.live_cue.has_value()) {
+            show_inspector(program.live_cue->cue);
+        }
+    });
+    operator_page_->set_choose_background_handler([this] {
+        const auto& program = presentation_.program();
+        if (program.live_cue.has_value()) {
+            choose_background(program.live_cue->cue);
+        }
     });
 }
 
@@ -396,27 +569,27 @@ void ShekinahWindow::refresh_cues() {
     const auto selected = presentation_.selected_item();
     if (!selected.has_value() || !repository_) {
         operator_page_->cue_grid()->set_cues({});
+        operator_page_->program_status()->set_item_cues({}, {});
         return;
     }
 
+    QString item_title;
     std::vector<CueView> cues;
+    std::vector<QuickCueItem> quick_cues;
     if (selected->content.kind == domain::ContentKind::song) {
         const auto song = repository_->load_song(std::get<domain::SongId>(selected->content.id));
         if (!song) {
             operator_page_->cue_grid()->set_cues({});
+            operator_page_->program_status()->set_item_cues({}, {});
             return;
         }
+        item_title = QString::fromStdString(song->title);
         cues.reserve(song->slides.size());
+        quick_cues.reserve(song->slides.size());
         std::optional<domain::BackgroundRef> previous_background;
         for (std::size_t index = 0; index != song->slides.size(); ++index) {
             const auto& slide = song->slides[index];
-            std::ostringstream summary;
-            for (std::size_t index = 0; index != slide.lines.size(); ++index) {
-                if (index != 0) {
-                    summary << '\n';
-                }
-                summary << slide.lines[index];
-            }
+            const auto summary_text = join_slide_lines(slide.lines);
 
             QString background_path;
             domain::FitMode background_fit = domain::FitMode::cover;
@@ -435,14 +608,21 @@ void ShekinahWindow::refresh_cues() {
                 }
             }
             previous_background = background;
+            const auto section_q = QString::fromStdString(slide.section);
+            quick_cues.push_back(QuickCueItem{
+                slide.id,
+                static_cast<int>(index + 1),
+                section_q,
+                summary_text,
+            });
             cues.push_back(CueView{
                 slide.id,
-                QString::fromStdString(slide.section),
-                QString::fromStdString(summary.str()),
+                section_q,
+                summary_text,
                 static_cast<int>(index + 1),
                 std::move(background_path),
                 background_fit,
-                QString::fromStdString(slide.section),
+                section_q,
                 true,
             });
         }
@@ -450,9 +630,12 @@ void ShekinahWindow::refresh_cues() {
         const auto sermon = repository_->load_deck(std::get<domain::SermonId>(selected->content.id));
         if (!sermon) {
             operator_page_->cue_grid()->set_cues({});
+            operator_page_->program_status()->set_item_cues({}, {});
             return;
         }
+        item_title = QString::fromStdString(sermon->title);
         cues.reserve(sermon->slides.size());
+        quick_cues.reserve(sermon->slides.size());
         for (std::size_t index = 0; index != sermon->slides.size(); ++index) {
             QString background_path;
             if (store_) {
@@ -462,6 +645,13 @@ void ShekinahWindow::refresh_cues() {
                         (store_->root() / asset->relative_path).string());
                 }
             }
+            const auto slide_label = QStringLiteral("Slide %1").arg(static_cast<qulonglong>(index + 1));
+            quick_cues.push_back(QuickCueItem{
+                sermon->slides[index].id,
+                static_cast<int>(index + 1),
+                slide_label,
+                {},
+            });
             cues.push_back(CueView{
                 sermon->slides[index].id,
                 {},
@@ -469,12 +659,13 @@ void ShekinahWindow::refresh_cues() {
                 static_cast<int>(index + 1),
                 std::move(background_path),
                 domain::FitMode::cover,
-                QStringLiteral("Slide %1").arg(static_cast<qulonglong>(index + 1)),
+                slide_label,
                 false,
             });
         }
     }
     operator_page_->cue_grid()->set_cues(std::move(cues));
+    operator_page_->program_status()->set_item_cues(std::move(item_title), std::move(quick_cues));
 }
 
 void ShekinahWindow::update_program_status() {
@@ -496,11 +687,13 @@ void ShekinahWindow::update_program_status() {
 void ShekinahWindow::present_live_media() {
     if (!repository_) {
         operator_page_->program_status()->set_slide_preview({});
+        operator_page_->program_status()->set_live_details({});
         return;
     }
     const auto& program = presentation_.program();
     if (program.mode != domain::ProgramMode::cue || !program.live_cue.has_value()) {
         operator_page_->program_status()->set_slide_preview({});
+        operator_page_->program_status()->set_live_details({});
         if (audience_output_) {
             audience_output_->set_live_text({});
             audience_output_->clear_slide_image();
@@ -512,37 +705,52 @@ void ShekinahWindow::present_live_media() {
     std::optional<domain::AssetId> asset_id;
     QString preview_text;
     domain::FitMode preview_fit = domain::FitMode::cover;
+    LiveSlideDetails details{};
     const auto& cue = *program.live_cue;
     if (cue.content.kind == domain::ContentKind::song) {
         const auto song = repository_->load_song(std::get<domain::SongId>(cue.content.id));
         if (song) {
+            details.item_title = QString::fromStdString(song->title);
+            details.total_slides = static_cast<int>(song->slides.size());
             const auto slide = std::find_if(song->slides.begin(), song->slides.end(), [&](const auto& candidate) {
                 return candidate.id == cue.cue;
             });
             if (slide != song->slides.end()) {
-                std::ostringstream lyric_text;
-                for (std::size_t index = 0; index != slide->lines.size(); ++index) {
-                    if (index != 0) {
-                        lyric_text << '\n';
-                    }
-                    lyric_text << slide->lines[index];
+                const auto index = static_cast<std::size_t>(std::distance(song->slides.begin(), slide));
+                details.slide_index = static_cast<int>(index + 1);
+                details.section = QString::fromStdString(slide->section);
+                preview_text = join_slide_lines(slide->lines);
+                details.slide_text = preview_text;
+                if (index + 1 < song->slides.size()) {
+                    const auto& next_slide = song->slides[index + 1];
+                    details.next_section = QString::fromStdString(next_slide.section);
+                    details.next_summary = join_slide_lines(next_slide.lines);
                 }
-                preview_text = QString::fromStdString(lyric_text.str());
             }
         }
         const auto background = presentation_.resolve_background(cue.content, cue.cue);
         if (background && background->has_value()) {
             asset_id = background->value().asset;
             preview_fit = background->value().fit;
+            details.fit_mode = preview_fit;
         }
     } else {
         const auto deck = repository_->load_deck(std::get<domain::SermonId>(cue.content.id));
         if (deck) {
+            details.item_title = QString::fromStdString(deck->title);
+            details.total_slides = static_cast<int>(deck->slides.size());
             const auto slide = std::find_if(deck->slides.begin(), deck->slides.end(), [&](const auto& candidate) {
                 return candidate.id == cue.cue;
             });
             if (slide != deck->slides.end()) {
+                const auto index = static_cast<std::size_t>(std::distance(deck->slides.begin(), slide));
+                details.slide_index = static_cast<int>(index + 1);
+                details.section = QStringLiteral("Slide %1").arg(details.slide_index);
                 asset_id = slide->image;
+                if (index + 1 < deck->slides.size()) {
+                    details.next_section = QStringLiteral("Slide %1").arg(details.slide_index + 1);
+                    details.next_summary = QStringLiteral("Next sermon slide");
+                }
             }
         }
     }
@@ -553,6 +761,7 @@ void ShekinahWindow::present_live_media() {
 
     if (!asset_id.has_value()) {
         operator_page_->program_status()->set_slide_preview(std::move(preview_text));
+        operator_page_->program_status()->set_live_details(std::move(details));
         if (audience_output_) {
             audience_output_->clear_slide_image();
             audience_output_->clear_loop_video();
@@ -562,18 +771,26 @@ void ShekinahWindow::present_live_media() {
     const auto asset = repository_->load_asset(*asset_id);
     if (!asset) {
         operator_page_->program_status()->set_slide_preview(std::move(preview_text));
+        operator_page_->program_status()->set_live_details(std::move(details));
         return;
     }
+    const auto filename = std::filesystem::path{asset->relative_path}.filename().string();
+    details.has_background = true;
+    details.is_video = (asset->kind == domain::AssetKind::video);
+    details.asset_name = QString::fromStdString(filename.empty() ? asset->relative_path : filename);
+
     const auto path = store_->root() / asset->relative_path;
     if (asset->kind == domain::AssetKind::image) {
         operator_page_->program_status()->set_slide_preview(
             std::move(preview_text), QString::fromStdString(path.string()), preview_fit);
+        operator_page_->program_status()->set_live_details(std::move(details));
         if (audience_output_) {
             audience_output_->clear_loop_video();
             audience_output_->load_slide_image(path, preview_fit);
         }
     } else {
         operator_page_->program_status()->set_slide_preview(std::move(preview_text));
+        operator_page_->program_status()->set_live_details(std::move(details));
         if (!audience_output_) {
             return;
         }

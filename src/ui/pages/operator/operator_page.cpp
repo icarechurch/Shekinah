@@ -16,15 +16,18 @@ namespace shekinah::ui {
 OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     setObjectName(QStringLiteral("operator-page"));
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(8, 8, 8, 8);
+    layout->setContentsMargins(6, 6, 6, 6);
+    layout->setSpacing(6);
 
     auto* presentation_section = new QLabel{QStringLiteral("Presentation"), this};
     presentation_section->setObjectName(QStringLiteral("presentation-section"));
-    presentation_section->setStyleSheet(QStringLiteral("font-size: 20px; font-weight: 600;"));
+    presentation_section->setStyleSheet(QStringLiteral(
+        "color: #f1f3f5; font-size: 16px; font-weight: 700; padding: 2px 4px;"));
     layout->addWidget(presentation_section);
 
     auto* workspace = new QSplitter{Qt::Horizontal, this};
     workspace->setObjectName(QStringLiteral("operator-workspace"));
+    workspace->setHandleWidth(2);
     service_order_ = new ServiceOrderWidget{workspace};
     service_order_->setMinimumWidth(220);
     cue_grid_ = new CueGridWidget{workspace};
@@ -37,8 +40,8 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     workspace->addWidget(service_order_);
     workspace->addWidget(cue_grid_);
     program_status_ = new ProgramStatusWidget{workspace};
-    program_status_->setMinimumWidth(260);
-    program_status_->setMaximumWidth(340);
+    program_status_->setMinimumWidth(290);
+    program_status_->setMaximumWidth(400);
     workspace->addWidget(program_status_);
     workspace->setCollapsible(0, false);
     workspace->setCollapsible(1, false);
@@ -46,7 +49,7 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     workspace->setStretchFactor(0, 0);
     workspace->setStretchFactor(1, 1);
     workspace->setStretchFactor(2, 0);
-    workspace->setSizes({220, 760, 280});
+    workspace->setSizes({220, 740, 320});
     layout->addWidget(workspace, 1);
     inspector_ = new InspectorDialog{this};
 }
@@ -122,7 +125,8 @@ void OperatorPage::set_inspector_save_handler(InspectorDialog::SaveHandler handl
 }
 
 void OperatorPage::set_take_live_handler(std::function<void(domain::CueId)> handler) {
-    cue_grid_->set_take_live_handler(std::move(handler));
+    cue_grid_->set_take_live_handler(handler);
+    program_status_->set_take_cue_handler(std::move(handler));
 }
 
 void OperatorPage::set_background_handler(std::function<void(domain::CueId)> handler) {
@@ -143,6 +147,26 @@ void OperatorPage::set_clear_handler(std::function<void()> handler) {
 
 void OperatorPage::set_black_handler(std::function<void()> handler) {
     program_status_->set_black_handler(std::move(handler));
+}
+
+void OperatorPage::set_show_screen_handler(std::function<void(QScreen*)> handler) {
+    program_status_->set_show_screen_handler(std::move(handler));
+}
+
+void OperatorPage::set_show_movable_handler(std::function<void()> handler) {
+    program_status_->set_show_movable_handler(std::move(handler));
+}
+
+void OperatorPage::set_hide_output_handler(std::function<void()> handler) {
+    program_status_->set_hide_output_handler(std::move(handler));
+}
+
+void OperatorPage::set_inspect_live_handler(std::function<void()> handler) {
+    program_status_->set_inspect_live_handler(std::move(handler));
+}
+
+void OperatorPage::set_choose_background_handler(std::function<void()> handler) {
+    program_status_->set_choose_background_handler(std::move(handler));
 }
 
 QMenu* OperatorPage::create_context_menu(const domain::CueId& cue) {
