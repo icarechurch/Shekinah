@@ -4,6 +4,8 @@
 #include <QDropEvent>
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
+#include <QLabel>
+#include <QLineEdit>
 #include <QListWidget>
 #include <QMimeData>
 #include <QPushButton>
@@ -185,4 +187,57 @@ TEST_CASE("service order ignores unsupported or out-of-row asset drops") {
     REQUIRE_FALSE(outside_event.isAccepted());
     REQUIRE_FALSE(callback_called);
     delete mime;
+}
+
+TEST_CASE("service order widget updates count badge, empty state, filter, and edit action") {
+    ensure_qapplication();
+    ServiceOrderWidget widget;
+    widget.resize(248, 420);
+    widget.show();
+    QTest::qWait(20);
+
+    auto* count_badge = widget.findChild<QLabel*>(QStringLiteral("service-order-count"));
+    auto* empty_overlay = widget.findChild<QWidget*>(QStringLiteral("service-order-empty-state"));
+    auto* filter = widget.findChild<QLineEdit*>(QStringLiteral("service-order-filter"));
+    auto* list = widget.findChild<QListWidget*>(QStringLiteral("service-order-list"));
+    auto* edit_btn = widget.findChild<QPushButton*>(QStringLiteral("service-order-edit"));
+    REQUIRE(count_badge != nullptr);
+    REQUIRE(empty_overlay != nullptr);
+    REQUIRE(filter != nullptr);
+    REQUIRE(list != nullptr);
+    REQUIRE(edit_btn != nullptr);
+
+    REQUIRE(count_badge->text() == QStringLiteral("0 ITEMS"));
+    REQUIRE(empty_overlay->isVisible());
+
+    ContentRef edited = ContentRef::song("unset");
+    widget.set_edit_handler([&](ContentRef content) { edited = std::move(content); });
+    widget.set_items({
+        ServiceOrderView{ServiceOrderItem{ServiceOrderItemId{"item-1"}, ContentRef::song("song-a"), 0},
+                         QStringLiteral("Diyos Ka Sa Amin"), 6, true, false},
+        ServiceOrderView{ServiceOrderItem{ServiceOrderItemId{"item-2"}, ContentRef::sermon("sermon-a"), 1},
+                         QStringLiteral("Sunday Message"), 12, false, false},
+    });
+    QTest::qWait(20);
+
+    REQUIRE(count_badge->text() == QStringLiteral("2 ITEMS"));
+    REQUIRE_FALSE(empty_overlay->isVisible());
+
+    widget.set_live_content(ContentRef::song("song-a"));
+    REQUIRE(widget.items()[0].is_live);
+    REQUIRE_FALSE(widget.items()[1].is_live);
+
+    widget.select_row(1);
+    edit_btn->click();
+    REQUIRE(edited == ContentRef::sermon("sermon-a"));
+
+    filter->setText(QStringLiteral("diyos"));
+    REQUIRE_FALSE(list->item(0)->isHidden());
+    REQUIRE(list->item(1)->isHidden());
+    REQUIRE_FALSE(empty_overlay->isVisible());
+
+    filter->setText(QStringLiteral("nonexistent"));
+    REQUIRE(list->item(0)->isHidden());
+    REQUIRE(list->item(1)->isHidden());
+    REQUIRE(empty_overlay->isVisible());
 }

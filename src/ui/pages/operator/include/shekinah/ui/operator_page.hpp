@@ -8,8 +8,10 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <vector>
 
+class QLabel;
 class QListWidget;
 class QMenu;
 class QScreen;
@@ -34,6 +36,10 @@ public:
         std::function<void(domain::ContentRef, domain::AssetId)> handler);
     void set_service_order_content_drop_handler(std::function<void(domain::ContentRef)> handler);
     void set_service_order_remove_handler(std::function<void(domain::ServiceOrderItemId)> handler);
+    void set_service_order_edit_handler(std::function<void(domain::ContentRef)> handler);
+    void set_service_order_new_sermon_handler(std::function<void()> handler);
+    void set_service_order_live_content(std::optional<domain::ContentRef> live_content);
+    void set_active_presentation_title(const QString& title);
     void set_cue_asset_drop_handler(std::function<void(domain::CueId, domain::AssetId)> handler);
     void set_authoring_handlers(std::function<void()> new_song,
                                 std::function<void()> import_song,
@@ -68,6 +74,11 @@ private:
     CueGridWidget* cue_grid_{nullptr};
     ProgramStatusWidget* program_status_{nullptr};
     InspectorDialog* inspector_{nullptr};
+    QLabel* presentation_item_label_{nullptr};
+    std::function<void()> new_song_handler_;
+    std::function<void()> import_song_handler_;
+    std::function<void()> new_sermon_handler_;
+    std::function<void()> import_sermon_handler_;
     std::function<void(domain::CueId)> background_handler_;
     std::function<void(domain::CueId)> inspector_handler_;
     std::function<QString(domain::CueId)> cue_asset_name_handler_;

@@ -6,6 +6,7 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
 #include <QAction>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QMenu>
 #include <QSplitter>
@@ -16,29 +17,56 @@ namespace shekinah::ui {
 OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     setObjectName(QStringLiteral("operator-page"));
     auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(6, 6, 6, 6);
-    layout->setSpacing(6);
-
-    auto* presentation_section = new QLabel{QStringLiteral("Presentation"), this};
-    presentation_section->setObjectName(QStringLiteral("presentation-section"));
-    presentation_section->setStyleSheet(QStringLiteral(
-        "color: #f1f3f5; font-size: 16px; font-weight: 700; padding: 2px 4px;"));
-    layout->addWidget(presentation_section);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
 
     auto* workspace = new QSplitter{Qt::Horizontal, this};
     workspace->setObjectName(QStringLiteral("operator-workspace"));
     workspace->setHandleWidth(2);
+
     service_order_ = new ServiceOrderWidget{workspace};
     service_order_->setMinimumWidth(220);
-    cue_grid_ = new CueGridWidget{workspace};
+    service_order_->setMaximumWidth(380);
+
+    auto* center_pane = new QWidget{workspace};
+    center_pane->setObjectName(QStringLiteral("presentation-pane"));
+    auto* center_layout = new QVBoxLayout(center_pane);
+    center_layout->setContentsMargins(0, 0, 0, 0);
+    center_layout->setSpacing(0);
+
+    auto* presentation_header = new QWidget{center_pane};
+    presentation_header->setObjectName(QStringLiteral("presentation-section"));
+    presentation_header->setFixedHeight(26);
+    presentation_header->setStyleSheet(QStringLiteral(
+        "#presentation-section { background-color: #191a1e; border-bottom: 1px solid #111215; }"));
+    auto* presentation_header_layout = new QHBoxLayout(presentation_header);
+    presentation_header_layout->setContentsMargins(10, 0, 10, 0);
+    presentation_header_layout->setSpacing(8);
+
+    auto* presentation_title = new QLabel{QStringLiteral("PRESENTATION"), presentation_header};
+    presentation_title->setStyleSheet(QStringLiteral(
+        "color: #8e929b; font-size: 10px; font-weight: 700; letter-spacing: 1.1px; border: none;"));
+    presentation_header_layout->addWidget(presentation_title);
+
+    presentation_item_label_ = new QLabel{QString{}, presentation_header};
+    presentation_item_label_->setObjectName(QStringLiteral("presentation-active-item"));
+    presentation_item_label_->setStyleSheet(QStringLiteral(
+        "color: #d7dae0; font-size: 11px; font-weight: 600; border: none;"));
+    presentation_item_label_->setVisible(false);
+    presentation_header_layout->addWidget(presentation_item_label_, 1);
+    center_layout->addWidget(presentation_header);
+
+    cue_grid_ = new CueGridWidget{center_pane};
     cue_grid_->setObjectName(QStringLiteral("cue-grid"));
     cue_grid_->set_context_handler([this](domain::CueId cue, QPoint position) {
         auto* menu = create_context_menu(cue);
         menu->exec(position);
         menu->deleteLater();
     });
+    center_layout->addWidget(cue_grid_, 1);
+
     workspace->addWidget(service_order_);
-    workspace->addWidget(cue_grid_);
+    workspace->addWidget(center_pane);
     program_status_ = new ProgramStatusWidget{workspace};
     program_status_->setMinimumWidth(290);
     program_status_->setMaximumWidth(400);
@@ -49,7 +77,7 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     workspace->setStretchFactor(0, 0);
     workspace->setStretchFactor(1, 1);
     workspace->setStretchFactor(2, 0);
-    workspace->setSizes({220, 740, 320});
+    workspace->setSizes({248, 712, 320});
     layout->addWidget(workspace, 1);
     inspector_ = new InspectorDialog{this};
 }
@@ -83,6 +111,32 @@ void OperatorPage::set_service_order_remove_handler(
     service_order_->set_remove_handler(std::move(handler));
 }
 
+void OperatorPage::set_service_order_edit_handler(
+    std::function<void(domain::ContentRef)> handler) {
+    service_order_->set_edit_handler(std::move(handler));
+}
+
+void OperatorPage::set_service_order_new_sermon_handler(std::function<void()> handler) {
+    new_sermon_handler_ = std::move(handler);
+    service_order_->set_authoring_handlers(
+        new_song_handler_, import_song_handler_, new_sermon_handler_, import_sermon_handler_);
+}
+
+void OperatorPage::set_service_order_live_content(std::optional<domain::ContentRef> live_content) {
+    service_order_->set_live_content(std::move(live_content));
+}
+
+void OperatorPage::set_active_presentation_title(const QString& title) {
+    const QString trimmed = title.trimmed();
+    if (trimmed.isEmpty()) {
+        presentation_item_label_->clear();
+        presentation_item_label_->setVisible(false);
+    } else {
+        presentation_item_label_->setText(QStringLiteral("·  %1").arg(trimmed));
+        presentation_item_label_->setVisible(true);
+    }
+}
+
 void OperatorPage::set_cue_asset_drop_handler(
     std::function<void(domain::CueId, domain::AssetId)> handler) {
     cue_grid_->set_asset_drop_handler(std::move(handler));
@@ -92,6 +146,11 @@ void OperatorPage::set_authoring_handlers(std::function<void()> new_song,
                                           std::function<void()> import_song,
                                           std::function<void()> import_sermon,
                                           std::function<void()> import_asset) {
+    new_song_handler_ = new_song;
+    import_song_handler_ = import_song;
+    import_sermon_handler_ = import_sermon;
+    service_order_->set_authoring_handlers(
+        new_song_handler_, import_song_handler_, new_sermon_handler_, import_sermon_handler_);
     cue_grid_->set_authoring_handlers(
         std::move(new_song), std::move(import_song), std::move(import_sermon), std::move(import_asset));
 }

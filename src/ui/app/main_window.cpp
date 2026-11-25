@@ -129,25 +129,25 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         "  border-bottom: 1px solid #111215;"
         "  font-weight: 600;"
         "}"
-        "QWidget#service-order QListWidget, QWidget#library-dock QListWidget {"
+        "QWidget#library-dock QListWidget {"
         "  background-color: #1c1d22;"
         "  border: 1px solid #2a2c34;"
         "  border-radius: 4px;"
         "  color: #e6e8ec;"
         "  outline: 0;"
         "}"
-        "QWidget#service-order QListWidget::item, QWidget#library-dock QListWidget::item {"
+        "QWidget#library-dock QListWidget::item {"
         "  padding: 5px 8px;"
         "  border-bottom: 1px solid #23252c;"
         "}"
-        "QWidget#service-order QListWidget::item:selected, QWidget#library-dock QListWidget::item:selected {"
+        "QWidget#library-dock QListWidget::item:selected {"
         "  background-color: #0a84ff;"
         "  color: #ffffff;"
         "}"
-        "QWidget#service-order QListWidget::item:hover, QWidget#library-dock QListWidget::item:hover {"
+        "QWidget#library-dock QListWidget::item:hover {"
         "  background-color: #272930;"
         "}"
-        "QWidget#service-order QPushButton, QWidget#cue-grid QPushButton, QWidget#library-dock QPushButton {"
+        "QWidget#cue-grid QPushButton, QWidget#library-dock QPushButton {"
         "  background-color: #292b32;"
         "  border: 1px solid #383b44;"
         "  border-radius: 4px;"
@@ -155,11 +155,11 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         "  padding: 5px 10px;"
         "  font-weight: 600;"
         "}"
-        "QWidget#service-order QPushButton:hover, QWidget#cue-grid QPushButton:hover, QWidget#library-dock QPushButton:hover {"
+        "QWidget#cue-grid QPushButton:hover, QWidget#library-dock QPushButton:hover {"
         "  background-color: #343741;"
         "  border-color: #4c515e;"
         "}"
-        "QWidget#service-order QPushButton:pressed, QWidget#cue-grid QPushButton:pressed, QWidget#library-dock QPushButton:pressed {"
+        "QWidget#cue-grid QPushButton:pressed, QWidget#library-dock QPushButton:pressed {"
         "  background-color: #1f2127;"
         "}"
         "QWidget#library-dock QLineEdit {"
@@ -240,6 +240,14 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         [this] { import_song_text(); },
         [this] { import_sermon_deck(); },
         [this] { import_asset(); });
+    operator_page_->set_service_order_new_sermon_handler([this] { create_sermon(); });
+    operator_page_->set_service_order_edit_handler([this](domain::ContentRef content) {
+        if (content.kind == domain::ContentKind::song) {
+            edit_song(std::get<domain::SongId>(content.id));
+        } else {
+            edit_sermon(std::get<domain::SermonId>(content.id));
+        }
+    });
     operator_page_->set_inspector_handler([this](domain::CueId cue) { show_inspector(cue); });
     operator_page_->set_edit_slide_handler([this](domain::CueId cue) { show_inspector(cue); });
     operator_page_->set_cue_asset_name_handler(
@@ -518,6 +526,7 @@ void ShekinahWindow::refresh_service_order() {
     if (!repository_) {
         operator_page_->set_service_order({});
         operator_page_->cue_grid()->set_cues({});
+        operator_page_->set_active_presentation_title({});
         update_program_status();
         return;
     }
@@ -526,20 +535,26 @@ void ShekinahWindow::refresh_service_order() {
     if (!loaded) {
         operator_page_->set_service_order({});
         operator_page_->cue_grid()->set_cues({});
+        operator_page_->set_active_presentation_title({});
         update_program_status();
         return;
     }
 
     std::vector<ServiceOrderView> views;
     views.reserve(loaded->size());
+    const auto program = presentation_.program();
     for (const auto& item : *loaded) {
         QString label = QStringLiteral("Unknown content");
+        int slide_count = 0;
+        bool has_background = false;
         if (item.content.kind == domain::ContentKind::song) {
             const auto content_id = std::get<domain::SongId>(item.content.id);
             const auto song = repository_->load_song(content_id);
             if (song) {
                 presentation_.register_song(*song);
                 label = QString::fromStdString(song->title);
+                slide_count = static_cast<int>(song->slides.size());
+                has_background = song->default_background.has_value();
             } else {
                 label = QStringLiteral("Song %1").arg(QString::fromStdString(content_id.value));
             }
@@ -549,11 +564,21 @@ void ShekinahWindow::refresh_service_order() {
             if (sermon) {
                 presentation_.register_sermon(*sermon);
                 label = QString::fromStdString(sermon->title);
+                slide_count = static_cast<int>(sermon->slides.size());
             } else {
                 label = QStringLiteral("Sermon %1").arg(QString::fromStdString(content_id.value));
             }
         }
-        views.push_back(ServiceOrderView{item, std::move(label)});
+        const bool is_live = program.mode == domain::ProgramMode::cue &&
+                             program.live_cue.has_value() &&
+                             program.live_cue->content == item.content;
+        views.push_back(ServiceOrderView{
+            item,
+            std::move(label),
+            slide_count,
+            has_background,
+            is_live,
+        });
     }
     presentation_.set_service_order(*loaded);
     operator_page_->set_service_order(std::move(views));
@@ -561,6 +586,7 @@ void ShekinahWindow::refresh_service_order() {
         operator_page_->service_order_widget()->select_row(0);
     } else {
         operator_page_->cue_grid()->set_cues({});
+        operator_page_->set_active_presentation_title({});
     }
     update_program_status();
 }
@@ -570,6 +596,7 @@ void ShekinahWindow::refresh_cues() {
     if (!selected.has_value() || !repository_) {
         operator_page_->cue_grid()->set_cues({});
         operator_page_->program_status()->set_item_cues({}, {});
+        operator_page_->set_active_presentation_title({});
         return;
     }
 
@@ -664,6 +691,7 @@ void ShekinahWindow::refresh_cues() {
             });
         }
     }
+    operator_page_->set_active_presentation_title(item_title);
     operator_page_->cue_grid()->set_cues(std::move(cues));
     operator_page_->program_status()->set_item_cues(std::move(item_title), std::move(quick_cues));
 }
@@ -676,6 +704,10 @@ void ShekinahWindow::update_program_status() {
         program.live_cue->content == selected_item->content) {
         selected_live_cue = program.live_cue->cue;
     }
+    operator_page_->set_service_order_live_content(
+        program.mode == domain::ProgramMode::cue && program.live_cue.has_value()
+            ? std::optional<domain::ContentRef>{program.live_cue->content}
+            : std::nullopt);
     operator_page_->cue_grid()->set_live_cue(std::move(selected_live_cue));
     operator_page_->program_status()->set_program(program);
     if (audience_output_) {
