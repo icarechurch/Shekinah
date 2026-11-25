@@ -1,6 +1,7 @@
 #include "shekinah/ui/service_order_widget.hpp"
 #include "shekinah/ui/support/asset_drag.hpp"
 #include "shekinah/ui/support/content_drag.hpp"
+#include "shekinah/ui/support/elided_label.hpp"
 
 #include <QAbstractItemView>
 #include <QDragEnterEvent>
@@ -242,7 +243,7 @@ public:
 
         // Title + Metadata text region
         const int text_left = static_cast<int>(badge_rect.right()) + 9;
-        const int text_width = std::max(40, bounds.right() - right_occupied - text_left);
+        const int text_width = std::max(0, bounds.right() - right_occupied - text_left);
 
         QFont title_font = option.font;
         title_font.setPixelSize(12);
@@ -581,7 +582,7 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     header_layout->setContentsMargins(10, 0, 6, 0);
     header_layout->setSpacing(6);
 
-    auto* title_label = new QLabel{QStringLiteral("SERVICE ORDER"), header_bar};
+    auto* title_label = new ElidedLabel{QStringLiteral("SERVICE ORDER"), header_bar};
     title_label->setObjectName(QStringLiteral("service-order-title"));
     title_label->setStyleSheet(QStringLiteral(
         "color: #8e929b; font-size: 10px; font-weight: 700; letter-spacing: 1.1px; border: none;"));

@@ -259,8 +259,9 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         [this](domain::CueId cue, std::string section, std::vector<std::string> lines, domain::FitMode fit) {
             save_inspected_slide(std::move(cue), std::move(section), std::move(lines), fit);
         });
-    library_dock_->setMinimumHeight(190);
+    library_dock_->setMinimumHeight(120);
     library_dock_->show();
+    resizeDocks({library_dock_}, {190}, Qt::Vertical);
     const auto add_content_to_presentation = [this](domain::ContentRef content) {
         if (!repository_) {
             return;

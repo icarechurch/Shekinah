@@ -19,6 +19,7 @@ InspectorDialog::InspectorDialog(QWidget* parent) : QDialog(parent) {
     auto* description = new QLabel{
         QStringLiteral("Edit this cue without changing the live Program."), this};
     description->setObjectName(QStringLiteral("inspector-description"));
+    description->setWordWrap(true);
     layout->addWidget(description);
 
     section_ = new QLineEdit{this};

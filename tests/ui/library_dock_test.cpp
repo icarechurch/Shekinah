@@ -253,3 +253,35 @@ TEST_CASE("library caches bounded thumbnails across refreshes and frees them on 
     dock.purge_non_live_caches();
     REQUIRE(dock.cached_thumbnail_count() == 0);
 }
+
+TEST_CASE("library toolbar wraps cleanly when narrowed without clipping buttons") {
+    ensure_qapplication();
+    LibraryDockWidget dock;
+    dock.resize(760, 240);
+    dock.show();
+    QTest::qWait(30);
+
+    auto* toolbar = dock.findChild<QWidget*>(QStringLiteral("library-toolbar"));
+    REQUIRE(toolbar != nullptr);
+    REQUIRE(toolbar->width() <= 760);
+    REQUIRE(toolbar->height() > 36);
+
+    for (const auto& button_name : {
+             QStringLiteral("import-asset"),
+             QStringLiteral("new-song"),
+             QStringLiteral("import-song-text"),
+             QStringLiteral("edit-song"),
+             QStringLiteral("new-sermon"),
+             QStringLiteral("import-sermon-deck"),
+             QStringLiteral("edit-sermon"),
+         }) {
+        auto* btn = toolbar->findChild<QPushButton*>(button_name);
+        REQUIRE(btn != nullptr);
+        const QPoint top_left = btn->mapTo(toolbar, QPoint{0, 0});
+        const QPoint bottom_right = btn->mapTo(toolbar, QPoint{btn->width() - 1, btn->height() - 1});
+        REQUIRE(top_left.x() >= 0);
+        REQUIRE(top_left.y() >= 0);
+        REQUIRE(bottom_right.x() < toolbar->width());
+        REQUIRE(bottom_right.y() < toolbar->height());
+    }
+}

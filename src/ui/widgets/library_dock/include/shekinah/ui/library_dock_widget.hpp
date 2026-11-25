@@ -78,6 +78,7 @@ private:
     void update_action_states();
     void update_empty_state();
     void layout_empty_overlay();
+    void update_responsive_grid_sizes();
     [[nodiscard]] QIcon load_bounded_thumbnail(const domain::AssetRecord& asset);
 
     LibraryTab current_tab_{LibraryTab::assets};

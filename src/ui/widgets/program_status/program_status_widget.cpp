@@ -2,6 +2,7 @@
 
 #include "shekinah/media/slide_renderer.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
+#include "shekinah/ui/support/elided_label.hpp"
 
 #include <QAbstractItemView>
 #include <QFrame>
@@ -175,14 +176,14 @@ public:
     explicit ProgramSlidePreview(QWidget* parent) : QFrame(parent) {
         setAttribute(Qt::WA_OpaquePaintEvent);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        setMinimumHeight(112);
+        setMinimumHeight(96);
     }
 
     [[nodiscard]] bool hasHeightForWidth() const override { return true; }
 
     [[nodiscard]] int heightForWidth(int width) const override {
         return std::clamp(static_cast<int>(std::lround(static_cast<double>(width) * 9.0 / 16.0)),
-                          112,
+                          96,
                           190);
     }
 
@@ -350,9 +351,9 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
         "  border: 1px solid #383b44;"
         "  border-radius: 4px;"
         "  color: #e8eaed;"
-        "  font-size: 11px;"
+        "  font-size: 10px;"
         "  font-weight: 600;"
-        "  padding: 4px 6px;"
+        "  padding: 4px 4px;"
         "  min-height: 24px;"
         "}"
         "#program-status QWidget#global-controls QPushButton:hover {"
@@ -549,7 +550,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     screen_layout->setContentsMargins(8, 0, 8, 0);
     screen_layout->setSpacing(4);
 
-    output_target_label_ = new QLabel{QStringLiteral("Output: Monitor 2"), screen_bar};
+    output_target_label_ = new ElidedLabel{QStringLiteral("Output: Monitor 2"), screen_bar};
     output_target_label_->setObjectName(QStringLiteral("output-target"));
     output_target_label_->setStyleSheet(QStringLiteral(
         "color: #d7dae0; font-size: 11px; font-weight: 600; border: none;"));
@@ -570,8 +571,9 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     screen_layout->addWidget(screen_menu_button_);
     screen_layout->addStretch(1);
 
-    audience_mode_label_ = new QLabel{QStringLiteral("Audience full-screen"), screen_bar};
+    audience_mode_label_ = new ElidedLabel{QStringLiteral("Audience full-screen"), screen_bar};
     audience_mode_label_->setObjectName(QStringLiteral("audience-mode"));
+    audience_mode_label_->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     audience_mode_label_->setStyleSheet(QStringLiteral(
         "color: #8e929b; font-size: 10px; border: none;"));
     screen_layout->addWidget(audience_mode_label_);
@@ -622,8 +624,9 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     indicator_row->addStretch(1);
     status_layout->addLayout(indicator_row);
 
-    cue_label_ = new QLabel{QStringLiteral("No cue live"), status_strip};
+    cue_label_ = new ElidedLabel{QStringLiteral("No cue live"), status_strip};
     cue_label_->setObjectName(QStringLiteral("program-cue"));
+    cue_label_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     cue_label_->setAlignment(Qt::AlignCenter);
     cue_label_->setStyleSheet(QStringLiteral("color: #8e929b; font-size: 11px; font-weight: 500;"));
     status_layout->addWidget(cue_label_);
@@ -646,8 +649,8 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     global_controls_->setStyleSheet(QStringLiteral(
         "#global-controls { background-color: #1c1d22; border-bottom: 1px solid #111215; }"));
     auto* controls = new QHBoxLayout(global_controls_);
-    controls->setContentsMargins(8, 6, 8, 8);
-    controls->setSpacing(6);
+    controls->setContentsMargins(6, 6, 6, 8);
+    controls->setSpacing(4);
 
     const auto add_control = [&](const QString& label,
                                  const QString& object_name,
@@ -656,8 +659,8 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
         auto* button = new QPushButton{label, global_controls_};
         button->setObjectName(object_name);
         button->setCursor(Qt::PointingHandCursor);
-        button->setIcon(make_glyph_icon(glyph, QColor{QStringLiteral("#d2d6de")}, 12));
-        button->setIconSize(QSize{12, 12});
+        button->setIcon(make_glyph_icon(glyph, QColor{QStringLiteral("#d2d6de")}, 11));
+        button->setIconSize(QSize{11, 11});
         QObject::connect(button, &QPushButton::clicked, this, handler);
         controls->addWidget(button, 1);
         return button;
@@ -723,10 +726,21 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     // 7. Stacked Drawer Pages
     drawer_stack_ = new QStackedWidget{this};
     drawer_stack_->setObjectName(QStringLiteral("drawer-stack"));
-    drawer_stack_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    drawer_stack_->setMinimumHeight(60);
+    drawer_stack_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Ignored);
 
-    // --- Page 0: Live & Next ---
-    auto* live_page = new QWidget{drawer_stack_};
+    // --- Page 0: Live & Next (scrollable when window height is constrained) ---
+    auto* live_scroll = new QScrollArea{drawer_stack_};
+    live_scroll->setObjectName(QStringLiteral("drawer-page-live-scroll"));
+    live_scroll->setMinimumHeight(48);
+    live_scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Ignored);
+    live_scroll->setFrameShape(QFrame::NoFrame);
+    live_scroll->setWidgetResizable(true);
+    live_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    live_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    live_scroll->setStyleSheet(QStringLiteral("background-color: #1d1e23;"));
+
+    auto* live_page = new QWidget{live_scroll};
     live_page->setObjectName(QStringLiteral("drawer-page-live"));
     live_page->setStyleSheet(QStringLiteral("background-color: #1d1e23;"));
     auto* live_page_layout = new QVBoxLayout(live_page);
@@ -761,8 +775,9 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
         "background-color: #2b2d34; color: #b6bac4; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;"));
     meta_row->addWidget(live_section_badge_);
 
-    live_item_title_label_ = new QLabel{QStringLiteral("Ready for service"), live_card};
+    live_item_title_label_ = new ElidedLabel{QStringLiteral("Ready for service"), live_card};
     live_item_title_label_->setObjectName(QStringLiteral("live-item-title"));
+    live_item_title_label_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     live_item_title_label_->setStyleSheet(QStringLiteral(
         "color: #e6e8ec; font-size: 11px; font-weight: 600;"));
     meta_row->addWidget(live_item_title_label_, 1);
@@ -778,6 +793,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
         QStringLiteral("Click any cue in the grid to project it live to the Audience Output."),
         live_card};
     live_lyrics_label_->setObjectName(QStringLiteral("live-lyrics-preview"));
+    live_lyrics_label_->setMinimumWidth(0);
     live_lyrics_label_->setWordWrap(true);
     live_lyrics_label_->setStyleSheet(QStringLiteral(
         "color: #9ea3ae; font-size: 11px; background-color: #141519; border: 1px solid #25272f; border-radius: 4px; padding: 6px 8px;"));
@@ -785,8 +801,9 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
 
     auto* bg_row = new QHBoxLayout;
     bg_row->setSpacing(6);
-    live_asset_label_ = new QLabel{QStringLiteral("Background: None"), live_card};
+    live_asset_label_ = new ElidedLabel{QStringLiteral("Background: None"), live_card};
     live_asset_label_->setObjectName(QStringLiteral("live-asset-label"));
+    live_asset_label_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     live_asset_label_->setStyleSheet(QStringLiteral("color: #8e929b; font-size: 10px;"));
     bg_row->addWidget(live_asset_label_, 1);
 
@@ -840,6 +857,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
         QStringLiteral("Select a Song or Sermon in the Service Order to cue slides."),
         next_up_card_};
     next_summary_label_->setObjectName(QStringLiteral("next-summary-label"));
+    next_summary_label_->setMinimumWidth(0);
     next_summary_label_->setWordWrap(true);
     next_summary_label_->setStyleSheet(QStringLiteral("color: #9ea3ae; font-size: 11px;"));
     next_layout->addWidget(next_summary_label_);
@@ -862,10 +880,21 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     next_layout->addWidget(next_up_action_button_);
     next_layout->addStretch(1);
     live_page_layout->addWidget(next_up_card_, 1);
-    drawer_stack_->addWidget(live_page);
+    live_scroll->setWidget(live_page);
+    drawer_stack_->addWidget(live_scroll);
 
-    // --- Page 1: Screens & Diagnostics ---
-    auto* screens_page = new QWidget{drawer_stack_};
+    // --- Page 1: Screens & Diagnostics (scrollable when height is constrained) ---
+    auto* screens_scroll = new QScrollArea{drawer_stack_};
+    screens_scroll->setObjectName(QStringLiteral("drawer-page-screens-scroll"));
+    screens_scroll->setMinimumHeight(48);
+    screens_scroll->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Ignored);
+    screens_scroll->setFrameShape(QFrame::NoFrame);
+    screens_scroll->setWidgetResizable(true);
+    screens_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    screens_scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    screens_scroll->setStyleSheet(QStringLiteral("background-color: #1d1e23;"));
+
+    auto* screens_page = new QWidget{screens_scroll};
     screens_page->setObjectName(QStringLiteral("drawer-page-screens"));
     screens_page->setStyleSheet(QStringLiteral("background-color: #1d1e23;"));
     auto* screens_layout = new QVBoxLayout(screens_page);
@@ -885,6 +914,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
 
     screens_list_ = new QListWidget{screens_page};
     screens_list_->setObjectName(QStringLiteral("screens-list"));
+    screens_list_->setMinimumHeight(48);
     screens_list_->setSelectionMode(QAbstractItemView::SingleSelection);
     QObject::connect(screens_list_, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) {
         if (item == nullptr || !show_screen_handler_) {
@@ -949,6 +979,8 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     memory_status_label_ = new QLabel{
         QStringLiteral("Memory: -- / 270 MB · Live Video Admitted"), mem_panel};
     memory_status_label_->setObjectName(QStringLiteral("memory-status-label"));
+    memory_status_label_->setMinimumWidth(0);
+    memory_status_label_->setWordWrap(true);
     memory_status_label_->setStyleSheet(QStringLiteral("color: #b8bcc4; font-size: 10px;"));
     mem_layout->addWidget(memory_status_label_);
 
@@ -963,7 +995,8 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
         "QProgressBar::chunk { background-color: #22e58a; border-radius: 2px; }"));
     mem_layout->addWidget(memory_bar_);
     screens_layout->addWidget(mem_panel);
-    drawer_stack_->addWidget(screens_page);
+    screens_scroll->setWidget(screens_page);
+    drawer_stack_->addWidget(screens_scroll);
 
     // --- Page 2: Active Item Cues + Filter ---
     auto* cues_page = new QWidget{drawer_stack_};
@@ -978,6 +1011,8 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
 
     cues_list_ = new QListWidget{cues_page};
     cues_list_->setObjectName(QStringLiteral("quick-cues-list"));
+    cues_list_->setMinimumHeight(36);
+    cues_list_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Ignored);
     cues_list_->setSelectionMode(QAbstractItemView::SingleSelection);
     QObject::connect(cues_list_, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
         if (item == nullptr || !take_cue_handler_) {
@@ -1000,6 +1035,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
 
     cues_filter_input_ = new QLineEdit{filter_bar};
     cues_filter_input_->setObjectName(QStringLiteral("quick-cues-filter"));
+    cues_filter_input_->setMinimumWidth(60);
     cues_filter_input_->setPlaceholderText(QStringLiteral("Filter cues..."));
     cues_filter_input_->setClearButtonEnabled(true);
     QObject::connect(cues_filter_input_, &QLineEdit::textChanged, this, [this] {
@@ -1007,7 +1043,7 @@ ProgramStatusWidget::ProgramStatusWidget(QWidget* parent) : QWidget(parent) {
     });
     filter_layout->addWidget(cues_filter_input_, 1);
 
-    auto* shortcut_hint = new QLabel{QStringLiteral("PgUp/Dn · Esc · B"), filter_bar};
+    auto* shortcut_hint = new ElidedLabel{QStringLiteral("PgUp/Dn · Esc · B"), filter_bar};
     shortcut_hint->setStyleSheet(QStringLiteral("color: #777c87; font-size: 10px; border: none;"));
     filter_layout->addWidget(shortcut_hint);
     cues_layout->addWidget(filter_bar);

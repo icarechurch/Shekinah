@@ -192,3 +192,19 @@ TEST_CASE("operator page forwards reusable content drops and removal") {
     page.service_order_widget()->findChild<QPushButton*>(QStringLiteral("service-order-remove"))->click();
     REQUIRE(removed == ServiceOrderItemId{"item-1"});
 }
+
+TEST_CASE("operator page handles narrow window widths with long active presentation titles") {
+    ensure_qapplication();
+    OperatorPage page;
+    page.set_active_presentation_title(
+        QStringLiteral("Very Long Song Title That Must Elide Rather Than Overflow The Presentation Header"));
+    page.resize(820, 520);
+    page.show();
+    QTest::qWait(30);
+
+    REQUIRE(page.width() <= 820);
+    REQUIRE(page.service_order_widget()->width() >= 200);
+    REQUIRE(page.cue_grid()->width() >= 220);
+    REQUIRE(page.program_status()->width() >= 270);
+    REQUIRE(page.program_status()->x() + page.program_status()->width() <= page.width());
+}

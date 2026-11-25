@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QAction>
 #include <QKeySequence>
+#include <QTest>
 
 #include "shekinah/ui/main_window.hpp"
 
@@ -57,4 +58,30 @@ TEST_CASE("main window applies the bounded live-media admission thresholds") {
 
     window.sample_memory_usage(100'000'000);
     REQUIRE(window.live_media_admitted());
+}
+
+TEST_CASE("main window resizes smoothly to compact laptop and split-screen dimensions") {
+    ensure_qapplication();
+    ShekinahWindow window;
+    window.show();
+    QTest::qWait(30);
+
+    for (const QSize target : {QSize{860, 560}, QSize{1024, 640}, QSize{1280, 720}}) {
+        window.resize(target);
+        QTest::qWait(30);
+        REQUIRE(window.width() <= target.width() + 2);
+        REQUIRE(window.height() <= target.height() + 2);
+        for (const auto& child_name : {
+                 QStringLiteral("service-order"),
+                 QStringLiteral("cue-grid"),
+                 QStringLiteral("program-status"),
+                 QStringLiteral("library-dock"),
+             }) {
+            auto* pane = window.findChild<QWidget*>(child_name);
+            REQUIRE(pane != nullptr);
+            REQUIRE(pane->isVisible());
+            REQUIRE(pane->width() > 0);
+            REQUIRE(pane->height() > 0);
+        }
+    }
 }

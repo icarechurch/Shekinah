@@ -4,6 +4,7 @@
 #include "shekinah/ui/inspector_dialog.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
+#include "shekinah/ui/support/elided_label.hpp"
 
 #include <QAction>
 #include <QHBoxLayout>
@@ -25,7 +26,7 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     workspace->setHandleWidth(2);
 
     service_order_ = new ServiceOrderWidget{workspace};
-    service_order_->setMinimumWidth(220);
+    service_order_->setMinimumWidth(200);
     service_order_->setMaximumWidth(380);
 
     auto* center_pane = new QWidget{workspace};
@@ -48,8 +49,9 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
         "color: #8e929b; font-size: 10px; font-weight: 700; letter-spacing: 1.1px; border: none;"));
     presentation_header_layout->addWidget(presentation_title);
 
-    presentation_item_label_ = new QLabel{QString{}, presentation_header};
+    presentation_item_label_ = new ElidedLabel{QString{}, presentation_header};
     presentation_item_label_->setObjectName(QStringLiteral("presentation-active-item"));
+    presentation_item_label_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     presentation_item_label_->setStyleSheet(QStringLiteral(
         "color: #d7dae0; font-size: 11px; font-weight: 600; border: none;"));
     presentation_item_label_->setVisible(false);
@@ -68,7 +70,7 @@ OperatorPage::OperatorPage(QWidget* parent) : QWidget(parent) {
     workspace->addWidget(service_order_);
     workspace->addWidget(center_pane);
     program_status_ = new ProgramStatusWidget{workspace};
-    program_status_->setMinimumWidth(290);
+    program_status_->setMinimumWidth(270);
     program_status_->setMaximumWidth(400);
     workspace->addWidget(program_status_);
     workspace->setCollapsible(0, false);

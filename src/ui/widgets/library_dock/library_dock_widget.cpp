@@ -1,6 +1,8 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/support/asset_drag.hpp"
 #include "shekinah/ui/support/content_drag.hpp"
+#include "shekinah/ui/support/elided_label.hpp"
+#include "shekinah/ui/support/flow_layout.hpp"
 
 #include <QAbstractItemView>
 #include <QAction>
@@ -225,11 +227,13 @@ public:
         painter->setPen(QPen{card_border, selected ? 1.5 : 1.0});
         painter->drawRoundedRect(card, 6.0, 6.0);
 
+        const int thumb_w = std::min(kThumbnailWidth, std::max(80, card.width() - 10));
+        const int thumb_h = std::min(kThumbnailHeight, std::max(45, thumb_w * 9 / 16));
         const QRect thumb_well{
-            card.left() + (card.width() - kThumbnailWidth) / 2,
+            card.left() + (card.width() - thumb_w) / 2,
             card.top() + 5,
-            kThumbnailWidth,
-            kThumbnailHeight,
+            thumb_w,
+            thumb_h,
         };
         painter->save();
         QPainterPath clip_path;
@@ -382,7 +386,7 @@ public:
         }
 
         const int text_left = static_cast<int>(badge_rect.right()) + 9;
-        const int text_width = std::max(40, card.right() - right_reserved - text_left);
+        const int text_width = std::max(0, card.right() - right_reserved - text_left);
 
         QFont title_font = option.font;
         title_font.setPixelSize(12);
@@ -496,13 +500,6 @@ private:
     std::function<void(QListWidgetItem*)> add_handler_;
     std::function<void(QListWidgetItem*)> edit_handler_;
 };
-
-QFrame* make_vertical_divider(QWidget* parent) {
-    auto* divider = new QFrame{parent};
-    divider->setFixedSize(1, 18);
-    divider->setStyleSheet(QStringLiteral("background-color: #2f333e; border: none;"));
-    return divider;
-}
 
 void refresh_widget_polish(QWidget* widget) {
     if (widget != nullptr && widget->style() != nullptr) {
@@ -643,11 +640,9 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
         "border-radius: 3px; padding: 0px 6px; font-size: 9px; font-weight: 700;"));
     title_layout->addWidget(header_count_badge_, 0, Qt::AlignVCenter);
 
-    auto* hint_label = new QLabel{
+    auto* hint_label = new ElidedLabel{
         QStringLiteral("Drag Assets to Slides/Orders  ·  Double-click Song/Sermon to add"),
         title_bar};
-    hint_label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-    hint_label->setMinimumWidth(0);
     hint_label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     hint_label->setStyleSheet(QStringLiteral("color: #6b707c; font-size: 10px; border: none;"));
     title_layout->addWidget(hint_label, 1);
@@ -675,13 +670,14 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
     container_layout->setContentsMargins(0, 0, 0, 0);
     container_layout->setSpacing(0);
 
-    // 3. Single unified ProPresenter toolbar (Tabs + Search + Media Filters + Grouped Actions)
+    // 3. Responsive ProPresenter toolbar (Tabs + Search + Media Filters + Grouped Actions)
     auto* toolbar = new QWidget{container};
     toolbar->setObjectName(QStringLiteral("library-toolbar"));
-    toolbar->setFixedHeight(36);
-    auto* toolbar_layout = new QHBoxLayout(toolbar);
+    QSizePolicy toolbar_policy{QSizePolicy::Preferred, QSizePolicy::Preferred};
+    toolbar_policy.setHeightForWidth(true);
+    toolbar->setSizePolicy(toolbar_policy);
+    auto* toolbar_layout = new FlowLayout{toolbar, 0, 6, 4};
     toolbar_layout->setContentsMargins(8, 4, 8, 4);
-    toolbar_layout->setSpacing(6);
 
     auto* tab_bar = new QWidget{toolbar};
     tab_bar->setObjectName(QStringLiteral("library-tabs"));
@@ -732,12 +728,12 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
     search_->setPlaceholderText(QStringLiteral("Search Assets, Songs, or Sermons..."));
     search_->setClearButtonEnabled(true);
     search_->setFixedHeight(26);
-    search_->setMinimumWidth(120);
-    search_->setMaximumWidth(270);
+    search_->setMinimumWidth(140);
+    search_->setMaximumWidth(230);
     search_->addAction(
         make_library_icon(LibraryGlyph::search, QColor{QStringLiteral("#7b808c")}, 12),
         QLineEdit::LeadingPosition);
-    toolbar_layout->addWidget(search_, 1);
+    toolbar_layout->addWidget(search_);
 
     asset_filter_bar_ = new QWidget{toolbar};
     asset_filter_bar_->setObjectName(QStringLiteral("asset-filter-bar"));
@@ -774,15 +770,16 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
         }
     });
     toolbar_layout->addWidget(asset_filter_bar_);
-    toolbar_layout->addStretch(1);
 
-    const auto add_action_btn = [&](const QString& label,
+    const auto add_action_btn = [&](QWidget* group_parent,
+                                    QHBoxLayout* group_layout,
+                                    const QString& label,
                                     const QString& object_name,
                                     const QString& tooltip,
                                     LibraryGlyph glyph,
                                     const QColor& icon_color,
                                     auto handler) {
-        auto* button = new QPushButton{label, toolbar};
+        auto* button = new QPushButton{label, group_parent};
         button->setObjectName(object_name);
         button->setProperty("libAction", true);
         button->setProperty("primaryAction", false);
@@ -792,12 +789,25 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
         button->setIcon(make_library_icon(glyph, icon_color, 12));
         button->setIconSize(QSize{12, 12});
         QObject::connect(button, &QPushButton::clicked, this, handler);
-        toolbar_layout->addWidget(button);
+        group_layout->addWidget(button);
         return button;
     };
 
+    const auto make_action_group = [&] {
+        auto* group = new QWidget{toolbar};
+        group->setStyleSheet(QStringLiteral("background: transparent; border: none;"));
+        auto* row = new QHBoxLayout(group);
+        row->setContentsMargins(0, 0, 0, 0);
+        row->setSpacing(4);
+        toolbar_layout->addWidget(group);
+        return std::pair{group, row};
+    };
+
     const QColor neutral_icon{QStringLiteral("#cfd3dc")};
-    import_asset_button_ = add_action_btn(QStringLiteral("Import Asset"),
+    auto [asset_group, asset_group_layout] = make_action_group();
+    import_asset_button_ = add_action_btn(asset_group,
+                                          asset_group_layout,
+                                          QStringLiteral("Import Asset"),
                                           QStringLiteral("import-asset"),
                                           QStringLiteral("Import image or video background"),
                                           LibraryGlyph::import_doc,
@@ -807,9 +817,11 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
                                                   import_asset_handler_();
                                               }
                                           });
-    toolbar_layout->addWidget(make_vertical_divider(toolbar));
 
-    new_song_button_ = add_action_btn(QStringLiteral("New Song"),
+    auto [song_group, song_group_layout] = make_action_group();
+    new_song_button_ = add_action_btn(song_group,
+                                      song_group_layout,
+                                      QStringLiteral("New Song"),
                                       QStringLiteral("new-song"),
                                       QStringLiteral("Create a new Song in Reflow editor"),
                                       LibraryGlyph::plus,
@@ -819,7 +831,9 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
                                               new_song_handler_();
                                           }
                                       });
-    import_song_button_ = add_action_btn(QStringLiteral("Import Text"),
+    import_song_button_ = add_action_btn(song_group,
+                                         song_group_layout,
+                                         QStringLiteral("Import Text"),
                                          QStringLiteral("import-song-text"),
                                          QStringLiteral("Import Song from text file"),
                                          LibraryGlyph::import_doc,
@@ -829,7 +843,9 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
                                                  import_song_handler_();
                                              }
                                          });
-    edit_song_button_ = add_action_btn(QStringLiteral("Edit"),
+    edit_song_button_ = add_action_btn(song_group,
+                                       song_group_layout,
+                                       QStringLiteral("Edit"),
                                        QStringLiteral("edit-song"),
                                        QStringLiteral("Edit selected Song"),
                                        LibraryGlyph::edit,
@@ -839,9 +855,11 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
                                                edit_song_row(songs_->currentRow());
                                            }
                                        });
-    toolbar_layout->addWidget(make_vertical_divider(toolbar));
 
-    new_sermon_button_ = add_action_btn(QStringLiteral("New Sermon"),
+    auto [sermon_group, sermon_group_layout] = make_action_group();
+    new_sermon_button_ = add_action_btn(sermon_group,
+                                        sermon_group_layout,
+                                        QStringLiteral("New Sermon"),
                                         QStringLiteral("new-sermon"),
                                         QStringLiteral("Create a new Sermon slide deck"),
                                         LibraryGlyph::plus,
@@ -851,7 +869,9 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
                                                 new_sermon_handler_();
                                             }
                                         });
-    import_sermon_button_ = add_action_btn(QStringLiteral("Import Deck"),
+    import_sermon_button_ = add_action_btn(sermon_group,
+                                           sermon_group_layout,
+                                           QStringLiteral("Import Deck"),
                                            QStringLiteral("import-sermon-deck"),
                                            QStringLiteral("Import Sermon slide media"),
                                            LibraryGlyph::import_doc,
@@ -861,7 +881,9 @@ LibraryDockWidget::LibraryDockWidget(QWidget* parent)
                                                    import_sermon_handler_();
                                                }
                                            });
-    edit_sermon_button_ = add_action_btn(QStringLiteral("Edit"),
+    edit_sermon_button_ = add_action_btn(sermon_group,
+                                         sermon_group_layout,
+                                         QStringLiteral("Edit"),
                                          QStringLiteral("edit-sermon"),
                                          QStringLiteral("Edit selected Sermon deck"),
                                          LibraryGlyph::edit,
@@ -1266,6 +1288,7 @@ int LibraryDockWidget::visible_content_count() const noexcept {
 void LibraryDockWidget::resizeEvent(QResizeEvent* event) {
     QDockWidget::resizeEvent(event);
     layout_empty_overlay();
+    update_responsive_grid_sizes();
 }
 
 void LibraryDockWidget::set_tab(LibraryTab tab, int index) {
@@ -1282,8 +1305,12 @@ void LibraryDockWidget::set_tab(LibraryTab tab, int index) {
         search_->setPlaceholderText(QStringLiteral("Filter sermons by title..."));
     }
     asset_filter_bar_->setVisible(tab == LibraryTab::assets);
+    if (auto* toolbar = findChild<QWidget*>(QStringLiteral("library-toolbar")); toolbar != nullptr) {
+        toolbar->updateGeometry();
+    }
     update_action_states();
     update_empty_state();
+    update_responsive_grid_sizes();
 }
 
 void LibraryDockWidget::apply_filter() {
@@ -1412,6 +1439,26 @@ void LibraryDockWidget::layout_empty_overlay() {
     if (empty_overlay_ != nullptr && stack_ != nullptr) {
         empty_overlay_->setGeometry(stack_->rect());
     }
+}
+
+void LibraryDockWidget::update_responsive_grid_sizes() {
+    const auto adapt_grid = [](QListWidget* list, int default_w, int min_w, int height) {
+        if (list == nullptr || list->viewport() == nullptr) {
+            return;
+        }
+        const int vw = list->viewport()->width();
+        if (vw <= 0) {
+            return;
+        }
+        const int target_w = vw < default_w + 16 ? std::max(min_w, vw - 16) : default_w;
+        const QSize target{target_w, height};
+        if (list->gridSize() != target) {
+            list->setGridSize(target);
+        }
+    };
+    adapt_grid(assets_, kAssetGridWidth, 128, kAssetGridHeight);
+    adapt_grid(songs_, kContentGridWidth, 148, kContentGridHeight);
+    adapt_grid(sermons_, kContentGridWidth, 148, kContentGridHeight);
 }
 
 QIcon LibraryDockWidget::load_bounded_thumbnail(const domain::AssetRecord& asset) {

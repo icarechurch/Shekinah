@@ -6,6 +6,7 @@
 #include <QListWidget>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QScrollArea>
 #include <QStackedWidget>
 #include <QTest>
 
@@ -201,4 +202,48 @@ TEST_CASE("Program Status quick cues drawer filters and triggers live cue select
     const auto item_rect = list->visualItemRect(list->item(1));
     QTest::mouseClick(list->viewport(), Qt::LeftButton, Qt::NoModifier, item_rect.center());
     REQUIRE(activated == CueId{"c2"});
+}
+
+TEST_CASE("Program Status adapts to compact dimensions without locking height or clipping controls") {
+    ensure_qapplication();
+    ProgramStatusWidget widget;
+    widget.set_program(ProgramState{
+        ProgramMode::cue,
+        CueRef{ContentRef::song("song-a"), CueId{"very-long-cue-identifier-slide-1"}},
+    });
+    widget.set_live_details(LiveSlideDetails{
+        QStringLiteral("Very Long Worship Song Title For Narrow Sidebar Verification"),
+        QStringLiteral("Chorus"),
+        QStringLiteral("Line one of lyrics\nLine two of lyrics\nLine three of lyrics\nLine four of lyrics"),
+        QStringLiteral("very_long_worship_background_loop_4k.mp4"),
+        QStringLiteral("Bridge"),
+        QStringLiteral("Next slide summary text that wraps cleanly inside the narrow drawer"),
+        2,
+        12,
+        true,
+        true,
+        FitMode::cover,
+    });
+    widget.resize(270, 440);
+    widget.show();
+    QTest::qWait(30);
+
+    REQUIRE(widget.width() <= 270);
+    REQUIRE(widget.height() <= 440);
+    REQUIRE(widget.global_controls_below_status());
+    REQUIRE(widget.findChild<QScrollArea*>(QStringLiteral("drawer-page-live-scroll")) != nullptr);
+
+    auto* controls = widget.findChild<QWidget*>(QStringLiteral("global-controls"));
+    REQUIRE(controls != nullptr);
+    for (const auto& name : {
+             QStringLiteral("previous"),
+             QStringLiteral("next"),
+             QStringLiteral("clear"),
+             QStringLiteral("black"),
+         }) {
+        auto* btn = controls->findChild<QPushButton*>(name);
+        REQUIRE(btn != nullptr);
+        REQUIRE(btn->x() >= 0);
+        REQUIRE(btn->x() + btn->width() <= controls->width());
+    }
 }
