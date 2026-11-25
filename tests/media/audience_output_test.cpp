@@ -194,6 +194,112 @@ TEST_CASE("slide previews keep their compact operator text size") {
     REQUIRE(max_y - min_y + 1 < 70);
 }
 
+TEST_CASE("slide previews fit multi-line lyrics inside compact cards without edge clipping") {
+    ensure_qapplication();
+    SlideRenderer renderer;
+    renderer.set_content(SlideRenderData{
+        QStringLiteral("O DIYOS IKAW\nANG TUNAY NA\nDAKILA SA\nMUNDO\nWALANG KATULAD"),
+        {},
+        FitMode::cover,
+        true,
+        false,
+        SlideTextMode::preview,
+    });
+
+    const QColor background{QStringLiteral("#182337")};
+    for (const QSize size : {QSize{160, 90}, QSize{220, 124}}) {
+        QImage rendered{size, QImage::Format_ARGB32_Premultiplied};
+        rendered.fill(background);
+        QPainter painter{&rendered};
+        renderer.paint(painter, rendered.rect());
+
+        bool top_edge_clean = true;
+        bool bottom_edge_clean = true;
+        for (int x = 0; x < rendered.width(); ++x) {
+            if (rendered.pixelColor(x, 0) != background || rendered.pixelColor(x, 1) != background) {
+                top_edge_clean = false;
+            }
+            if (rendered.pixelColor(x, rendered.height() - 1) != background ||
+                rendered.pixelColor(x, rendered.height() - 2) != background) {
+                bottom_edge_clean = false;
+            }
+        }
+        bool left_edge_clean = true;
+        bool right_edge_clean = true;
+        for (int y = 0; y < rendered.height(); ++y) {
+            if (rendered.pixelColor(0, y) != background || rendered.pixelColor(1, y) != background) {
+                left_edge_clean = false;
+            }
+            if (rendered.pixelColor(rendered.width() - 1, y) != background ||
+                rendered.pixelColor(rendered.width() - 2, y) != background) {
+                right_edge_clean = false;
+            }
+        }
+        REQUIRE(top_edge_clean);
+        REQUIRE(bottom_edge_clean);
+        REQUIRE(left_edge_clean);
+        REQUIRE(right_edge_clean);
+    }
+}
+
+TEST_CASE("resized audience output fits multi-line lyrics without edge clipping") {
+    ensure_qapplication();
+    AudienceOutput output;
+    output.resize(480, 270);
+    output.present(ProgramState{
+        ProgramMode::cue,
+        CueRef{ContentRef::song("song-a"), CueId{"slide-1"}},
+    });
+    output.set_live_text(QStringLiteral(
+        "GINAWA MO'NG LAHAT\nPAG-IBIG MO AY TAPAT AT WAGAS\nDI MAGBABAGO\nAMING SANDIGAN"));
+
+    QImage rendered{output.size(), QImage::Format_ARGB32_Premultiplied};
+    rendered.fill(Qt::transparent);
+    output.render(&rendered);
+
+    const QColor background{QStringLiteral("#182337")};
+    bool has_text = false;
+    for (int y = 0; y < rendered.height(); ++y) {
+        for (int x = 0; x < rendered.width(); ++x) {
+            const bool on_border =
+                x < 4 || x >= rendered.width() - 4 || y < 4 || y >= rendered.height() - 4;
+            if (rendered.pixelColor(x, y) != background) {
+                REQUIRE_FALSE(on_border);
+                has_text = true;
+            }
+        }
+    }
+    REQUIRE(has_text);
+}
+
+TEST_CASE("slide renderer clips cover backgrounds strictly to the viewport") {
+    ensure_qapplication();
+    QTemporaryFile temporary;
+    REQUIRE(temporary.open());
+    QImage image{400, 400, QImage::Format_RGB32};
+    image.fill(Qt::red);
+    REQUIRE(image.save(temporary.fileName(), "PNG"));
+
+    SlideRenderer renderer;
+    renderer.set_content(SlideRenderData{
+        {},
+        temporary.fileName(),
+        FitMode::cover,
+        false,
+        false,
+        SlideTextMode::preview,
+    });
+
+    QImage canvas{240, 140, QImage::Format_ARGB32_Premultiplied};
+    canvas.fill(Qt::black);
+    QPainter painter{&canvas};
+    renderer.paint(painter, QRect{20, 20, 160, 90});
+
+    REQUIRE(canvas.pixelColor(10, 10) == QColor{Qt::black});
+    REQUIRE(canvas.pixelColor(190, 115) == QColor{Qt::black});
+    REQUIRE(canvas.pixelColor(100, 65).red() > 200);
+}
+
 TEST_CASE("audience output exposes one video pause control") {
     ensure_qapplication();
     AudienceOutput output;
