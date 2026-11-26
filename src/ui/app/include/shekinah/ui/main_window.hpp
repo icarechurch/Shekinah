@@ -84,6 +84,7 @@ private:
     void remove_asset_from_song(const domain::CueId& cue);
     void apply_asset_to_song(domain::ContentRef content, domain::AssetId asset);
     void apply_asset_to_slide(domain::CueId cue, domain::AssetId asset);
+    void insert_asset_at_slide_position(std::size_t index, domain::AssetId asset);
     void choose_background(const domain::CueId& cue);
     void import_asset();
     void import_song_text();

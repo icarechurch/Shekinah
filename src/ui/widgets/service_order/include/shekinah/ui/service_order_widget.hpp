@@ -33,6 +33,7 @@ public:
     explicit ServiceOrderWidget(QWidget* parent = nullptr);
 
     void set_items(std::vector<ServiceOrderView> items);
+    void update_item_slide_count(const domain::ContentRef& content, int slide_count);
     void set_live_content(std::optional<domain::ContentRef> live_content);
     void set_selection_handler(std::function<void(domain::ServiceOrderItemId)> handler) {
         selection_handler_ = std::move(handler);

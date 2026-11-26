@@ -6,6 +6,7 @@
 #include <QString>
 #include <QWidget>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -41,6 +42,8 @@ public:
     void set_service_order_live_content(std::optional<domain::ContentRef> live_content);
     void set_active_presentation_title(const QString& title);
     void set_cue_asset_drop_handler(std::function<void(domain::CueId, domain::AssetId)> handler);
+    void set_cue_asset_insert_handler(
+        std::function<void(std::size_t, domain::AssetId)> handler);
     void set_authoring_handlers(std::function<void()> new_song,
                                 std::function<void()> import_song,
                                 std::function<void()> import_sermon,

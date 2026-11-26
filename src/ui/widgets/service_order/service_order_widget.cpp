@@ -891,6 +891,29 @@ void ServiceOrderWidget::set_items(std::vector<ServiceOrderView> items) {
     update_controls_state();
 }
 
+void ServiceOrderWidget::update_item_slide_count(const domain::ContentRef& content, int slide_count) {
+    for (int i = 0; i < list_->count() && i < static_cast<int>(items_.size()); ++i) {
+        auto& view = items_[static_cast<std::size_t>(i)];
+        if (view.item.content != content) {
+            continue;
+        }
+        view.slide_count = slide_count;
+        auto* item = list_->item(i);
+        item->setData(kSlideCountRole, slide_count);
+        const QString kind_name = view.item.content.kind == domain::ContentKind::song
+                                      ? QStringLiteral("Song")
+                                      : QStringLiteral("Sermon");
+        QString tip = QStringLiteral("%1 (%2)").arg(view.label, kind_name);
+        if (view.slide_count > 0) {
+            tip += QStringLiteral("\n%1 slide%2")
+                       .arg(view.slide_count)
+                       .arg(view.slide_count == 1 ? QString() : QStringLiteral("s"));
+        }
+        item->setToolTip(tip);
+    }
+    list_->viewport()->update();
+}
+
 void ServiceOrderWidget::set_live_content(std::optional<domain::ContentRef> live_content) {
     live_content_ = std::move(live_content);
     for (int i = 0; i < list_->count() && i < static_cast<int>(items_.size()); ++i) {

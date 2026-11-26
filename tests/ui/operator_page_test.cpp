@@ -208,3 +208,39 @@ TEST_CASE("operator page handles narrow window widths with long active presentat
     REQUIRE(page.program_status()->width() >= 270);
     REQUIRE(page.program_status()->x() + page.program_status()->width() <= page.width());
 }
+
+TEST_CASE("operator page forwards cue asset insertions") {
+    ensure_qapplication();
+    OperatorPage page;
+    page.cue_grid()->set_cues({
+        CueView{CueId{"cue-1"}, "Verse", "One", 1},
+        CueView{CueId{"cue-2"}, "Chorus", "Two", 2},
+    });
+    std::size_t inserted_index = 999;
+    AssetId inserted_asset{"unset"};
+    page.set_cue_asset_insert_handler([&](std::size_t index, AssetId asset) {
+        inserted_index = index;
+        inserted_asset = std::move(asset);
+    });
+    page.resize(900, 520);
+    page.show();
+    QTest::qWait(30);
+
+    auto* container = page.cue_grid()->findChild<QWidget*>(QStringLiteral("cue-grid-container"));
+    auto* card1 = page.cue_grid()->findChild<QWidget*>(QStringLiteral("cue-cue-1"));
+    REQUIRE(container != nullptr);
+    REQUIRE(card1 != nullptr);
+
+    auto* mime = shekinah::ui::make_asset_mime_data(AssetId{"asset-before"});
+    const auto pos = test_support::drag_event_position(
+        QPoint{std::max(1, card1->x() / 2), card1->geometry().center().y()});
+    QDragEnterEvent enter{pos, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(container, &enter);
+    QDropEvent drop{pos, Qt::CopyAction, mime, Qt::LeftButton, Qt::NoModifier};
+    QApplication::sendEvent(container, &drop);
+    delete mime;
+
+    REQUIRE(drop.isAccepted());
+    REQUIRE(inserted_index == 0);
+    REQUIRE(inserted_asset == AssetId{"asset-before"});
+}

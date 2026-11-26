@@ -25,10 +25,64 @@
 #include <cmath>
 
 namespace shekinah::ui {
+namespace {
+
+constexpr int kGridMarginX = 12;
+constexpr int kGridMarginY = 10;
+constexpr int kGridSpacing = 12;
+
+}  // namespace
+
+class CueGridWidget::InsertOverlay final : public QWidget {
+public:
+    explicit InsertOverlay(QWidget* parent) : QWidget(parent) {
+        setObjectName(QStringLiteral("cue-insert-overlay"));
+        setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+        setAttribute(Qt::WA_TranslucentBackground, true);
+    }
+
+    void set_indicator_rect(QRect rect) {
+        indicator_rect_ = rect;
+        if (indicator_rect_.isValid() && !indicator_rect_.isEmpty()) {
+            show();
+            raise();
+        } else {
+            hide();
+        }
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        if (!indicator_rect_.isValid() || indicator_rect_.isEmpty()) {
+            return;
+        }
+        const auto& p = ThemeManager::instance().palette();
+        QPainter painter{this};
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(p.drop_highlight);
+        painter.drawRoundedRect(indicator_rect_, 2.0, 2.0);
+        if (indicator_rect_.height() >= indicator_rect_.width()) {
+            const qreal cx = indicator_rect_.center().x() + 0.5;
+            painter.drawEllipse(QPointF{cx, static_cast<qreal>(indicator_rect_.top() + 3)}, 4.0, 4.0);
+            painter.drawEllipse(QPointF{cx, static_cast<qreal>(indicator_rect_.bottom() - 2)}, 4.0, 4.0);
+        } else {
+            const qreal cy = indicator_rect_.center().y() + 0.5;
+            painter.drawEllipse(QPointF{static_cast<qreal>(indicator_rect_.left() + 3), cy}, 4.0, 4.0);
+            painter.drawEllipse(QPointF{static_cast<qreal>(indicator_rect_.right() - 2), cy}, 4.0, 4.0);
+        }
+    }
+
+private:
+    QRect indicator_rect_;
+};
 
 class CueGridWidget::CueCard final : public QWidget {
 public:
-    CueCard(const CueView& cue, CueGridWidget& owner) : QWidget(&owner), cue_(cue), owner_(owner) {
+    CueCard(const CueView& cue, std::size_t index, CueGridWidget& owner)
+        : QWidget(&owner), cue_(cue), index_(index), owner_(owner) {
         setObjectName(QStringLiteral("cue-%1").arg(QString::fromStdString(cue.id.value)));
         setMinimumSize(120, 100);
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -81,26 +135,61 @@ public:
     }
 
 protected:
-    void dragEnterEvent(QDragEnterEvent* event) override {
-        if (asset_id_from_mime_data(event->mimeData()).has_value()) {
+    enum class DropZone { on_card, insert_before, insert_after };
+
+    DropZone drop_zone_for(QPoint pos) const {
+        const int edge = width() >= 32 ? std::clamp(width() / 10, 8, 16) : 0;
+        if (edge > 0 && pos.x() < edge) {
+            return DropZone::insert_before;
+        }
+        if (edge > 0 && pos.x() >= width() - edge) {
+            return DropZone::insert_after;
+        }
+        return DropZone::on_card;
+    }
+
+    void update_drag_hover(const QMimeData* mime, QPoint pos) {
+        if (!asset_id_from_mime_data(mime).has_value()) {
+            setProperty("cue-drop-target", false);
+            update();
+            owner_.clear_insert_target();
+            return;
+        }
+        const auto zone = drop_zone_for(pos);
+        if (zone == DropZone::on_card) {
+            owner_.clear_insert_target();
             setProperty("cue-drop-target", true);
             update();
+        } else {
+            setProperty("cue-drop-target", false);
+            update();
+            const std::size_t insert_index =
+                zone == DropZone::insert_before ? index_ : index_ + 1;
+            owner_.set_insert_target_for_card(
+                index_, insert_index, zone == DropZone::insert_before);
+        }
+    }
+
+    void dragEnterEvent(QDragEnterEvent* event) override {
+        if (asset_id_from_mime_data(event->mimeData()).has_value()) {
+            update_drag_hover(event->mimeData(), event->position().toPoint());
             event->acceptProposedAction();
         } else {
             setProperty("cue-drop-target", false);
             update();
+            owner_.clear_insert_target();
             event->ignore();
         }
     }
 
     void dragMoveEvent(QDragMoveEvent* event) override {
         if (asset_id_from_mime_data(event->mimeData()).has_value()) {
-            setProperty("cue-drop-target", true);
-            update();
+            update_drag_hover(event->mimeData(), event->position().toPoint());
             event->acceptProposedAction();
         } else {
             setProperty("cue-drop-target", false);
             update();
+            owner_.clear_insert_target();
             event->ignore();
         }
     }
@@ -108,18 +197,27 @@ protected:
     void dragLeaveEvent(QDragLeaveEvent* event) override {
         setProperty("cue-drop-target", false);
         update();
+        owner_.clear_insert_target();
         event->accept();
     }
 
     void dropEvent(QDropEvent* event) override {
         setProperty("cue-drop-target", false);
         update();
+        owner_.clear_insert_target();
         const auto asset = asset_id_from_mime_data(event->mimeData());
         if (!asset.has_value()) {
             event->ignore();
             return;
         }
-        owner_.handle_asset_drop(cue_.id, *asset);
+        const auto zone = drop_zone_for(event->position().toPoint());
+        if (zone == DropZone::on_card) {
+            owner_.handle_asset_drop(cue_.id, *asset);
+        } else {
+            const std::size_t insert_index =
+                zone == DropZone::insert_before ? index_ : index_ + 1;
+            owner_.handle_asset_insert(insert_index, *asset);
+        }
         event->acceptProposedAction();
     }
 
@@ -185,6 +283,7 @@ protected:
 
 private:
     CueView cue_;
+    std::size_t index_{0};
     CueGridWidget& owner_;
     media::SlideRenderer slide_renderer_;
 };
@@ -255,11 +354,18 @@ CueGridWidget::CueGridWidget(QWidget* parent) : QWidget(parent), grid_container_
     grid_scroll_->setWidgetResizable(true);
     grid_scroll_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     grid_scroll_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    grid_container_->setObjectName(QStringLiteral("cue-grid-container"));
+    grid_container_->setAcceptDrops(true);
+    grid_container_->installEventFilter(this);
+    insert_overlay_ = new InsertOverlay{grid_container_};
+    insert_overlay_->hide();
     grid_scroll_->setWidget(grid_container_);
+    grid_scroll_->viewport()->setAcceptDrops(true);
     grid_scroll_->viewport()->installEventFilter(this);
     outer->addWidget(grid_scroll_);
     grid_scroll_->setVisible(false);
     setMinimumWidth(220);
+    setProperty("cue-insert-index", -1);
 
     apply_theme();
     QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
@@ -312,6 +418,9 @@ void CueGridWidget::apply_theme() {
     if (grid_container_ != nullptr) {
         grid_container_->setStyleSheet(
             QStringLiteral("background-color: %1;").arg(p.window_bg.name()));
+    }
+    if (insert_overlay_ != nullptr) {
+        insert_overlay_->update();
     }
     for (auto* card : cards_) {
         if (card != nullptr) {
@@ -403,6 +512,54 @@ bool CueGridWidget::eventFilter(QObject* watched, QEvent* event) {
         event->type() == QEvent::Resize) {
         relayout_cards(false);
     }
+    if (grid_container_ != nullptr && watched == grid_container_ &&
+        event->type() == QEvent::Resize && insert_overlay_ != nullptr) {
+        insert_overlay_->setGeometry(grid_container_->rect());
+    }
+
+    const bool is_container = (grid_container_ != nullptr && watched == grid_container_);
+    const bool is_viewport =
+        (grid_scroll_ != nullptr && watched == grid_scroll_->viewport());
+    if (is_container || is_viewport) {
+        const auto to_container_pos = [&](QPoint pos) {
+            return is_container ? pos : grid_container_->mapFrom(grid_scroll_->viewport(), pos);
+        };
+        if (event->type() == QEvent::DragEnter || event->type() == QEvent::DragMove) {
+            auto* drag_event = static_cast<QDropEvent*>(event);
+            if (asset_id_from_mime_data(drag_event->mimeData()).has_value() && !cards_.empty()) {
+                if (const auto target = compute_insert_target(
+                        to_container_pos(drag_event->position().toPoint()));
+                    target.has_value()) {
+                    set_insert_target(*target);
+                    drag_event->acceptProposedAction();
+                    return true;
+                }
+            }
+            clear_insert_target();
+            drag_event->ignore();
+            return true;
+        }
+        if (event->type() == QEvent::DragLeave) {
+            clear_insert_target();
+            return true;
+        }
+        if (event->type() == QEvent::Drop) {
+            auto* drop_event = static_cast<QDropEvent*>(event);
+            const auto asset = asset_id_from_mime_data(drop_event->mimeData());
+            const auto target = cards_.empty()
+                                    ? std::nullopt
+                                    : compute_insert_target(
+                                          to_container_pos(drop_event->position().toPoint()));
+            clear_insert_target();
+            if (!asset.has_value() || !target.has_value()) {
+                drop_event->ignore();
+                return true;
+            }
+            handle_asset_insert(target->index, *asset);
+            drop_event->acceptProposedAction();
+            return true;
+        }
+    }
     return QWidget::eventFilter(watched, event);
 }
 
@@ -415,6 +572,7 @@ void CueGridWidget::rebuild_cards() {
     if (grid_container_ == nullptr) {
         return;
     }
+    clear_insert_target();
     if (auto* old_layout = grid_container_->layout(); old_layout != nullptr) {
         while (auto* item = old_layout->takeAt(0)) {
             delete item;
@@ -427,8 +585,9 @@ void CueGridWidget::rebuild_cards() {
     cards_.clear();
     cards_.reserve(cues_.size());
 
-    for (const auto& cue : cues_) {
-        auto* card = new CueCard{cue, *this};
+    for (std::size_t index = 0; index != cues_.size(); ++index) {
+        const auto& cue = cues_[index];
+        auto* card = new CueCard{cue, index, *this};
         card->setProperty("cue-id", QString::fromStdString(cue.id.value));
         card->set_live(live_cue_.has_value() && cue.id == *live_cue_);
         cards_.push_back(card);
@@ -459,8 +618,8 @@ void CueGridWidget::relayout_cards(bool force) {
     }
 
     auto* layout = new QGridLayout(grid_container_);
-    layout->setContentsMargins(8, 8, 8, 8);
-    layout->setSpacing(8);
+    layout->setContentsMargins(kGridMarginX, kGridMarginY, kGridMarginX, kGridMarginY);
+    layout->setSpacing(kGridSpacing);
     for (int col = 0; col < columns; ++col) {
         layout->setColumnStretch(col, 1);
     }
@@ -472,6 +631,10 @@ void CueGridWidget::relayout_cards(bool force) {
     const int row_count =
         cards_.empty() ? 0 : static_cast<int>((cards_.size() + static_cast<std::size_t>(columns) - 1) / static_cast<std::size_t>(columns));
     layout->setRowStretch(row_count, 1);
+    if (insert_overlay_ != nullptr) {
+        insert_overlay_->setGeometry(grid_container_->rect());
+        insert_overlay_->raise();
+    }
 }
 
 void CueGridWidget::handle_left_click(const domain::CueId& cue) {
@@ -489,6 +652,145 @@ void CueGridWidget::handle_right_click(const domain::CueId& cue, QPoint global_p
 void CueGridWidget::handle_asset_drop(const domain::CueId& cue, const domain::AssetId& asset) {
     if (asset_drop_handler_) {
         asset_drop_handler_(cue, asset);
+    }
+}
+
+void CueGridWidget::handle_asset_insert(std::size_t index, const domain::AssetId& asset) {
+    if (asset_insert_handler_) {
+        asset_insert_handler_(index, asset);
+    }
+}
+
+QRect CueGridWidget::indicator_rect_for_card_edge(std::size_t card_index, bool left_side) const {
+    if (card_index >= cards_.size() || grid_container_ == nullptr) {
+        return {};
+    }
+    const auto* card = cards_[card_index];
+    int x = 0;
+    if (left_side) {
+        if (card_index > 0 && cards_[card_index - 1]->y() == card->y()) {
+            const int prev_right = cards_[card_index - 1]->geometry().right() + 1;
+            x = (prev_right + card->x()) / 2;
+        } else {
+            x = std::max(3, card->x() / 2);
+        }
+    } else {
+        if (card_index + 1 < cards_.size() && cards_[card_index + 1]->y() == card->y()) {
+            const int card_right = card->geometry().right() + 1;
+            x = (card_right + cards_[card_index + 1]->x()) / 2;
+        } else {
+            const int card_right = card->geometry().right() + 1;
+            x = std::min(std::max(3, grid_container_->width() - 4),
+                         card_right + std::max(3, kGridSpacing / 2));
+        }
+    }
+    return QRect{x - 2, card->y(), 4, card->height()};
+}
+
+std::optional<CueGridWidget::InsertTarget> CueGridWidget::compute_insert_target(
+    QPoint container_pos) const {
+    if (cards_.empty() || grid_container_ == nullptr) {
+        return std::nullopt;
+    }
+    const std::size_t count = cards_.size();
+    const std::size_t columns = static_cast<std::size_t>(std::max(1, current_columns_));
+    const std::size_t row_count = (count + columns - 1) / columns;
+
+    const auto row_bounds = [&](std::size_t row) -> std::pair<int, int> {
+        const std::size_t start = row * columns;
+        const std::size_t end = std::min((row + 1) * columns, count);
+        int top = cards_[start]->y();
+        int bottom = cards_[start]->geometry().bottom();
+        for (std::size_t i = start + 1; i < end; ++i) {
+            top = std::min(top, cards_[i]->y());
+            bottom = std::max(bottom, cards_[i]->geometry().bottom());
+        }
+        return {top, bottom};
+    };
+
+    if (columns == 1) {
+        if (container_pos.y() < cards_[0]->y()) {
+            if (container_pos.x() < cards_[0]->x()) {
+                return InsertTarget{0, indicator_rect_for_card_edge(0, true)};
+            }
+            const int y = std::max(2, cards_[0]->y() / 2);
+            return InsertTarget{0, QRect{cards_[0]->x(), y - 2, cards_[0]->width(), 4}};
+        }
+        for (std::size_t r = 0; r + 1 < row_count; ++r) {
+            const int bottom = cards_[r]->geometry().bottom();
+            const int next_top = cards_[r + 1]->y();
+            if (container_pos.y() > bottom && container_pos.y() < next_top) {
+                const int mid_y = (bottom + 1 + next_top) / 2;
+                return InsertTarget{
+                    r + 1, QRect{cards_[r]->x(), mid_y - 2, cards_[r]->width(), 4}};
+            }
+        }
+        if (container_pos.y() > cards_.back()->geometry().bottom()) {
+            const int y = std::min(std::max(2, grid_container_->height() - 4),
+                                   cards_.back()->geometry().bottom() + 1 + kGridSpacing / 2);
+            return InsertTarget{
+                count, QRect{cards_.back()->x(), y - 2, cards_.back()->width(), 4}};
+        }
+    }
+
+    const auto last_bounds = row_bounds(row_count - 1);
+    if (container_pos.y() > last_bounds.second) {
+        return InsertTarget{count, indicator_rect_for_card_edge(count - 1, false)};
+    }
+
+    std::size_t target_row = 0;
+    if (container_pos.y() > row_bounds(0).second) {
+        for (std::size_t r = 0; r < row_count; ++r) {
+            const auto bounds = row_bounds(r);
+            if (container_pos.y() >= bounds.first && container_pos.y() <= bounds.second) {
+                target_row = r;
+                break;
+            }
+            if (r + 1 < row_count) {
+                const auto next_bounds = row_bounds(r + 1);
+                if (container_pos.y() > bounds.second && container_pos.y() < next_bounds.first) {
+                    const int mid_y = (bounds.second + 1 + next_bounds.first) / 2;
+                    target_row = container_pos.y() <= mid_y ? r : (r + 1);
+                    break;
+                }
+            }
+        }
+    }
+
+    const std::size_t row_start = target_row * columns;
+    const std::size_t row_end = std::min((target_row + 1) * columns, count);
+    if (container_pos.x() < cards_[row_start]->geometry().center().x()) {
+        return InsertTarget{row_start, indicator_rect_for_card_edge(row_start, true)};
+    }
+    for (std::size_t idx = row_start; idx + 1 < row_end; ++idx) {
+        if (container_pos.x() < cards_[idx + 1]->geometry().center().x()) {
+            return InsertTarget{idx + 1, indicator_rect_for_card_edge(idx, false)};
+        }
+    }
+    return InsertTarget{row_end, indicator_rect_for_card_edge(row_end - 1, false)};
+}
+
+void CueGridWidget::set_insert_target(InsertTarget target) {
+    insert_target_ = target;
+    setProperty("cue-insert-index", static_cast<int>(target.index));
+    if (insert_overlay_ != nullptr) {
+        insert_overlay_->set_indicator_rect(target.indicator_rect);
+    }
+}
+
+void CueGridWidget::set_insert_target_for_card(
+    std::size_t card_index, std::size_t insert_index, bool left_side) {
+    set_insert_target(InsertTarget{
+        insert_index,
+        indicator_rect_for_card_edge(card_index, left_side),
+    });
+}
+
+void CueGridWidget::clear_insert_target() {
+    insert_target_.reset();
+    setProperty("cue-insert-index", -1);
+    if (insert_overlay_ != nullptr) {
+        insert_overlay_->set_indicator_rect({});
     }
 }
 

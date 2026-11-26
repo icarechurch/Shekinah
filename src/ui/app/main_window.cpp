@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/resource_governor.hpp"
+#include "shekinah/application/slide_insertion.hpp"
 #include "shekinah/application/song_backgrounds.hpp"
 #include "shekinah/application/song_text_importer.hpp"
 #include "shekinah/media/audience_output.hpp"
@@ -183,6 +184,10 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     operator_page_->set_cue_asset_drop_handler(
         [this](domain::CueId cue, domain::AssetId asset) {
             apply_asset_to_slide(std::move(cue), std::move(asset));
+        });
+    operator_page_->set_cue_asset_insert_handler(
+        [this](std::size_t index, domain::AssetId asset) {
+            insert_asset_at_slide_position(index, std::move(asset));
         });
     operator_page_->set_inspector_save_handler(
         [this](domain::CueId cue, std::string section, std::vector<std::string> lines, domain::FitMode fit) {
@@ -715,7 +720,8 @@ void ShekinahWindow::refresh_cues() {
                                       ? slide.background
                                       : song->default_background;
             const auto starts_asset_range = background.has_value() &&
-                                            (!previous_background.has_value() ||
+                                            (slide.lines.empty() ||
+                                             !previous_background.has_value() ||
                                              previous_background != background);
             if (starts_asset_range && store_) {
                 const auto asset = repository_->load_asset(background->asset);
@@ -1067,6 +1073,59 @@ void ShekinahWindow::apply_asset_to_slide(domain::CueId cue, domain::AssetId ass
         return;
     }
     presentation_.register_song(*saved);
+    refresh_cues();
+    update_program_status();
+}
+
+void ShekinahWindow::insert_asset_at_slide_position(std::size_t index, domain::AssetId asset) {
+    if (!repository_) {
+        return;
+    }
+    const auto selected = presentation_.selected_item();
+    if (!selected.has_value()) {
+        return;
+    }
+    const auto asset_record = repository_->load_asset(asset);
+    if (!asset_record) {
+        return;
+    }
+    if (selected->content.kind == domain::ContentKind::song) {
+        auto song = repository_->load_song(std::get<domain::SongId>(selected->content.id));
+        if (!song) {
+            return;
+        }
+        const auto inserted = application::insert_asset_slide(
+            *song, index, domain::BackgroundRef{asset_record->id, domain::FitMode::cover});
+        if (!inserted) {
+            return;
+        }
+        const auto saved = repository_->save_song(*song);
+        if (!saved) {
+            return;
+        }
+        presentation_.register_song(*saved);
+        operator_page_->service_order_widget()->update_item_slide_count(
+            selected->content, static_cast<int>(saved->slides.size()));
+        refresh_cues();
+        update_program_status();
+        return;
+    }
+
+    auto sermon = repository_->load_deck(std::get<domain::SermonId>(selected->content.id));
+    if (!sermon) {
+        return;
+    }
+    const auto inserted = application::insert_asset_slide(*sermon, index, asset_record->id);
+    if (!inserted) {
+        return;
+    }
+    const auto saved = repository_->save_deck(*sermon);
+    if (!saved) {
+        return;
+    }
+    presentation_.register_sermon(*saved);
+    operator_page_->service_order_widget()->update_item_slide_count(
+        selected->content, static_cast<int>(saved->slides.size()));
     refresh_cues();
     update_program_status();
 }
