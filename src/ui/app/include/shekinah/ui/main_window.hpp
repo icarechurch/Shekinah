@@ -68,6 +68,8 @@ private:
 
     void apply_theme();
     void sync_theme_actions();
+    void configure_window_actions();
+    void configure_feature_handlers();
     [[nodiscard]] storage::ProjectStore* store() noexcept { return session_.store(); }
     [[nodiscard]] const storage::ProjectStore* store() const noexcept { return session_.store(); }
     [[nodiscard]] storage::SqliteContentRepository* repository() noexcept {
