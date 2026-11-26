@@ -81,6 +81,9 @@ public:
 
 private:
     void build_drawer_pages(QVBoxLayout* layout);
+    void build_live_drawer_page();
+    void build_screens_drawer_page();
+    void build_cues_drawer_page();
     void apply_theme();
     void set_active_tab(int index);
     void update_status_chrome();
