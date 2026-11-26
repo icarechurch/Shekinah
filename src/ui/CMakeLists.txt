@@ -39,6 +39,10 @@ add_library(shekinah_ui STATIC
     widgets/library_dock/library_dock_title_bar.cpp
     widgets/library_dock/library_dock_toolbar_navigation.cpp
     widgets/library_dock/library_dock_toolbar_actions.cpp
+    widgets/library_dock/library_dock_catalog.cpp
+    widgets/library_dock/library_dock_navigation.cpp
+    widgets/library_dock/library_dock_content_actions.cpp
+    widgets/library_dock/library_dock_view_state.cpp
     widgets/library_dock/library_dock_content.cpp
     widgets/library_dock/library_dock_interactions.cpp
     widgets/library_dock/library_dock_filtering.cpp
@@ -47,7 +51,6 @@ add_library(shekinah_ui STATIC
     widgets/library_dock/library_dock_theme_styles.cpp
     widgets/library_dock/library_dock_theme_styles.hpp
     widgets/library_dock/library_dock_thumbnails.cpp
-    widgets/library_dock/library_dock_widget.cpp
     widgets/program_status/program_status_components.hpp
     widgets/program_status/program_status_chrome.cpp
     widgets/program_status/program_status_preview.hpp
