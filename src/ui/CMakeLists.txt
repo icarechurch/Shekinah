@@ -3,6 +3,7 @@ add_library(shekinah_ui STATIC
     app/main_window_refresh.cpp
     app/main_window_assets.cpp
     app/main_window_imports.cpp
+    app/main_window_content_editing.cpp
     app/main_window_theme.cpp
     features/edit_song/reflow_editor_dialog.cpp
     features/edit_song/reflow_text_edit.cpp
