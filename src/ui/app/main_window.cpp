@@ -1,5 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
+#include "shekinah/application/cue_presenter.hpp"
 #include "shekinah/application/resource_governor.hpp"
 #include "shekinah/application/slide_insertion.hpp"
 #include "shekinah/application/song_backgrounds.hpp"
@@ -685,9 +686,19 @@ void ShekinahWindow::refresh_cues() {
         return;
     }
 
-    QString item_title;
-    std::vector<CueView> cues;
-    std::vector<QuickCueItem> quick_cues;
+    const auto resolve_asset_path = [this](const domain::AssetId& asset_id)
+        -> std::optional<std::filesystem::path> {
+        if (!repository() || !store()) {
+            return std::nullopt;
+        }
+        const auto asset = repository()->load_asset(asset_id);
+        if (!asset) {
+            return std::nullopt;
+        }
+        return store()->root() / asset->relative_path;
+    };
+
+    application::CuePresentationSet presented;
     if (selected->content.kind == domain::ContentKind::song) {
         const auto song = repository()->load_song(std::get<domain::SongId>(selected->content.id));
         if (!song) {
@@ -695,50 +706,7 @@ void ShekinahWindow::refresh_cues() {
             operator_page_->program_status()->set_item_cues({}, {});
             return;
         }
-        item_title = QString::fromStdString(song->title);
-        cues.reserve(song->slides.size());
-        quick_cues.reserve(song->slides.size());
-        std::optional<domain::BackgroundRef> previous_background;
-        for (std::size_t index = 0; index != song->slides.size(); ++index) {
-            const auto& slide = song->slides[index];
-            const auto summary_text = join_slide_lines(slide.lines);
-
-            QString background_path;
-            domain::FitMode background_fit = domain::FitMode::cover;
-            const auto background = slide.background.has_value()
-                                      ? slide.background
-                                      : song->default_background;
-            const auto starts_asset_range = background.has_value() &&
-                                            (slide.lines.empty() ||
-                                             !previous_background.has_value() ||
-                                             previous_background != background);
-            if (starts_asset_range && store()) {
-                const auto asset = repository()->load_asset(background->asset);
-                if (asset) {
-                    background_path = QString::fromStdString(
-                        (store()->root() / asset->relative_path).string());
-                    background_fit = background->fit;
-                }
-            }
-            previous_background = background;
-            const auto section_q = QString::fromStdString(slide.section);
-            quick_cues.push_back(QuickCueItem{
-                slide.id,
-                static_cast<int>(index + 1),
-                section_q,
-                summary_text,
-            });
-            cues.push_back(CueView{
-                slide.id,
-                section_q,
-                summary_text,
-                static_cast<int>(index + 1),
-                std::move(background_path),
-                background_fit,
-                section_q,
-                true,
-            });
-        }
+        presented = application::build_song_cue_presentation(*song, resolve_asset_path);
     } else {
         const auto sermon = repository()->load_deck(std::get<domain::SermonId>(selected->content.id));
         if (!sermon) {
@@ -746,37 +714,36 @@ void ShekinahWindow::refresh_cues() {
             operator_page_->program_status()->set_item_cues({}, {});
             return;
         }
-        item_title = QString::fromStdString(sermon->title);
-        cues.reserve(sermon->slides.size());
-        quick_cues.reserve(sermon->slides.size());
-        for (std::size_t index = 0; index != sermon->slides.size(); ++index) {
-            QString background_path;
-            if (store()) {
-                const auto asset = repository()->load_asset(sermon->slides[index].image);
-                if (asset) {
-                    background_path = QString::fromStdString(
-                        (store()->root() / asset->relative_path).string());
-                }
-            }
-            const auto slide_label = QStringLiteral("Slide %1").arg(static_cast<qulonglong>(index + 1));
-            quick_cues.push_back(QuickCueItem{
-                sermon->slides[index].id,
-                static_cast<int>(index + 1),
-                slide_label,
-                {},
-            });
-            cues.push_back(CueView{
-                sermon->slides[index].id,
-                {},
-                {},
-                static_cast<int>(index + 1),
-                std::move(background_path),
-                domain::FitMode::cover,
-                slide_label,
-                false,
-            });
-        }
+        presented = application::build_sermon_cue_presentation(*sermon, resolve_asset_path);
     }
+
+    std::vector<CueView> cues;
+    cues.reserve(presented.cues.size());
+    for (const auto& cue : presented.cues) {
+        cues.push_back(CueView{
+            cue.id,
+            QString::fromStdString(cue.section),
+            QString::fromStdString(cue.summary),
+            cue.number,
+            QString::fromStdString(cue.background_path.string()),
+            cue.background_fit,
+            QString::fromStdString(cue.footer_label),
+            cue.show_text,
+        });
+    }
+
+    std::vector<QuickCueItem> quick_cues;
+    quick_cues.reserve(presented.quick_cues.size());
+    for (const auto& cue : presented.quick_cues) {
+        quick_cues.push_back(QuickCueItem{
+            cue.id,
+            cue.number,
+            QString::fromStdString(cue.label),
+            QString::fromStdString(cue.summary),
+        });
+    }
+
+    auto item_title = QString::fromStdString(presented.title);
     operator_page_->set_active_presentation_title(item_title);
     operator_page_->cue_grid()->set_cues(std::move(cues));
     operator_page_->program_status()->set_item_cues(std::move(item_title), std::move(quick_cues));

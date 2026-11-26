@@ -1,4 +1,5 @@
 add_library(shekinah_application STATIC
+    cue_presenter.cpp
     presentation_service.cpp
     resource_governor.cpp
     service_order_service.cpp

@@ -75,6 +75,7 @@ target_link_libraries(shekinah_performance_tests PRIVATE shekinah_media Catch2::
 shekinah_register_test(shekinah_performance_tests performance)
 
 add_executable(shekinah_application_tests
+    application/cue_presenter_test.cpp
     application/presentation_service_test.cpp
     application/resource_governor_test.cpp
     application/service_order_service_test.cpp
