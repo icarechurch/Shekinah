@@ -7,7 +7,9 @@ add_library(shekinah_storage STATIC
     sermon_deck_importer.cpp
     sermon_repository.cpp
     service_order_repository.cpp
-    song_repository.cpp
+    song_repository_reads.cpp
+    song_repository_reflow.cpp
+    song_repository_writes.cpp
 )
 
 target_include_directories(shekinah_storage
