@@ -1,9 +1,11 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
-#include "service_order_components.hpp"
+#include "service_order_primitives.hpp"
 
 #include <QLineEdit>
+#include <QLabel>
 #include <QListWidget>
+#include <QPushButton>
 
 #include <utility>
 

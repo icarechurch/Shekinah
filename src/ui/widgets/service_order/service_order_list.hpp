@@ -1,6 +1,23 @@
 #pragma once
 
-#include "service_order_components.hpp"
+#include "service_order_delegate.hpp"
+
+#include "shekinah/ui/support/asset_drag.hpp"
+#include "shekinah/ui/support/content_drag.hpp"
+#include "shekinah/ui/support/theme.hpp"
+
+#include <QDragEnterEvent>
+#include <QDragLeaveEvent>
+#include <QDragMoveEvent>
+#include <QDropEvent>
+#include <QEvent>
+#include <QKeyEvent>
+#include <QListWidget>
+#include <QMimeData>
+#include <QPainter>
+
+#include <functional>
+#include <utility>
 
 namespace shekinah::ui {
 namespace {

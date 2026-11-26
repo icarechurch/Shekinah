@@ -1,7 +1,19 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
-#include "service_order_components.hpp"
+#include "service_order_primitives.hpp"
 #include "service_order_list.hpp"
+
+#include "shekinah/ui/support/elided_label.hpp"
+#include "shekinah/ui/support/theme.hpp"
+
+#include <QAbstractItemView>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QPushButton>
+#include <QVBoxLayout>
 
 namespace shekinah::ui {
 ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
