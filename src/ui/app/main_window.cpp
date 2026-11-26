@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/cue_presenter.hpp"
+#include "shekinah/application/live_slide_presenter.hpp"
 #include "shekinah/application/resource_governor.hpp"
 #include "shekinah/application/service_order_presenter.hpp"
 #include "shekinah/application/slide_insertion.hpp"
@@ -34,7 +35,6 @@
 
 #include <algorithm>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -86,17 +86,6 @@ application::SongReflowDocument reflow_document_for_song(const domain::Song& son
         }
     }
     return application::SongReflowDocument{std::move(text), std::move(breaks)};
-}
-
-QString join_slide_lines(const std::vector<std::string>& lines) {
-    std::ostringstream out;
-    for (std::size_t index = 0; index != lines.size(); ++index) {
-        if (index != 0) {
-            out << '\n';
-        }
-        out << lines[index];
-    }
-    return QString::fromStdString(out.str());
 }
 
 }  // namespace
@@ -784,57 +773,33 @@ void ShekinahWindow::present_live_media() {
         return;
     }
 
-    std::optional<domain::AssetId> asset_id;
-    QString preview_text;
-    domain::FitMode preview_fit = domain::FitMode::cover;
-    LiveSlideDetails details{};
     const auto& cue = *program.live_cue;
+    application::LiveSlidePresentation presented;
     if (cue.content.kind == domain::ContentKind::song) {
         const auto song = repository()->load_song(std::get<domain::SongId>(cue.content.id));
         if (song) {
-            details.item_title = QString::fromStdString(song->title);
-            details.total_slides = static_cast<int>(song->slides.size());
-            const auto slide = std::find_if(song->slides.begin(), song->slides.end(), [&](const auto& candidate) {
-                return candidate.id == cue.cue;
-            });
-            if (slide != song->slides.end()) {
-                const auto index = static_cast<std::size_t>(std::distance(song->slides.begin(), slide));
-                details.slide_index = static_cast<int>(index + 1);
-                details.section = QString::fromStdString(slide->section);
-                preview_text = join_slide_lines(slide->lines);
-                details.slide_text = preview_text;
-                if (index + 1 < song->slides.size()) {
-                    const auto& next_slide = song->slides[index + 1];
-                    details.next_section = QString::fromStdString(next_slide.section);
-                    details.next_summary = join_slide_lines(next_slide.lines);
-                }
-            }
-        }
-        const auto background = presentation_.resolve_background(cue.content, cue.cue);
-        if (background && background->has_value()) {
-            asset_id = background->value().asset;
-            preview_fit = background->value().fit;
-            details.fit_mode = preview_fit;
+            presented = application::build_live_song_presentation(*song, cue.cue);
         }
     } else {
         const auto deck = repository()->load_deck(std::get<domain::SermonId>(cue.content.id));
         if (deck) {
-            details.item_title = QString::fromStdString(deck->title);
-            details.total_slides = static_cast<int>(deck->slides.size());
-            const auto slide = std::find_if(deck->slides.begin(), deck->slides.end(), [&](const auto& candidate) {
-                return candidate.id == cue.cue;
-            });
-            if (slide != deck->slides.end()) {
-                const auto index = static_cast<std::size_t>(std::distance(deck->slides.begin(), slide));
-                details.slide_index = static_cast<int>(index + 1);
-                details.section = QStringLiteral("Slide %1").arg(details.slide_index);
-                asset_id = slide->image;
-                if (index + 1 < deck->slides.size()) {
-                    details.next_section = QStringLiteral("Slide %1").arg(details.slide_index + 1);
-                    details.next_summary = QStringLiteral("Next sermon slide");
-                }
-            }
+            presented = application::build_live_sermon_presentation(*deck, cue.cue);
         }
+    }
+
+    std::optional<domain::AssetId> asset_id = presented.background_asset;
+    QString preview_text = QString::fromStdString(presented.slide_text);
+    domain::FitMode preview_fit = presented.background_fit;
+    LiveSlideDetails details{};
+    details.item_title = QString::fromStdString(presented.item_title);
+    details.section = QString::fromStdString(presented.section);
+    details.slide_text = preview_text;
+    details.next_section = QString::fromStdString(presented.next_section);
+    details.next_summary = QString::fromStdString(presented.next_summary);
+    details.slide_index = presented.slide_index;
+    details.total_slides = presented.total_slides;
+    if (asset_id.has_value()) {
+        details.fit_mode = preview_fit;
     }
 
     if (audience_output_) {
