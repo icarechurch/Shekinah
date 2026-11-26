@@ -9,6 +9,7 @@ add_library(shekinah_ui STATIC
     app/main_window_asset_backgrounds.cpp
     app/main_window_asset_imports.cpp
     app/main_window_imports.cpp
+    app/main_window_sermon_imports.cpp
     app/main_window_slide_background.cpp
     app/main_window_slide_inspector.cpp
     app/main_window_slide_mutations.cpp
