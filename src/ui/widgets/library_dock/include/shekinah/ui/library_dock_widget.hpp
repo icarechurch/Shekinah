@@ -71,6 +71,10 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private:
+    void setup_title_bar();
+    void setup_toolbar(QWidget* container);
+    void setup_content(QWidget* container);
+    void setup_interactions();
     void apply_theme();
     void set_tab(LibraryTab tab, int index);
     void apply_filter();

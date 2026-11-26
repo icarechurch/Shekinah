@@ -28,6 +28,9 @@ add_library(shekinah_ui STATIC
     ${PROJECT_SOURCE_DIR}/assets/icons/shekinah.qrc
     widgets/library_dock/library_components.hpp
     widgets/library_dock/library_dock_constructor.cpp
+    widgets/library_dock/library_dock_shell.cpp
+    widgets/library_dock/library_dock_content.cpp
+    widgets/library_dock/library_dock_interactions.cpp
     widgets/library_dock/library_dock_filtering.cpp
     widgets/library_dock/library_lists.hpp
     widgets/library_dock/library_dock_theme.cpp
