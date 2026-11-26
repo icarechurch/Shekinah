@@ -22,7 +22,10 @@ add_library(shekinah_ui STATIC
     support/theme_catalog.cpp
     support/theme_dark_palette.cpp
     support/theme_light_palette.cpp
-    support/theme_curated_palettes.cpp
+    support/theme_midnight_palette.cpp
+    support/theme_slate_palette.cpp
+    support/theme_warm_light_palette.cpp
+    support/theme_high_contrast_palette.cpp
     support/theme_settings.cpp
     support/theme_palettes.hpp
     ${PROJECT_SOURCE_DIR}/assets/icons/shekinah.qrc
