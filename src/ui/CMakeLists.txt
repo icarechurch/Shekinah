@@ -8,7 +8,9 @@ add_library(shekinah_ui STATIC
     app/main_window_service_order_refresh.cpp
     app/main_window_assets.cpp
     app/main_window_imports.cpp
-    app/main_window_slide_editing.cpp
+    app/main_window_slide_background.cpp
+    app/main_window_slide_inspector.cpp
+    app/main_window_slide_mutations.cpp
     app/main_window_song_editing.cpp
     app/main_window_theme.cpp
     features/edit_song/reflow_editor_dialog.cpp
