@@ -78,6 +78,7 @@ add_executable(shekinah_application_tests
     application/cue_presenter_test.cpp
     application/presentation_service_test.cpp
     application/resource_governor_test.cpp
+    application/service_order_presenter_test.cpp
     application/service_order_service_test.cpp
     application/slide_insertion_test.cpp
     application/song_backgrounds_test.cpp

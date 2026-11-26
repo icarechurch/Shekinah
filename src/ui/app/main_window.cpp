@@ -2,6 +2,7 @@
 
 #include "shekinah/application/cue_presenter.hpp"
 #include "shekinah/application/resource_governor.hpp"
+#include "shekinah/application/service_order_presenter.hpp"
 #include "shekinah/application/slide_insertion.hpp"
 #include "shekinah/application/song_backgrounds.hpp"
 #include "shekinah/application/song_text_importer.hpp"
@@ -630,40 +631,36 @@ void ShekinahWindow::refresh_service_order() {
     views.reserve(loaded->size());
     const auto program = presentation_.program();
     for (const auto& item : *loaded) {
-        QString label = QStringLiteral("Unknown content");
-        int slide_count = 0;
-        bool has_background = false;
+        application::ServiceOrderItemPresentation presented;
         if (item.content.kind == domain::ContentKind::song) {
             const auto content_id = std::get<domain::SongId>(item.content.id);
             const auto song = repository()->load_song(content_id);
             if (song) {
                 presentation_.register_song(*song);
-                label = QString::fromStdString(song->title);
-                slide_count = static_cast<int>(song->slides.size());
-                has_background = song->default_background.has_value();
+                presented = application::present_service_order_item(
+                    item, &*song, nullptr, program);
             } else {
-                label = QStringLiteral("Song %1").arg(QString::fromStdString(content_id.value));
+                presented = application::present_service_order_item(
+                    item, nullptr, nullptr, program);
             }
         } else {
             const auto content_id = std::get<domain::SermonId>(item.content.id);
             const auto sermon = repository()->load_deck(content_id);
             if (sermon) {
                 presentation_.register_sermon(*sermon);
-                label = QString::fromStdString(sermon->title);
-                slide_count = static_cast<int>(sermon->slides.size());
+                presented = application::present_service_order_item(
+                    item, nullptr, &*sermon, program);
             } else {
-                label = QStringLiteral("Sermon %1").arg(QString::fromStdString(content_id.value));
+                presented = application::present_service_order_item(
+                    item, nullptr, nullptr, program);
             }
         }
-        const bool is_live = program.mode == domain::ProgramMode::cue &&
-                             program.live_cue.has_value() &&
-                             program.live_cue->content == item.content;
         views.push_back(ServiceOrderView{
             item,
-            std::move(label),
-            slide_count,
-            has_background,
-            is_live,
+            QString::fromStdString(presented.label),
+            presented.slide_count,
+            presented.has_background,
+            presented.is_live,
         });
     }
     presentation_.set_service_order(*loaded);
