@@ -43,6 +43,7 @@ shekinah_register_test(shekinah_media_tests media)
 
 add_executable(shekinah_ui_tests
     ui/cue_grid_test.cpp
+    ui/cue_grid_insertion_test.cpp
     ui/inspector_dialog_test.cpp
     ui/library_dock_test.cpp
     ui/library_actions_test.cpp
