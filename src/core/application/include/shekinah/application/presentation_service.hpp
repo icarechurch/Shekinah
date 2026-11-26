@@ -34,6 +34,8 @@ private:
         const domain::ServiceOrderItemId& item_id) const noexcept;
     [[nodiscard]] const domain::Song* find_song(const domain::SongId& id) const noexcept;
     [[nodiscard]] const domain::SermonDeck* find_sermon(const domain::SermonId& id) const noexcept;
+    [[nodiscard]] const domain::ServiceOrderItem* find_item_for_content(
+        const domain::ContentRef& content) const noexcept;
     domain::Status move_live(int direction);
 
     std::vector<domain::Song> songs_;

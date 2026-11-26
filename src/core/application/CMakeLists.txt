@@ -2,6 +2,8 @@ add_library(shekinah_application STATIC
     cue_presenter.cpp
     live_slide_presenter.cpp
     presentation_service.cpp
+    presentation_service_backgrounds.cpp
+    presentation_service_navigation.cpp
     resource_governor.cpp
     song_authoring.cpp
     service_order_service.cpp
