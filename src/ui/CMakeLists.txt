@@ -41,6 +41,9 @@ add_library(shekinah_ui STATIC
     widgets/library_dock/library_dock_filtering.cpp
     widgets/library_dock/library_lists.hpp
     widgets/library_dock/library_dock_theme.cpp
+    widgets/library_dock/library_dock_theme_styles.cpp
+    widgets/library_dock/library_dock_theme_styles.hpp
+    widgets/library_dock/library_dock_thumbnails.cpp
     widgets/library_dock/library_dock_widget.cpp
     widgets/program_status/program_status_components.hpp
     widgets/program_status/program_status_chrome.cpp
