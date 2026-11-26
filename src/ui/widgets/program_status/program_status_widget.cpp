@@ -1,5 +1,5 @@
 #include "shekinah/ui/program_status_widget.hpp"
-#include "program_status_components.hpp"
+#include "program_status_preview.hpp"
 
 #include "shekinah/media/slide_renderer.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"

@@ -1,6 +1,15 @@
 #include "shekinah/ui/program_status_widget.hpp"
 
 #include "program_status_components.hpp"
+#include "program_status_preview.hpp"
+
+#include "shekinah/ui/support/elided_label.hpp"
+
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QProgressBar>
+#include <QPushButton>
+#include <QVBoxLayout>
 
 namespace shekinah::ui {
 

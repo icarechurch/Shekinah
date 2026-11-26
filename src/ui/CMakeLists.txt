@@ -40,6 +40,8 @@ add_library(shekinah_ui STATIC
     widgets/library_dock/library_dock_theme.cpp
     widgets/library_dock/library_dock_widget.cpp
     widgets/program_status/program_status_components.hpp
+    widgets/program_status/program_status_preview.hpp
+    widgets/program_status/program_status_sections.hpp
     widgets/program_status/program_status_constructor.cpp
     widgets/program_status/program_status_layout.cpp
     widgets/program_status/program_status_output.cpp
