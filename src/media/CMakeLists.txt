@@ -1,5 +1,7 @@
 add_library(shekinah_media STATIC
     audience_output.cpp
+    audience_output_media.cpp
+    audience_output_rendering.cpp
     image_cache.cpp
     low_end_profile.cpp
     memory_diagnostics.cpp
