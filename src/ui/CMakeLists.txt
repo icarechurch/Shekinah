@@ -47,6 +47,8 @@ add_library(shekinah_ui STATIC
     widgets/program_status/program_status_output.cpp
     widgets/program_status/program_status_tabs.cpp
     widgets/program_status/program_status_theme.cpp
+    widgets/program_status/program_status_theme_styles.cpp
+    widgets/program_status/program_status_theme_styles.hpp
     widgets/program_status/program_status_widget.cpp
     widgets/service_order/service_order_components.hpp
     widgets/service_order/service_order_constructor.cpp
