@@ -3,6 +3,8 @@
 #include "service_order_primitives.hpp"
 #include "service_order_list.hpp"
 
+#include "shekinah/ui/support/asset_drag.hpp"
+#include "shekinah/ui/support/content_drag.hpp"
 #include "shekinah/ui/support/elided_label.hpp"
 #include "shekinah/ui/support/theme.hpp"
 
@@ -54,7 +56,7 @@ ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
     layout->addWidget(header_bar);
 
     // 2. Service Order List + Transparent Empty-State Overlay
-    auto* list_widget = new ServiceOrderListWidget{this};
+    auto* list_widget = new service_order_internal::ServiceOrderListWidget{this};
     list_ = list_widget;
     list_->setObjectName(QStringLiteral("service-order-list"));
     list_->setFrameShape(QFrame::NoFrame);
