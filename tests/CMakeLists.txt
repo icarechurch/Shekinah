@@ -53,6 +53,10 @@ add_executable(shekinah_ui_tests
     ui/operator_page_test.cpp
     ui/program_status_widget_test.cpp
     ui/project_session_test.cpp
+    ui/project_session_order_test.cpp
+    ui/project_session_assets_test.cpp
+    ui/project_session_output_test.cpp
+    ui/project_session_insertion_test.cpp
     ui/reflow_editor_dialog_test.cpp
     ui/sermon_editor_dialog_test.cpp
     ui/service_order_widget_test.cpp
