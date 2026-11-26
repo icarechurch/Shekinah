@@ -14,6 +14,10 @@ add_library(shekinah_ui STATIC
     support/include/shekinah/ui/support/app_icon.hpp
     support/include/shekinah/ui/support/theme.hpp
     support/theme.cpp
+    support/theme_dark_palette.cpp
+    support/theme_light_palette.cpp
+    support/theme_curated_palettes.cpp
+    support/theme_palettes.hpp
     ${PROJECT_SOURCE_DIR}/assets/icons/shekinah.qrc
     widgets/library_dock/library_dock_widget.cpp
     widgets/program_status/program_status_widget.cpp
