@@ -167,17 +167,17 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
             apply_asset_to_song(std::move(content), std::move(asset));
         });
     operator_page_->set_service_order_content_drop_handler([this](domain::ContentRef content) {
-        if (!repository_) {
+        if (!repository()) {
             return;
         }
-        const auto appended = repository_->append_to_order(
+        const auto appended = repository()->append_to_order(
             domain::ServiceOrderId{"default-service"}, std::move(content));
         if (appended) {
             refresh_service_order();
         }
     });
     operator_page_->set_service_order_remove_handler([this](domain::ServiceOrderItemId item) {
-        if (repository_ && repository_->remove_from_order(item)) {
+        if (repository() && repository()->remove_from_order(item)) {
             refresh_service_order();
         }
     });
@@ -197,10 +197,10 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     library_dock_->show();
     resizeDocks({library_dock_}, {190}, Qt::Vertical);
     const auto add_content_to_presentation = [this](domain::ContentRef content) {
-        if (!repository_) {
+        if (!repository()) {
             return;
         }
-        const auto appended = repository_->append_to_order(
+        const auto appended = repository()->append_to_order(
             domain::ServiceOrderId{"default-service"}, std::move(content));
         if (appended) {
             refresh_service_order();
@@ -230,9 +230,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     auto* close_project_action = file_menu->addAction(QStringLiteral("Close Project"));
     close_project_action->setObjectName(QStringLiteral("close-project"));
     QObject::connect(close_project_action, &QAction::triggered, this, [this] {
-        repository_.reset();
-        store_.reset();
-        project_root_.clear();
+        session_.close();
         presentation_.reset();
         refresh_library();
         refresh_service_order();
@@ -493,7 +491,7 @@ void ShekinahWindow::configure_operator() {
     });
     operator_page_->set_service_order_move_handler(
         [this](domain::ServiceOrderItemId item_id, std::int64_t target_ordinal) {
-            if (repository_ && repository_->move_in_order(item_id, target_ordinal)) {
+            if (repository() && repository()->move_in_order(item_id, target_ordinal)) {
                 refresh_service_order();
             }
         });
@@ -563,26 +561,17 @@ void ShekinahWindow::configure_operator() {
 }
 
 domain::Status ShekinahWindow::open_project(const std::filesystem::path& root) {
-    repository_.reset();
-    store_.reset();
-    project_root_.clear();
-
-    auto opened = storage::ProjectStore::create_or_open(root);
+    const auto opened = session_.open(root);
     if (!opened) {
-        return domain::Status::fail(opened.error());
+        return opened;
     }
 
-    store_ = std::make_unique<storage::ProjectStore>(std::move(opened.value()));
-    repository_ = std::make_unique<storage::SqliteContentRepository>(*store_);
-    project_root_ = root;
     next_content_id_ = 1;
 
-    const auto order = repository_->ensure_service_order(
+    const auto order = session_.repository()->ensure_service_order(
         domain::ServiceOrderId{"default-service"}, "Service Order");
     if (!order) {
-        repository_.reset();
-        store_.reset();
-        project_root_.clear();
+        session_.close();
         return order;
     }
     refresh_library();
@@ -592,24 +581,24 @@ domain::Status ShekinahWindow::open_project(const std::filesystem::path& root) {
 
 void ShekinahWindow::refresh_library() {
     library_dock_->clear_contents();
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
 
-    library_dock_->set_asset_root(project_root_);
-    const auto assets = repository_->list_assets();
+    library_dock_->set_asset_root(session_.root());
+    const auto assets = repository()->list_assets();
     if (assets) {
         for (const auto& asset : *assets) {
             library_dock_->add_asset(asset);
         }
     }
-    const auto songs = repository_->list_songs();
+    const auto songs = repository()->list_songs();
     if (songs) {
         for (const auto& song : *songs) {
             library_dock_->add_song(song);
         }
     }
-    const auto sermons = repository_->list_decks();
+    const auto sermons = repository()->list_decks();
     if (sermons) {
         for (const auto& sermon : *sermons) {
             library_dock_->add_sermon(sermon);
@@ -619,7 +608,7 @@ void ShekinahWindow::refresh_library() {
 
 void ShekinahWindow::refresh_service_order() {
     presentation_.reset();
-    if (!repository_) {
+    if (!repository()) {
         operator_page_->set_service_order({});
         operator_page_->cue_grid()->set_cues({});
         operator_page_->set_active_presentation_title({});
@@ -627,7 +616,7 @@ void ShekinahWindow::refresh_service_order() {
         return;
     }
 
-    const auto loaded = repository_->load_order(domain::ServiceOrderId{"default-service"});
+    const auto loaded = repository()->load_order(domain::ServiceOrderId{"default-service"});
     if (!loaded) {
         operator_page_->set_service_order({});
         operator_page_->cue_grid()->set_cues({});
@@ -645,7 +634,7 @@ void ShekinahWindow::refresh_service_order() {
         bool has_background = false;
         if (item.content.kind == domain::ContentKind::song) {
             const auto content_id = std::get<domain::SongId>(item.content.id);
-            const auto song = repository_->load_song(content_id);
+            const auto song = repository()->load_song(content_id);
             if (song) {
                 presentation_.register_song(*song);
                 label = QString::fromStdString(song->title);
@@ -656,7 +645,7 @@ void ShekinahWindow::refresh_service_order() {
             }
         } else {
             const auto content_id = std::get<domain::SermonId>(item.content.id);
-            const auto sermon = repository_->load_deck(content_id);
+            const auto sermon = repository()->load_deck(content_id);
             if (sermon) {
                 presentation_.register_sermon(*sermon);
                 label = QString::fromStdString(sermon->title);
@@ -689,7 +678,7 @@ void ShekinahWindow::refresh_service_order() {
 
 void ShekinahWindow::refresh_cues() {
     const auto selected = presentation_.selected_item();
-    if (!selected.has_value() || !repository_) {
+    if (!selected.has_value() || !repository()) {
         operator_page_->cue_grid()->set_cues({});
         operator_page_->program_status()->set_item_cues({}, {});
         operator_page_->set_active_presentation_title({});
@@ -700,7 +689,7 @@ void ShekinahWindow::refresh_cues() {
     std::vector<CueView> cues;
     std::vector<QuickCueItem> quick_cues;
     if (selected->content.kind == domain::ContentKind::song) {
-        const auto song = repository_->load_song(std::get<domain::SongId>(selected->content.id));
+        const auto song = repository()->load_song(std::get<domain::SongId>(selected->content.id));
         if (!song) {
             operator_page_->cue_grid()->set_cues({});
             operator_page_->program_status()->set_item_cues({}, {});
@@ -723,11 +712,11 @@ void ShekinahWindow::refresh_cues() {
                                             (slide.lines.empty() ||
                                              !previous_background.has_value() ||
                                              previous_background != background);
-            if (starts_asset_range && store_) {
-                const auto asset = repository_->load_asset(background->asset);
+            if (starts_asset_range && store()) {
+                const auto asset = repository()->load_asset(background->asset);
                 if (asset) {
                     background_path = QString::fromStdString(
-                        (store_->root() / asset->relative_path).string());
+                        (store()->root() / asset->relative_path).string());
                     background_fit = background->fit;
                 }
             }
@@ -751,7 +740,7 @@ void ShekinahWindow::refresh_cues() {
             });
         }
     } else {
-        const auto sermon = repository_->load_deck(std::get<domain::SermonId>(selected->content.id));
+        const auto sermon = repository()->load_deck(std::get<domain::SermonId>(selected->content.id));
         if (!sermon) {
             operator_page_->cue_grid()->set_cues({});
             operator_page_->program_status()->set_item_cues({}, {});
@@ -762,11 +751,11 @@ void ShekinahWindow::refresh_cues() {
         quick_cues.reserve(sermon->slides.size());
         for (std::size_t index = 0; index != sermon->slides.size(); ++index) {
             QString background_path;
-            if (store_) {
-                const auto asset = repository_->load_asset(sermon->slides[index].image);
+            if (store()) {
+                const auto asset = repository()->load_asset(sermon->slides[index].image);
                 if (asset) {
                     background_path = QString::fromStdString(
-                        (store_->root() / asset->relative_path).string());
+                        (store()->root() / asset->relative_path).string());
                 }
             }
             const auto slide_label = QStringLiteral("Slide %1").arg(static_cast<qulonglong>(index + 1));
@@ -814,7 +803,7 @@ void ShekinahWindow::update_program_status() {
 }
 
 void ShekinahWindow::present_live_media() {
-    if (!repository_) {
+    if (!repository()) {
         operator_page_->program_status()->set_slide_preview({});
         operator_page_->program_status()->set_live_details({});
         return;
@@ -837,7 +826,7 @@ void ShekinahWindow::present_live_media() {
     LiveSlideDetails details{};
     const auto& cue = *program.live_cue;
     if (cue.content.kind == domain::ContentKind::song) {
-        const auto song = repository_->load_song(std::get<domain::SongId>(cue.content.id));
+        const auto song = repository()->load_song(std::get<domain::SongId>(cue.content.id));
         if (song) {
             details.item_title = QString::fromStdString(song->title);
             details.total_slides = static_cast<int>(song->slides.size());
@@ -864,7 +853,7 @@ void ShekinahWindow::present_live_media() {
             details.fit_mode = preview_fit;
         }
     } else {
-        const auto deck = repository_->load_deck(std::get<domain::SermonId>(cue.content.id));
+        const auto deck = repository()->load_deck(std::get<domain::SermonId>(cue.content.id));
         if (deck) {
             details.item_title = QString::fromStdString(deck->title);
             details.total_slides = static_cast<int>(deck->slides.size());
@@ -897,7 +886,7 @@ void ShekinahWindow::present_live_media() {
         }
         return;
     }
-    const auto asset = repository_->load_asset(*asset_id);
+    const auto asset = repository()->load_asset(*asset_id);
     if (!asset) {
         operator_page_->program_status()->set_slide_preview(std::move(preview_text));
         operator_page_->program_status()->set_live_details(std::move(details));
@@ -908,7 +897,7 @@ void ShekinahWindow::present_live_media() {
     details.is_video = (asset->kind == domain::AssetKind::video);
     details.asset_name = QString::fromStdString(filename.empty() ? asset->relative_path : filename);
 
-    const auto path = store_->root() / asset->relative_path;
+    const auto path = store()->root() / asset->relative_path;
     if (asset->kind == domain::AssetKind::image) {
         operator_page_->program_status()->set_slide_preview(
             std::move(preview_text), QString::fromStdString(path.string()), preview_fit);
@@ -932,7 +921,7 @@ void ShekinahWindow::present_live_media() {
 }
 
 QString ShekinahWindow::asset_name_for_cue(const domain::CueId& cue) const {
-    if (!repository_) {
+    if (!repository()) {
         return {};
     }
     const auto selected = presentation_.selected_item();
@@ -943,7 +932,7 @@ QString ShekinahWindow::asset_name_for_cue(const domain::CueId& cue) const {
     if (!background || !background->has_value()) {
         return {};
     }
-    const auto asset = repository_->load_asset(background->value().asset);
+    const auto asset = repository()->load_asset(background->value().asset);
     if (!asset) {
         return {};
     }
@@ -952,7 +941,7 @@ QString ShekinahWindow::asset_name_for_cue(const domain::CueId& cue) const {
 }
 
 void ShekinahWindow::remove_asset_from_song(const domain::CueId& cue) {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
     const auto selected = presentation_.selected_item();
@@ -963,12 +952,12 @@ void ShekinahWindow::remove_asset_from_song(const domain::CueId& cue) {
     if (!background || !background->has_value()) {
         return;
     }
-    auto song = repository_->load_song(std::get<domain::SongId>(selected->content.id));
+    auto song = repository()->load_song(std::get<domain::SongId>(selected->content.id));
     if (!song) {
         return;
     }
     application::remove_asset_from_song(*song, background->value().asset);
-    const auto saved = repository_->save_song(*song);
+    const auto saved = repository()->save_song(*song);
     if (!saved) {
         return;
     }
@@ -978,10 +967,10 @@ void ShekinahWindow::remove_asset_from_song(const domain::CueId& cue) {
 }
 
 void ShekinahWindow::choose_background(const domain::CueId& cue) {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
-    const auto assets = repository_->list_assets();
+    const auto assets = repository()->list_assets();
     if (!assets || assets->empty()) {
         return;
     }
@@ -1004,7 +993,7 @@ void ShekinahWindow::choose_background(const domain::CueId& cue) {
 }
 
 void ShekinahWindow::import_asset() {
-    if (!store_) {
+    if (!store()) {
         return;
     }
     const auto path = QFileDialog::getOpenFileName(
@@ -1025,20 +1014,20 @@ void ShekinahWindow::import_asset() {
 }
 
 void ShekinahWindow::apply_asset_to_song(domain::ContentRef content, domain::AssetId asset) {
-    if (!repository_ || content.kind != domain::ContentKind::song) {
+    if (!repository() || content.kind != domain::ContentKind::song) {
         return;
     }
-    const auto asset_record = repository_->load_asset(asset);
+    const auto asset_record = repository()->load_asset(asset);
     if (!asset_record) {
         return;
     }
-    auto song = repository_->load_song(std::get<domain::SongId>(content.id));
+    auto song = repository()->load_song(std::get<domain::SongId>(content.id));
     if (!song) {
         return;
     }
     application::set_default_background(
         *song, domain::BackgroundRef{asset_record->id, domain::FitMode::cover});
-    const auto saved = repository_->save_song(*song);
+    const auto saved = repository()->save_song(*song);
     if (!saved) {
         return;
     }
@@ -1048,18 +1037,18 @@ void ShekinahWindow::apply_asset_to_song(domain::ContentRef content, domain::Ass
 }
 
 void ShekinahWindow::apply_asset_to_slide(domain::CueId cue, domain::AssetId asset) {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
     const auto selected = presentation_.selected_item();
     if (!selected.has_value() || selected->content.kind != domain::ContentKind::song) {
         return;
     }
-    const auto asset_record = repository_->load_asset(asset);
+    const auto asset_record = repository()->load_asset(asset);
     if (!asset_record) {
         return;
     }
-    auto song = repository_->load_song(std::get<domain::SongId>(selected->content.id));
+    auto song = repository()->load_song(std::get<domain::SongId>(selected->content.id));
     if (!song) {
         return;
     }
@@ -1068,7 +1057,7 @@ void ShekinahWindow::apply_asset_to_slide(domain::CueId cue, domain::AssetId ass
     if (!changed) {
         return;
     }
-    const auto saved = repository_->save_song(*song);
+    const auto saved = repository()->save_song(*song);
     if (!saved) {
         return;
     }
@@ -1078,19 +1067,19 @@ void ShekinahWindow::apply_asset_to_slide(domain::CueId cue, domain::AssetId ass
 }
 
 void ShekinahWindow::insert_asset_at_slide_position(std::size_t index, domain::AssetId asset) {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
     const auto selected = presentation_.selected_item();
     if (!selected.has_value()) {
         return;
     }
-    const auto asset_record = repository_->load_asset(asset);
+    const auto asset_record = repository()->load_asset(asset);
     if (!asset_record) {
         return;
     }
     if (selected->content.kind == domain::ContentKind::song) {
-        auto song = repository_->load_song(std::get<domain::SongId>(selected->content.id));
+        auto song = repository()->load_song(std::get<domain::SongId>(selected->content.id));
         if (!song) {
             return;
         }
@@ -1099,7 +1088,7 @@ void ShekinahWindow::insert_asset_at_slide_position(std::size_t index, domain::A
         if (!inserted) {
             return;
         }
-        const auto saved = repository_->save_song(*song);
+        const auto saved = repository()->save_song(*song);
         if (!saved) {
             return;
         }
@@ -1111,7 +1100,7 @@ void ShekinahWindow::insert_asset_at_slide_position(std::size_t index, domain::A
         return;
     }
 
-    auto sermon = repository_->load_deck(std::get<domain::SermonId>(selected->content.id));
+    auto sermon = repository()->load_deck(std::get<domain::SermonId>(selected->content.id));
     if (!sermon) {
         return;
     }
@@ -1119,7 +1108,7 @@ void ShekinahWindow::insert_asset_at_slide_position(std::size_t index, domain::A
     if (!inserted) {
         return;
     }
-    const auto saved = repository_->save_deck(*sermon);
+    const auto saved = repository()->save_deck(*sermon);
     if (!saved) {
         return;
     }
@@ -1132,15 +1121,15 @@ void ShekinahWindow::insert_asset_at_slide_position(std::size_t index, domain::A
 
 domain::Result<domain::AssetRecord> ShekinahWindow::import_asset_file(
     const std::filesystem::path& source) {
-    if (!store_) {
+    if (!store()) {
         return domain::Result<domain::AssetRecord>::fail(
             {domain::ErrorCode::storage_failure, "Open a project before importing assets"});
     }
-    return storage::AssetImporter{*store_}.import_file(source);
+    return storage::AssetImporter{*store()}.import_file(source);
 }
 
 void ShekinahWindow::import_song_text() {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
     const auto path = QFileDialog::getOpenFileName(
@@ -1168,12 +1157,12 @@ void ShekinahWindow::import_song_text() {
     editor->set_reflow_document(reflow_document_for_song(imported));
     QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
         const auto draft = editor->draft_song();
-        if (!draft || !repository_) {
+        if (!draft || !repository()) {
             return;
         }
         auto song = *draft;
         normalize_song_cue_ids(song);
-        const auto saved = repository_->save_song(song);
+        const auto saved = repository()->save_song(song);
         if (saved) {
             library_dock_->add_song(*saved);
         }
@@ -1183,7 +1172,7 @@ void ShekinahWindow::import_song_text() {
 
 domain::Result<domain::Song> ShekinahWindow::import_song_file(
     const std::filesystem::path& source) {
-    if (!repository_) {
+    if (!repository()) {
         return domain::Result<domain::Song>::fail(
             {domain::ErrorCode::storage_failure, "Open a project before importing songs"});
     }
@@ -1200,7 +1189,7 @@ domain::Result<domain::Song> ShekinahWindow::import_song_file(
     auto song = parsed.value();
     song.id = domain::SongId{allocate_song_id()};
     normalize_song_cue_ids(song);
-    const auto saved = repository_->save_song(song);
+    const auto saved = repository()->save_song(song);
     if (!saved) {
         return domain::Result<domain::Song>::fail(saved.error());
     }
@@ -1208,7 +1197,7 @@ domain::Result<domain::Song> ShekinahWindow::import_song_file(
 }
 
 void ShekinahWindow::import_sermon_deck() {
-    if (!store_) {
+    if (!store()) {
         return;
     }
     const auto paths = QFileDialog::getOpenFileNames(
@@ -1239,17 +1228,17 @@ void ShekinahWindow::import_sermon_deck() {
 
 domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
     std::vector<std::filesystem::path> sources, std::string title, bool preserve_order) {
-    if (!store_) {
+    if (!store()) {
         return domain::Result<domain::SermonDeck>::fail(
             {domain::ErrorCode::storage_failure, "Open a project before importing sermons"});
     }
-    return storage::SermonDeckImporter{*store_}.import_files(
+    return storage::SermonDeckImporter{*store()}.import_files(
         domain::SermonId{allocate_sermon_id()}, std::move(title),
         std::move(sources), preserve_order);
 }
 
 void ShekinahWindow::create_sermon() {
-    if (!store_) {
+    if (!store()) {
         return;
     }
     auto* editor = new SermonEditorDialog{this};
@@ -1266,21 +1255,21 @@ void ShekinahWindow::create_sermon() {
 }
 
 void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
-    if (!store_ || !repository_) {
+    if (!store() || !repository()) {
         return;
     }
-    const auto existing = repository_->load_deck(id);
+    const auto existing = repository()->load_deck(id);
     if (!existing) {
         return;
     }
     std::vector<std::filesystem::path> files;
     files.reserve(existing->slides.size());
     for (const auto& slide : existing->slides) {
-        const auto asset = repository_->load_asset(slide.image);
+        const auto asset = repository()->load_asset(slide.image);
         if (!asset) {
             return;
         }
-        files.push_back(store_->root() / asset->relative_path);
+        files.push_back(store()->root() / asset->relative_path);
     }
 
     auto* editor = new SermonEditorDialog{this};
@@ -1288,13 +1277,13 @@ void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
     editor->set_title(QString::fromStdString(existing->title));
     editor->set_files(std::move(files));
     QObject::connect(editor, &QDialog::accepted, this, [this, editor, existing] {
-        if (!store_ || !repository_) {
+        if (!store() || !repository()) {
             return;
         }
         const auto files = editor->files();
         std::vector<domain::SermonSlide> slides;
         slides.reserve(files.size());
-        storage::AssetImporter assets{*store_};
+        storage::AssetImporter assets{*store()};
         for (std::size_t index = 0; index != files.size(); ++index) {
             const auto imported = assets.import_file(files[index]);
             if (!imported) {
@@ -1306,7 +1295,7 @@ void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
         auto updated = *existing;
         updated.title = editor->title().toStdString();
         updated.slides = std::move(slides);
-        const auto saved = repository_->save_deck(updated);
+        const auto saved = repository()->save_deck(updated);
         if (saved) {
             refresh_library();
             presentation_.register_sermon(*saved);
@@ -1319,7 +1308,7 @@ void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
 
 domain::Status ShekinahWindow::set_slide_background(
     const domain::CueId& cue, const domain::AssetId& asset) {
-    if (!repository_) {
+    if (!repository()) {
         return domain::Status::fail(
             {domain::ErrorCode::storage_failure, "Open a project before setting a background"});
     }
@@ -1328,11 +1317,11 @@ domain::Status ShekinahWindow::set_slide_background(
         return domain::Status::fail(
             {domain::ErrorCode::invalid_input, "Only selected Song cues accept editable backgrounds"});
     }
-    const auto asset_record = repository_->load_asset(asset);
+    const auto asset_record = repository()->load_asset(asset);
     if (!asset_record) {
         return domain::Status::fail(asset_record.error());
     }
-    auto song = repository_->load_song(std::get<domain::SongId>(selected->content.id));
+    auto song = repository()->load_song(std::get<domain::SongId>(selected->content.id));
     if (!song) {
         return domain::Status::fail(song.error());
     }
@@ -1343,7 +1332,7 @@ domain::Status ShekinahWindow::set_slide_background(
         return domain::Status::fail({domain::ErrorCode::not_found, "Song cue was not found"});
     }
     slide->background = domain::BackgroundRef{asset_record->id, domain::FitMode::cover};
-    const auto saved = repository_->save_song(*song);
+    const auto saved = repository()->save_song(*song);
     if (!saved) {
         return domain::Status::fail(saved.error());
     }
@@ -1356,7 +1345,7 @@ domain::Status ShekinahWindow::set_slide_background(
 }
 
 void ShekinahWindow::show_inspector(const domain::CueId& cue) {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
     const auto selected = presentation_.selected_item();
@@ -1365,7 +1354,7 @@ void ShekinahWindow::show_inspector(const domain::CueId& cue) {
     }
     if (selected->content.kind == domain::ContentKind::song) {
         const auto song_id = std::get<domain::SongId>(selected->content.id);
-        const auto song = repository_->load_song(song_id);
+        const auto song = repository()->load_song(song_id);
         if (!song) {
             return;
         }
@@ -1382,7 +1371,7 @@ void ShekinahWindow::show_inspector(const domain::CueId& cue) {
     }
 
     const auto sermon_id = std::get<domain::SermonId>(selected->content.id);
-    const auto sermon = repository_->load_deck(sermon_id);
+    const auto sermon = repository()->load_deck(sermon_id);
     if (!sermon) {
         return;
     }
@@ -1399,7 +1388,7 @@ void ShekinahWindow::save_inspected_slide(domain::CueId cue,
                                           std::string section,
                                           std::vector<std::string> lines,
                                           domain::FitMode fit) {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
     const auto selected = presentation_.selected_item();
@@ -1407,7 +1396,7 @@ void ShekinahWindow::save_inspected_slide(domain::CueId cue,
         return;
     }
     const auto song_id = std::get<domain::SongId>(selected->content.id);
-    auto song = repository_->load_song(song_id);
+    auto song = repository()->load_song(song_id);
     if (!song) {
         return;
     }
@@ -1422,7 +1411,7 @@ void ShekinahWindow::save_inspected_slide(domain::CueId cue,
     if (slide->background.has_value()) {
         slide->background->fit = fit;
     }
-    const auto saved = repository_->save_song(*song);
+    const auto saved = repository()->save_song(*song);
     if (!saved) {
         return;
     }
@@ -1436,7 +1425,7 @@ void ShekinahWindow::save_inspected_slide(domain::CueId cue,
 }
 
 void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
     const auto selected = presentation_.selected_item();
@@ -1445,7 +1434,7 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
     }
     if (selected->content.kind == domain::ContentKind::song) {
         const auto id = std::get<domain::SongId>(selected->content.id);
-        auto song = repository_->load_song(id);
+        auto song = repository()->load_song(id);
         if (!song) {
             return;
         }
@@ -1458,7 +1447,7 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
         auto duplicate = *position;
         duplicate.id = domain::CueId{song->id.value + "-copy-" + std::to_string(song->slides.size())};
         song->slides.insert(position + 1, std::move(duplicate));
-        const auto saved = repository_->save_song(*song);
+        const auto saved = repository()->save_song(*song);
         if (saved) {
             presentation_.register_song(*saved);
             refresh_cues();
@@ -1467,7 +1456,7 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
     }
 
     const auto id = std::get<domain::SermonId>(selected->content.id);
-    auto sermon = repository_->load_deck(id);
+    auto sermon = repository()->load_deck(id);
     if (!sermon || sermon->slides.size() == 0) {
         return;
     }
@@ -1480,7 +1469,7 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
     auto duplicate = *position;
     duplicate.id = domain::CueId{sermon->id.value + "-copy-" + std::to_string(sermon->slides.size())};
     sermon->slides.insert(position + 1, std::move(duplicate));
-    const auto saved = repository_->save_deck(*sermon);
+    const auto saved = repository()->save_deck(*sermon);
     if (saved) {
         presentation_.register_sermon(*saved);
         refresh_cues();
@@ -1488,7 +1477,7 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
 }
 
 void ShekinahWindow::delete_slide(const domain::CueId& cue) {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
     const auto selected = presentation_.selected_item();
@@ -1497,7 +1486,7 @@ void ShekinahWindow::delete_slide(const domain::CueId& cue) {
     }
     if (selected->content.kind == domain::ContentKind::song) {
         const auto id = std::get<domain::SongId>(selected->content.id);
-        auto song = repository_->load_song(id);
+        auto song = repository()->load_song(id);
         if (!song || song->slides.size() <= 1) {
             return;
         }
@@ -1508,7 +1497,7 @@ void ShekinahWindow::delete_slide(const domain::CueId& cue) {
             return;
         }
         song->slides.erase(position);
-        const auto saved = repository_->save_song(*song);
+        const auto saved = repository()->save_song(*song);
         if (saved) {
             presentation_.register_song(*saved);
             if (presentation_.program().live_cue.has_value() &&
@@ -1522,7 +1511,7 @@ void ShekinahWindow::delete_slide(const domain::CueId& cue) {
     }
 
     const auto id = std::get<domain::SermonId>(selected->content.id);
-    auto sermon = repository_->load_deck(id);
+    auto sermon = repository()->load_deck(id);
     if (!sermon || sermon->slides.size() <= 1) {
         return;
     }
@@ -1533,7 +1522,7 @@ void ShekinahWindow::delete_slide(const domain::CueId& cue) {
         return;
     }
     sermon->slides.erase(position);
-    const auto saved = repository_->save_deck(*sermon);
+    const auto saved = repository()->save_deck(*sermon);
     if (saved) {
         presentation_.register_sermon(*saved);
         if (presentation_.program().live_cue.has_value() &&
@@ -1548,7 +1537,7 @@ void ShekinahWindow::delete_slide(const domain::CueId& cue) {
 std::string ShekinahWindow::allocate_song_id() {
     for (;;) {
         const auto candidate = "song-" + std::to_string(next_content_id_++);
-        if (!repository_ || !repository_->load_song(domain::SongId{candidate})) {
+        if (!repository() || !repository()->load_song(domain::SongId{candidate})) {
             return candidate;
         }
     }
@@ -1557,14 +1546,14 @@ std::string ShekinahWindow::allocate_song_id() {
 std::string ShekinahWindow::allocate_sermon_id() {
     for (;;) {
         const auto candidate = "sermon-" + std::to_string(next_content_id_++);
-        if (!repository_ || !repository_->load_deck(domain::SermonId{candidate})) {
+        if (!repository() || !repository()->load_deck(domain::SermonId{candidate})) {
             return candidate;
         }
     }
 }
 
 void ShekinahWindow::create_song() {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
     auto* editor = new ReflowEditorDialog{this};
@@ -1573,12 +1562,12 @@ void ShekinahWindow::create_song() {
     editor->set_title(QStringLiteral("Untitled Song"));
     QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
         const auto draft = editor->draft_song();
-        if (!draft || !repository_) {
+        if (!draft || !repository()) {
             return;
         }
         auto song = *draft;
         normalize_song_cue_ids(song);
-        const auto saved = repository_->save_song(song);
+        const auto saved = repository()->save_song(song);
         if (saved) {
             library_dock_->add_song(*saved);
         }
@@ -1587,11 +1576,11 @@ void ShekinahWindow::create_song() {
 }
 
 void ShekinahWindow::edit_song(const domain::SongId& id) {
-    if (!repository_) {
+    if (!repository()) {
         return;
     }
-    const auto existing = repository_->load_song(id);
-    const auto reflow = repository_->load_song_reflow(id);
+    const auto existing = repository()->load_song(id);
+    const auto reflow = repository()->load_song_reflow(id);
     if (!existing || !reflow) {
         return;
     }
@@ -1603,7 +1592,7 @@ void ShekinahWindow::edit_song(const domain::SongId& id) {
     editor->set_reflow_document(*reflow);
     QObject::connect(editor, &QDialog::accepted, this, [this, editor, existing] {
         const auto draft = editor->draft_song();
-        if (!draft || !repository_) {
+        if (!draft || !repository()) {
             return;
         }
         auto song = *draft;
@@ -1617,7 +1606,7 @@ void ShekinahWindow::edit_song(const domain::SongId& id) {
                     song.id.value + "-slide-" + std::to_string(index)};
             }
         }
-        const auto saved = repository_->save_song(song);
+        const auto saved = repository()->save_song(song);
         if (saved) {
             refresh_library();
             presentation_.register_song(*saved);

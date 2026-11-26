@@ -24,6 +24,7 @@ target_sources(shekinah_domain_tests PRIVATE domain/result_test.cpp)
 
 add_executable(shekinah_storage_tests
     storage/content_repository_test.cpp
+    storage/project_session_test.cpp
     storage/project_store_test.cpp
     storage/asset_importer_test.cpp
     storage/sermon_deck_importer_test.cpp

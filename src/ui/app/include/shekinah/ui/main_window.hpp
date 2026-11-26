@@ -12,12 +12,8 @@
 #include "shekinah/application/presentation_service.hpp"
 #include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
+#include "shekinah/storage/project_session.hpp"
 #include "shekinah/ui/support/theme.hpp"
-
-namespace shekinah::storage {
-class ProjectStore;
-class SqliteContentRepository;
-}
 
 namespace shekinah::application {
 class ResourceGovernor;
@@ -50,8 +46,8 @@ public:
     void sample_memory_usage(std::size_t working_set_bytes);
     [[nodiscard]] std::size_t last_working_set_bytes() const noexcept;
     [[nodiscard]] bool live_media_admitted() const noexcept;
-    [[nodiscard]] bool project_open() const noexcept { return store_ != nullptr; }
-    [[nodiscard]] const std::filesystem::path& project_root() const noexcept { return project_root_; }
+    [[nodiscard]] bool project_open() const noexcept { return session_.is_open(); }
+    [[nodiscard]] const std::filesystem::path& project_root() const noexcept { return session_.root(); }
 
     [[nodiscard]] OperatorPage* operator_page() const noexcept { return operator_page_; }
     [[nodiscard]] LibraryDockWidget* library_dock() const noexcept { return library_dock_; }
@@ -61,9 +57,7 @@ public:
 private:
     OperatorPage* operator_page_{nullptr};
     LibraryDockWidget* library_dock_{nullptr};
-    std::filesystem::path project_root_;
-    std::unique_ptr<storage::ProjectStore> store_;
-    std::unique_ptr<storage::SqliteContentRepository> repository_;
+    storage::ProjectSession session_;
     std::unique_ptr<media::AudienceOutput> audience_output_;
     std::unique_ptr<application::ResourcePools> resource_pools_;
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
@@ -74,6 +68,14 @@ private:
 
     void apply_theme();
     void sync_theme_actions();
+    [[nodiscard]] storage::ProjectStore* store() noexcept { return session_.store(); }
+    [[nodiscard]] const storage::ProjectStore* store() const noexcept { return session_.store(); }
+    [[nodiscard]] storage::SqliteContentRepository* repository() noexcept {
+        return session_.repository();
+    }
+    [[nodiscard]] const storage::SqliteContentRepository* repository() const noexcept {
+        return session_.repository();
+    }
     void configure_operator();
     void refresh_library();
     void refresh_service_order();
