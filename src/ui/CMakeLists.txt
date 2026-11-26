@@ -25,6 +25,10 @@ add_library(shekinah_ui STATIC
     support/include/shekinah/ui/support/app_icon.hpp
     support/include/shekinah/ui/support/theme.hpp
     support/theme.cpp
+    support/theme_dialog_stylesheet.cpp
+    support/theme_palette.cpp
+    support/theme_qpalette.cpp
+    support/theme_selection.cpp
     support/theme_catalog.cpp
     support/theme_dark_palette.cpp
     support/theme_light_palette.cpp
