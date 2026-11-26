@@ -27,6 +27,7 @@ add_library(shekinah_ui STATIC
     support/theme_palettes.hpp
     ${PROJECT_SOURCE_DIR}/assets/icons/shekinah.qrc
     widgets/library_dock/library_components.hpp
+    widgets/library_dock/library_card_delegates.cpp
     widgets/library_dock/library_dock_constructor.cpp
     widgets/library_dock/library_dock_shell.cpp
     widgets/library_dock/library_dock_content.cpp

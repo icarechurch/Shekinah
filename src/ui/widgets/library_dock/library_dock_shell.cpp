@@ -2,6 +2,17 @@
 
 #include "library_components.hpp"
 
+#include "shekinah/ui/support/elided_label.hpp"
+#include "shekinah/ui/support/flow_layout.hpp"
+
+#include <QButtonGroup>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QPushButton>
+#include <QVBoxLayout>
+
 namespace shekinah::ui {
 using namespace library_internal;
 

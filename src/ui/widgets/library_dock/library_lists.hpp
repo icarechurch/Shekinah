@@ -2,6 +2,10 @@
 
 #include "library_components.hpp"
 
+#include <QKeyEvent>
+#include <QListWidget>
+#include <QMouseEvent>
+
 namespace shekinah::ui {
 namespace library_internal {
 

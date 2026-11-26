@@ -3,6 +3,13 @@
 #include "library_components.hpp"
 #include "library_lists.hpp"
 
+#include <QAbstractItemView>
+#include <QLabel>
+#include <QListView>
+#include <QListWidget>
+#include <QStackedWidget>
+#include <QVBoxLayout>
+
 namespace shekinah::ui {
 using namespace library_internal;
 
@@ -26,7 +33,7 @@ void LibraryDockWidget::setup_content(QWidget* container) {
     assets_->setIconSize(QSize{kThumbnailWidth, kThumbnailHeight});
     assets_->setGridSize(QSize{kAssetGridWidth, kAssetGridHeight});
     assets_->setUniformItemSizes(true);
-    assets_->setItemDelegate(new AssetCardDelegate{assets_});
+    assets_->setItemDelegate(make_asset_card_delegate(assets_));
 
     auto* songs_list = new ContentListWidget{domain::ContentKind::song, stack_};
     auto* sermons_list = new ContentListWidget{domain::ContentKind::sermon, stack_};
@@ -48,7 +55,7 @@ void LibraryDockWidget::setup_content(QWidget* container) {
         list->setSpacing(4);
         list->setGridSize(QSize{kContentGridWidth, kContentGridHeight});
         list->setUniformItemSizes(true);
-        list->setItemDelegate(new ContentCardDelegate{list});
+        list->setItemDelegate(make_content_card_delegate(list));
     }
 
     songs_list->set_action_handlers(

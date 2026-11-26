@@ -2,6 +2,8 @@
 
 #include "library_components.hpp"
 
+#include <QVBoxLayout>
+
 namespace shekinah::ui {
 using namespace library_internal;
 

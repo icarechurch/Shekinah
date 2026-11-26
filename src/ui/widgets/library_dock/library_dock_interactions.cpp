@@ -2,6 +2,13 @@
 
 #include "library_components.hpp"
 
+#include <QAction>
+#include <QKeySequence>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QMenu>
+#include <QShortcut>
+
 namespace shekinah::ui {
 using namespace library_internal;
 
