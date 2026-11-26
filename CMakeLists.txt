@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.28)
 project(Shekinah VERSION 0.1.0 LANGUAGES CXX)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CompilerWarnings.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ArchitecturePolicy.cmake)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,6 +20,16 @@ endif()
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
+
+shekinah_enforce_architecture()
+
+add_custom_target(shekinah_hotspots
+    COMMAND ${CMAKE_COMMAND}
+        -DROOT=${PROJECT_SOURCE_DIR}
+        -DLIMIT=500
+        -P ${PROJECT_SOURCE_DIR}/cmake/report_hotspots.cmake
+    VERBATIM
+)
 
 find_package(Qt6 6.7 REQUIRED COMPONENTS Core Gui Widgets Multimedia MultimediaWidgets Test)
 find_package(SQLite3 REQUIRED)
