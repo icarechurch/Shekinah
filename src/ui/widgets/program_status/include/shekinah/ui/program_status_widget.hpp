@@ -16,6 +16,7 @@ class QProgressBar;
 class QPushButton;
 class QScreen;
 class QStackedWidget;
+class QVBoxLayout;
 
 namespace shekinah::ui {
 
@@ -79,6 +80,7 @@ public:
     }
 
 private:
+    void build_drawer_pages(QVBoxLayout* layout);
     void apply_theme();
     void set_active_tab(int index);
     void update_status_chrome();
