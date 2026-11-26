@@ -4,16 +4,9 @@
 
 #include <QApplication>
 #include <QGuiApplication>
-#include <QSettings>
 #include <QStyleHints>
 
 namespace shekinah::ui {
-namespace {
-
-constexpr auto kThemeSettingsKey = "ui/theme";
-
-}  // namespace
-
 ThemeManager::ThemeManager() {
     apply_resolved_theme(false);
     if (QGuiApplication::instance() != nullptr && QGuiApplication::styleHints() != nullptr) {
@@ -51,69 +44,6 @@ bool ThemeManager::set_theme_by_key(const QString& key) {
         }
     }
     return false;
-}
-
-void ThemeManager::load_from_settings(const QSettings& settings) {
-    const QString key = settings.value(QString::fromLatin1(kThemeSettingsKey),
-                                       QStringLiteral("dark"))
-                            .toString();
-    if (!set_theme_by_key(key)) {
-        set_theme(ThemeId::dark);
-    }
-}
-
-void ThemeManager::save_to_settings(QSettings& settings) const {
-    settings.setValue(QString::fromLatin1(kThemeSettingsKey), info_for(current_id_).key);
-}
-
-const std::vector<ThemeInfo>& ThemeManager::available_themes() {
-    static const std::vector<ThemeInfo> themes = {
-        {ThemeId::system,
-         QStringLiteral("system"),
-         QStringLiteral("System (Auto)"),
-         QStringLiteral("Follow the operating system light or dark appearance"),
-         false},
-        {ThemeId::dark,
-         QStringLiteral("dark"),
-         QStringLiteral("Dark"),
-         QStringLiteral("Charcoal studio operator theme"),
-         true},
-        {ThemeId::light,
-         QStringLiteral("light"),
-         QStringLiteral("Light"),
-         QStringLiteral("Crisp daylight workspace theme"),
-         false},
-        {ThemeId::midnight,
-         QStringLiteral("midnight"),
-         QStringLiteral("Midnight"),
-         QStringLiteral("Ultra-low-glare theme for darkened booths"),
-         true},
-        {ThemeId::slate,
-         QStringLiteral("slate"),
-         QStringLiteral("Slate"),
-         QStringLiteral("Cool Nordic blue-grey studio theme"),
-         true},
-        {ThemeId::warm_light,
-         QStringLiteral("warm-light"),
-         QStringLiteral("Warm Light"),
-         QStringLiteral("Soft warm paper daylight theme"),
-         false},
-        {ThemeId::high_contrast,
-         QStringLiteral("high-contrast"),
-         QStringLiteral("High Contrast"),
-         QStringLiteral("Accessible high-contrast dark theme"),
-         true},
-    };
-    return themes;
-}
-
-ThemeInfo ThemeManager::info_for(ThemeId id) {
-    for (const auto& info : available_themes()) {
-        if (info.id == id) {
-            return info;
-        }
-    }
-    return available_themes().at(1);
 }
 
 ThemeId ThemeManager::resolve_theme_id(ThemeId id) {
