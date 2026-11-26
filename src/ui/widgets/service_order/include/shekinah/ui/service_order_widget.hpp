@@ -14,6 +14,7 @@ class QLabel;
 class QLineEdit;
 class QListWidget;
 class QPushButton;
+class QVBoxLayout;
 
 namespace shekinah::ui {
 
@@ -62,6 +63,10 @@ public:
     [[nodiscard]] const std::vector<ServiceOrderView>& items() const noexcept { return items_; }
 
 private:
+    void setup_header(QVBoxLayout* layout);
+    void setup_list(QVBoxLayout* layout);
+    void setup_controls(QVBoxLayout* layout);
+    void setup_filter(QVBoxLayout* layout);
     void apply_theme();
     void apply_filter();
     void update_controls_state();
