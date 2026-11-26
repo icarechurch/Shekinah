@@ -1,6 +1,7 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 
 #include "library_components.hpp"
+#include "library_lists.hpp"
 
 namespace shekinah::ui {
 using namespace library_internal;
