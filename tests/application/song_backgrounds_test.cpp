@@ -5,6 +5,31 @@
 using namespace shekinah::application;
 using namespace shekinah::domain;
 
+TEST_CASE("song background resolution chooses slide override before default") {
+    const Song song{SongId{"song"}, "Song", BackgroundRef{AssetId{"default"}, FitMode::cover},
+                    {Slide{CueId{"one"}, "Verse", {"One"}, std::nullopt},
+                     Slide{CueId{"two"}, "Chorus", {"Two"},
+                           BackgroundRef{AssetId{"override"}, FitMode::contain}}}};
+
+    const auto fallback = resolve_song_background(song, CueId{"one"});
+    REQUIRE(fallback);
+    REQUIRE(fallback->value().asset == AssetId{"default"});
+    REQUIRE(fallback->value().fit == FitMode::cover);
+    const auto override_value = resolve_song_background(song, CueId{"two"});
+    REQUIRE(override_value);
+    REQUIRE(override_value->value().asset == AssetId{"override"});
+    REQUIRE(override_value->value().fit == FitMode::contain);
+    REQUIRE_FALSE(resolve_song_background(song, CueId{"missing"}));
+}
+
+TEST_CASE("song background resolution returns no background when none is set") {
+    const Song song{SongId{"song"}, "Song", std::nullopt,
+                    {Slide{CueId{"one"}, "Verse", {"One"}, std::nullopt}}};
+    const auto result = resolve_song_background(song, CueId{"one"});
+    REQUIRE(result);
+    REQUIRE_FALSE(result->has_value());
+}
+
 TEST_CASE("slide background assignment applies from the selected slide forward") {
     Song song{SongId{"song"},
               "Song",

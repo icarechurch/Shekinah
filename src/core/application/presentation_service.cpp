@@ -1,4 +1,5 @@
 #include "shekinah/application/presentation_service.hpp"
+#include "shekinah/application/song_backgrounds.hpp"
 
 #include <algorithm>
 #include <string>
@@ -130,17 +131,7 @@ domain::Result<std::optional<domain::BackgroundRef>> PresentationService::resolv
         return domain::Result<std::optional<domain::BackgroundRef>>::fail(
             {domain::ErrorCode::not_found, "Song was not found"});
     }
-    const auto slide = std::find_if(song->slides.begin(), song->slides.end(), [&](const auto& candidate) {
-        return candidate.id == cue;
-    });
-    if (slide == song->slides.end()) {
-        return domain::Result<std::optional<domain::BackgroundRef>>::fail(
-            {domain::ErrorCode::not_found, "Song cue was not found"});
-    }
-    if (slide->background.has_value()) {
-        return domain::Result<std::optional<domain::BackgroundRef>>::ok(slide->background);
-    }
-    return domain::Result<std::optional<domain::BackgroundRef>>::ok(song->default_background);
+    return resolve_song_background(*song, cue);
 }
 
 const domain::ServiceOrderItem* PresentationService::find_item(

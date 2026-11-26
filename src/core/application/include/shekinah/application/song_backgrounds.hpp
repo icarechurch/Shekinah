@@ -3,7 +3,12 @@
 #include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
 
+#include <optional>
+
 namespace shekinah::application {
+
+[[nodiscard]] domain::Result<std::optional<domain::BackgroundRef>> resolve_song_background(
+    const domain::Song& song, const domain::CueId& cue);
 
 domain::Status apply_background_from_slide(domain::Song& song,
                                            const domain::CueId& start,
