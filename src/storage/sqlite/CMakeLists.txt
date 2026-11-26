@@ -3,6 +3,8 @@ add_library(shekinah_storage STATIC
     asset_repository.cpp
     content_repository.cpp
     project_store.cpp
+    project_store_schema.hpp
+    project_store_transactions.cpp
     project_session.cpp
     sermon_deck_importer.cpp
     sermon_repository.cpp
