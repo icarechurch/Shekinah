@@ -4,6 +4,7 @@ add_library(shekinah_storage STATIC
     project_store.cpp
     project_session.cpp
     sermon_deck_importer.cpp
+    song_repository.cpp
 )
 
 target_include_directories(shekinah_storage
