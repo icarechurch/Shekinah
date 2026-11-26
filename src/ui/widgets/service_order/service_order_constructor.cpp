@@ -1,6 +1,7 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
 #include "service_order_components.hpp"
+#include "service_order_list.hpp"
 
 namespace shekinah::ui {
 ServiceOrderWidget::ServiceOrderWidget(QWidget* parent) : QWidget(parent) {
