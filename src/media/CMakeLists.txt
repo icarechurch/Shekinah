@@ -6,6 +6,9 @@ add_library(shekinah_media STATIC
     low_end_profile.cpp
     memory_diagnostics.cpp
     slide_renderer.cpp
+    slide_renderer_background.cpp
+    slide_renderer_geometry.hpp
+    slide_renderer_text.cpp
 )
 
 target_include_directories(shekinah_media
