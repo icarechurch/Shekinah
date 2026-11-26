@@ -23,6 +23,8 @@ class QWidget;
 
 namespace shekinah::ui {
 
+class FlowLayout;
+
 enum class LibraryTab { assets, songs, sermons };
 
 class LibraryDockWidget final : public QDockWidget {
@@ -73,6 +75,8 @@ protected:
 private:
     void setup_title_bar();
     void setup_toolbar(QWidget* container);
+    void setup_toolbar_navigation(QWidget* toolbar, FlowLayout* toolbar_layout);
+    void setup_toolbar_actions(QWidget* toolbar, FlowLayout* toolbar_layout);
     void setup_content(QWidget* container);
     void setup_interactions();
     void apply_theme();
