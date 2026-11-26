@@ -6,6 +6,7 @@
 #include "shekinah/application/service_order_presenter.hpp"
 #include "shekinah/application/slide_insertion.hpp"
 #include "shekinah/application/song_backgrounds.hpp"
+#include "shekinah/application/song_authoring.hpp"
 #include "shekinah/application/song_text_importer.hpp"
 #include "shekinah/media/audience_output.hpp"
 #include "shekinah/media/memory_diagnostics.hpp"
@@ -62,31 +63,6 @@ public:
 private:
     std::function<void()> purge_callback_;
 };
-
-void normalize_song_cue_ids(domain::Song& song) {
-    for (std::size_t index = 0; index != song.slides.size(); ++index) {
-        song.slides[index].id = domain::CueId{
-            song.id.value + "-slide-" + std::to_string(index)};
-    }
-}
-
-application::SongReflowDocument reflow_document_for_song(const domain::Song& song) {
-    std::string text;
-    std::vector<application::SlideBreak> breaks;
-    for (std::size_t index = 0; index != song.slides.size(); ++index) {
-        if (index != 0) {
-            breaks.push_back(application::SlideBreak{text.size(), song.slides[index].section});
-            text.push_back('\n');
-        }
-        for (std::size_t line = 0; line != song.slides[index].lines.size(); ++line) {
-            if (line != 0) {
-                text.push_back('\n');
-            }
-            text += song.slides[index].lines[line];
-        }
-    }
-    return application::SongReflowDocument{std::move(text), std::move(breaks)};
-}
 
 }  // namespace
 
@@ -437,20 +413,20 @@ void ShekinahWindow::import_song_text() {
     }
     auto imported = parsed.value();
     imported.id = domain::SongId{allocate_song_id()};
-    normalize_song_cue_ids(imported);
+    application::normalize_song_cue_ids(imported);
 
     auto* editor = new ReflowEditorDialog{this};
     editor->setAttribute(Qt::WA_DeleteOnClose);
     editor->load_song(imported.id);
     editor->set_title(QString::fromStdString(imported.title));
-    editor->set_reflow_document(reflow_document_for_song(imported));
+    editor->set_reflow_document(application::reflow_document_for_song(imported));
     QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
         const auto draft = editor->draft_song();
         if (!draft || !repository()) {
             return;
         }
         auto song = *draft;
-        normalize_song_cue_ids(song);
+        application::normalize_song_cue_ids(song);
         const auto saved = repository()->save_song(song);
         if (saved) {
             library_dock_->add_song(*saved);
@@ -477,7 +453,7 @@ domain::Result<domain::Song> ShekinahWindow::import_song_file(
     }
     auto song = parsed.value();
     song.id = domain::SongId{allocate_song_id()};
-    normalize_song_cue_ids(song);
+    application::normalize_song_cue_ids(song);
     const auto saved = repository()->save_song(song);
     if (!saved) {
         return domain::Result<domain::Song>::fail(saved.error());
@@ -855,7 +831,7 @@ void ShekinahWindow::create_song() {
             return;
         }
         auto song = *draft;
-        normalize_song_cue_ids(song);
+        application::normalize_song_cue_ids(song);
         const auto saved = repository()->save_song(song);
         if (saved) {
             library_dock_->add_song(*saved);

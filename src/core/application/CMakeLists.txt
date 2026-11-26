@@ -3,6 +3,7 @@ add_library(shekinah_application STATIC
     live_slide_presenter.cpp
     presentation_service.cpp
     resource_governor.cpp
+    song_authoring.cpp
     service_order_service.cpp
     service_order_presenter.cpp
     slide_insertion.cpp
