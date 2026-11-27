@@ -5,6 +5,7 @@ add_library(shekinah_application STATIC
     presentation_service.cpp
     presentation_service_backgrounds.cpp
     presentation_service_navigation.cpp
+    presentation_service_live_navigation.cpp
     resource_governor.cpp
     song_authoring.cpp
     service_order_service.cpp
