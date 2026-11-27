@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `76d8253 refactor: isolate slide mutations`
+- Latest local commit: `eabfbf2 refactor: isolate slide inspection`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -124,6 +124,8 @@ Since the previous handoff, the media and window seams were tightened further:
 - `76d8253` isolates Song and Sermon slide deletion and duplication, including
   cue lookup, minimum-slide protection, existing `*-copy-N` ID generation, and
   persistence. The window retains live-cue clearing and refresh policy.
+- `eabfbf2` isolates slide inspection projection and Song-slide persistence,
+  while the window retains Inspector widget invocation and refresh behavior.
 
 ## Verification state
 
@@ -135,6 +137,8 @@ Since the previous handoff, the media and window seams were tightened further:
 - The UI gate passes 122/122 in both debug and release configurations after
   the Song asset and slide-mutation extractions. The latest slide-mutation run
   completed in 68.25 seconds for debug and 63.95 seconds for release.
+- The latest slide-inspection UI gate passes 122/122 in both debug and release
+  configurations in 62.42 and 61.57 seconds respectively.
 - The current debug hotspot report says no source files exceed 500 LOC.
 - The current media gate passes 19/19 in both debug and release configurations
   after the renderer and audience-video extractions.
