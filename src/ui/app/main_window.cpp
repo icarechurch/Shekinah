@@ -6,6 +6,7 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/support/app_icon.hpp"
+#include "asset_catalog_coordinator.hpp"
 #include "asset_import_coordinator.hpp"
 #include "asset_slide_insertion_coordinator.hpp"
 #include "content_id_allocator.hpp"
@@ -39,6 +40,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     resource_pools_ = std::make_unique<WindowResourcePools>();
     resource_governor_ = std::make_unique<application::ResourceGovernor>(*resource_pools_);
     content_id_allocator_ = std::make_unique<ContentIdAllocator>(session_);
+    asset_catalog_coordinator_ = std::make_unique<AssetCatalogCoordinator>(session_);
     asset_import_coordinator_ = std::make_unique<AssetImportCoordinator>(session_);
     sermon_import_coordinator_ = std::make_unique<SermonImportCoordinator>(session_);
     content_persistence_coordinator_ =
@@ -60,7 +62,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     cue_presentation_coordinator_ = std::make_unique<CuePresentationCoordinator>(session_);
     live_media_coordinator_ =
         std::make_unique<main_window_internal::LiveMediaCoordinator>(session_);
-    library_catalog_coordinator_ = std::make_unique<LibraryCatalogCoordinator>(session_);
+    library_catalog_coordinator_ = std::make_unique<LibraryCatalogCoordinator>(
+        session_, *asset_catalog_coordinator_);
     service_order_coordinator_ = std::make_unique<ServiceOrderCoordinator>(session_);
     project_lifecycle_coordinator_ = std::make_unique<ProjectLifecycleCoordinator>(
         session_, presentation_, *service_order_coordinator_);

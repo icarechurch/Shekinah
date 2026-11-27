@@ -1,6 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/asset_repository.hpp"
+#include "asset_catalog_coordinator.hpp"
 
 #include <QInputDialog>
 #include <QStringList>
@@ -8,10 +8,7 @@
 namespace shekinah::ui {
 
 void ShekinahWindow::choose_background(const domain::CueId& cue) {
-    if (!assets()) {
-        return;
-    }
-    const auto asset_records = assets()->list_assets();
+    const auto asset_records = asset_catalog_coordinator_->list();
     if (!asset_records || asset_records->empty()) {
         return;
     }

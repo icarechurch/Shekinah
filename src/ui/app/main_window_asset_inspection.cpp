@@ -1,15 +1,10 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/asset_repository.hpp"
-
-#include <filesystem>
+#include "asset_catalog_coordinator.hpp"
 
 namespace shekinah::ui {
 
 QString ShekinahWindow::asset_name_for_cue(const domain::CueId& cue) const {
-    if (!assets()) {
-        return {};
-    }
     const auto selected = presentation_.selected_item();
     if (!selected.has_value() || selected->content.kind != domain::ContentKind::song) {
         return {};
@@ -18,12 +13,11 @@ QString ShekinahWindow::asset_name_for_cue(const domain::CueId& cue) const {
     if (!background || !background->has_value()) {
         return {};
     }
-    const auto asset = assets()->load_asset(background->value().asset);
-    if (!asset) {
+    const auto filename = asset_catalog_coordinator_->filename(background->value().asset);
+    if (!filename.has_value()) {
         return {};
     }
-    const auto filename = std::filesystem::path{asset->relative_path}.filename().string();
-    return QString::fromStdString(filename.empty() ? asset->relative_path : filename);
+    return QString::fromStdString(*filename);
 }
 
 }  // namespace shekinah::ui
