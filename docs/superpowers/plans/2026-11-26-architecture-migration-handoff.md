@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `d93e6f3 refactor: isolate content ID allocation`
+- Latest local commit: `7cfd7c2 refactor: isolate asset catalog`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -144,6 +144,9 @@ Since the previous handoff, the media and window seams were tightened further:
   and persistence. The window retains editor lifecycle and refresh behavior.
 - `d93e6f3` isolates shared Song/Sermon ID allocation and project-open reset
   policy, preserving the existing collision loop and generated-ID behavior.
+- `7cfd7c2` isolates asset listing, loading, and filename projection behind an
+  AssetCatalogCoordinator reused by the Library projection, background chooser,
+  and cue asset-label inspection flow.
 
 ## Verification state
 
@@ -168,7 +171,12 @@ Since the previous handoff, the media and window seams were tightened further:
   configurations in 62.07 and 60.02 seconds respectively.
 - The latest content-ID allocation UI gate passes 122/122 in both debug and
   release configurations in 70.69 and 71.05 seconds respectively.
-- The latest debug hotspot report says no source files exceed 500 LOC.
+- The latest Asset catalog UI gate passes 122/122 in both debug and release
+  configurations in 65.43 and 66.87 seconds respectively. The release run
+  included a clean rebuild and a focused main-window smoke test after recovered
+  build metadata had previously produced stale-layout failures.
+- The latest debug hotspot report says no source files exceed 500 LOC after the
+  Asset catalog extraction.
 - The current media gate passes 19/19 in both debug and release configurations
   after the renderer and audience-video extractions.
 - The current UI gate passes 122/122 in both debug and release configurations
