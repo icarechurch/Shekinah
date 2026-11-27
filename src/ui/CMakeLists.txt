@@ -87,6 +87,7 @@ add_library(shekinah_ui STATIC
     widgets/service_order/service_order_constructor.cpp
     widgets/service_order/service_order_controls.cpp
     widgets/service_order/service_order_filter.cpp
+    widgets/service_order/service_order_filter_state.cpp
     widgets/service_order/service_order_header.cpp
     widgets/service_order/service_order_item_state.cpp
     widgets/service_order/service_order_list_setup.cpp
