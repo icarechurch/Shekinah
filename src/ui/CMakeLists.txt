@@ -8,6 +8,7 @@ add_library(shekinah_ui STATIC
     app/main_window_live_refresh.cpp
     app/main_window_service_order_refresh.cpp
     app/main_window_asset_backgrounds.cpp
+    app/main_window_background_dialog.cpp
     app/main_window_asset_imports.cpp
     app/main_window_imports.cpp
     app/main_window_sermon_imports.cpp
