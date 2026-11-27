@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `eabfbf2 refactor: isolate slide inspection`
+- Latest local commit: `5a6047a refactor: isolate Song authoring`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -126,6 +126,13 @@ Since the previous handoff, the media and window seams were tightened further:
   persistence. The window retains live-cue clearing and refresh policy.
 - `eabfbf2` isolates slide inspection projection and Song-slide persistence,
   while the window retains Inspector widget invocation and refresh behavior.
+- `67b737a` isolates asset importing and removes the raw AssetImporter accessor
+  from the main-window header.
+- `98c7e91` isolates reusable Sermon importing and removes the raw
+  SermonDeckImporter accessor from the main-window header.
+- `5a6047a` isolates reusable Song editing load/save policy, including Reflow
+  loading, cue-ID preservation, background preservation, and appended-slide ID
+  generation.
 
 ## Verification state
 
@@ -139,6 +146,8 @@ Since the previous handoff, the media and window seams were tightened further:
   completed in 68.25 seconds for debug and 63.95 seconds for release.
 - The latest slide-inspection UI gate passes 122/122 in both debug and release
   configurations in 62.42 and 61.57 seconds respectively.
+- The latest Song authoring UI gate passes 122/122 in both debug and release
+  configurations in 62.92 and 61.87 seconds respectively.
 - The current debug hotspot report says no source files exceed 500 LOC.
 - The current media gate passes 19/19 in both debug and release configurations
   after the renderer and audience-video extractions.
