@@ -51,6 +51,7 @@ class LibraryCatalogCoordinator;
 class AssetImportCoordinator;
 class SermonImportCoordinator;
 class SongAuthoringCoordinator;
+class SongImportCoordinator;
 class OperatorPage;
 class ContentPersistenceCoordinator;
 class CuePresentationCoordinator;
@@ -95,6 +96,7 @@ private:
     std::unique_ptr<AssetImportCoordinator> asset_import_coordinator_;
     std::unique_ptr<SermonImportCoordinator> sermon_import_coordinator_;
     std::unique_ptr<SongAuthoringCoordinator> song_authoring_coordinator_;
+    std::unique_ptr<SongImportCoordinator> song_import_coordinator_;
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
     std::unique_ptr<AssetSlideInsertionCoordinator> asset_slide_insertion_coordinator_;
     std::unique_ptr<SongAssetCoordinator> song_asset_coordinator_;
