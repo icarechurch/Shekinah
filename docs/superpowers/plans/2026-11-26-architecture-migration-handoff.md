@@ -62,11 +62,12 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `ed42779 refactor: release redundant audience slide buffers`
+- Latest local commit: `4fac711 refactor: unify authoring persistence`
 - Worktree is clean at this handoff.
-- Commits after the previously recorded `8d70603` were created locally during
-  this migration and should be treated as unpushed unless the user confirms
-  otherwise.
+- The user confirmed that the previously accumulated migration history through
+  `b7bd33d` was pushed before the current sprint. The migration commits after
+  that push are local and should remain unpushed unless the user explicitly
+  asks for a push.
 - Do not reset, rebase, force-push, or discard user changes.
 
 ## Completed migration commits
@@ -94,18 +95,30 @@ legacy store/repository accessors. Audience output no longer retains a
 redundant decoded slide buffer in addition to the renderer's bounded image;
 the existing loaded/cleared state contract is unchanged.
 
+Since the previous handoff, the media and window seams were tightened further:
+
+- `5a2810c` isolates slide background rendering from text rendering.
+- `e0e99c6` isolates canonical text fitting and transformed text painting.
+- `acc5643` isolates the audience video-player/widget lifecycle.
+- `7c15037` centralizes default service-order identity and mutations behind a
+  window-owned coordinator.
+- `f94956b`, `c5d39ee`, and `4fac711` centralize aggregate persistence and
+  presentation-registry refreshes across background, insertion, deletion,
+  duplication, import, and editor flows.
+
 ## Verification state
 
-- Before the latest persistence split, full debug and release gates passed
-  207/207 with the architecture policy enabled.
+- The full debug gate currently passes 207/207 in 87.05 seconds, and the full
+  release gate passes 207/207 in 96.52 seconds, with the architecture policy
+  enabled.
 - The current focused storage gate passed 22/22 in both debug and release
   configurations.
 - The current UI gate passed 122/122 in both debug and release configurations.
 - The current debug hotspot report says no source files exceed 500 LOC.
-- The current media gate passed 19/19 in both debug and release configurations
-  after the audience-output buffer reduction.
-- A full unlabelled debug/release `ctest` gate remains a milestone check; do
-  not infer it from the focused storage/UI labels.
+- The current media gate passes 19/19 in both debug and release configurations
+  after the renderer and audience-video extractions.
+- The current UI gate passes 122/122 in both debug and release configurations
+  after the window coordinator extractions.
 - Build/test commands:
 
 ```text
