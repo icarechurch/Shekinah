@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `3c79ae6 refactor: isolate live media resolution`
+- Latest local commit: `acb99cb refactor: isolate asset slide insertion`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -110,15 +110,24 @@ Since the previous handoff, the media and window seams were tightened further:
 - `0ed2083` isolates service-order view projection and removes the raw-repository
   view-builder seam.
 - `3c79ae6` isolates live-media resolution behind the project session.
+- `c5b33e2` repairs explicit `Result` wrapping in the cue presentation
+  coordinator after the typed result boundary was tightened.
+- `93c7161` isolates live-output presentation, including the existing image,
+  video, missing-asset, and memory-admission branches.
+- `89e5849` makes `ProjectSession` compose independent typed repository
+  adapters instead of using the aggregate compatibility facade at runtime.
+- `acb99cb` isolates Song and Sermon asset-slide insertion, including asset
+  lookup, domain mutation, persistence, and returned slide-count projection.
 
 ## Verification state
 
-- The full debug gate currently passes 207/207 in 89.24 seconds, and the full
-  release gate passes 207/207 in 88.76 seconds, with the architecture policy
+- The full debug gate currently passes 207/207 in 89.96 seconds, and the full
+  release gate passes 207/207 in 90.03 seconds, with the architecture policy
   enabled.
-- The current focused storage gate passed 22/22 in both debug and release
-  configurations.
-- The current UI gate passed 122/122 in both debug and release configurations.
+- The focused storage gate passes 22/22 in both debug and release
+  configurations after typed-session composition.
+- The UI gate passes 122/122 in both debug and release configurations after
+  live-output and asset-insertion extraction.
 - The current debug hotspot report says no source files exceed 500 LOC.
 - The current media gate passes 19/19 in both debug and release configurations
   after the renderer and audience-video extractions.
