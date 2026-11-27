@@ -115,6 +115,7 @@ add_library(shekinah_ui STATIC
     widgets/cue_grid/cue_grid_insert_target.cpp
     widgets/cue_grid/cue_grid_layout.cpp
     widgets/cue_grid/cue_card.cpp
+    widgets/cue_grid/cue_card_dragdrop.cpp
     widgets/cue_grid/cue_grid_style.cpp
     widgets/cue_grid/cue_grid_overlay.hpp
 )
