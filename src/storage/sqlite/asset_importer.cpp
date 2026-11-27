@@ -1,4 +1,5 @@
 #include "shekinah/storage/asset_importer.hpp"
+#include "shekinah/storage/project_store.hpp"
 
 #include "internal/asset_importer_file.hpp"
 

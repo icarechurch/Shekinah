@@ -3,6 +3,7 @@
 #include "internal/sermon_deck_importer_order.hpp"
 
 #include "shekinah/storage/asset_importer.hpp"
+#include "shekinah/storage/project_store.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 
 #include <string>

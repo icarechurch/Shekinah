@@ -2,13 +2,13 @@
 
 #include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
-#include "shekinah/storage/project_store.hpp"
 
 #include <filesystem>
 #include <vector>
 
 namespace shekinah::storage {
 
+class ProjectStore;
 class SermonRepository;
 
 class SermonDeckImporter {

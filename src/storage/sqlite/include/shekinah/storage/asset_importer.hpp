@@ -4,9 +4,10 @@
 
 #include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
-#include "shekinah/storage/project_store.hpp"
 
 namespace shekinah::storage {
+
+class ProjectStore;
 
 class AssetImporter {
 public:
