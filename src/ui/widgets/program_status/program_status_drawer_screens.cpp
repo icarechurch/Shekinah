@@ -6,9 +6,7 @@
 #include <QFrame>
 #include <QGuiApplication>
 #include <QHBoxLayout>
-#include <QLabel>
 #include <QListWidget>
-#include <QProgressBar>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QSizePolicy>
@@ -97,28 +95,7 @@ void ProgramStatusWidget::build_screens_drawer_page() {
     });
     screens_layout->addWidget(screen_actions);
 
-    screens_layout->addWidget(make_section_header(QStringLiteral("RESOURCE GOVERNOR"), screens_page));
-    auto* mem_panel = new QWidget{screens_page};
-    mem_panel->setObjectName(QStringLiteral("memory-panel"));
-    auto* mem_layout = new QVBoxLayout(mem_panel);
-    mem_layout->setContentsMargins(10, 8, 10, 10);
-    mem_layout->setSpacing(6);
-
-    memory_status_label_ = new QLabel{
-        QStringLiteral("Memory: -- / 270 MB Â· Live Video Admitted"), mem_panel};
-    memory_status_label_->setObjectName(QStringLiteral("memory-status-label"));
-    memory_status_label_->setMinimumWidth(0);
-    memory_status_label_->setWordWrap(true);
-    mem_layout->addWidget(memory_status_label_);
-
-    memory_bar_ = new QProgressBar{mem_panel};
-    memory_bar_->setObjectName(QStringLiteral("memory-usage-bar"));
-    memory_bar_->setTextVisible(false);
-    memory_bar_->setFixedHeight(6);
-    memory_bar_->setRange(0, 300);
-    memory_bar_->setValue(0);
-    mem_layout->addWidget(memory_bar_);
-    screens_layout->addWidget(mem_panel);
+    build_resource_governor(screens_page, screens_layout);
     screens_scroll->setWidget(screens_page);
     drawer_stack_->addWidget(screens_scroll);
 }

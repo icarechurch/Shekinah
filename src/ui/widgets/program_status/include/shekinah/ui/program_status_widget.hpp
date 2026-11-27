@@ -90,6 +90,7 @@ private:
     void build_live_drawer_page();
     void build_next_up_card(QWidget* live_page, QVBoxLayout* live_page_layout);
     void build_screens_drawer_page();
+    void build_resource_governor(QWidget* screens_page, QVBoxLayout* screens_layout);
     void build_cues_drawer_page();
     void apply_theme();
     void set_active_tab(int index);

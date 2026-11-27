@@ -76,6 +76,7 @@ add_library(shekinah_ui STATIC
     widgets/program_status/program_status_drawer_cues.cpp
     widgets/program_status/program_status_drawer_live.cpp
     widgets/program_status/program_status_drawer_next_up.cpp
+    widgets/program_status/program_status_resource_governor.cpp
     widgets/program_status/program_status_drawer_screens.cpp
     widgets/program_status/program_status_drawer_tabs.cpp
     widgets/program_status/program_status_layout.cpp
