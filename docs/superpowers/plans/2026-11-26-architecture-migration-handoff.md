@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `c31f003 refactor: centralize Song text import policy`
+- Latest local commit: `a0d8f0b refactor: isolate Sermon authoring`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -139,6 +139,9 @@ Since the previous handoff, the media and window seams were tightened further:
 - `c31f003` extends that boundary to the interactive Song text-import flow:
   file preparation and save policy now stay in the coordinator while the
   window retains file-dialog and Reflow-editor presentation behavior.
+- `a0d8f0b` isolates Sermon editing policy, including stored-deck loading,
+  asset-path projection, replacement-media importing, slide-ID rebuilding,
+  and persistence. The window retains editor lifecycle and refresh behavior.
 
 ## Verification state
 
@@ -159,6 +162,8 @@ Since the previous handoff, the media and window seams were tightened further:
   configurations in 68.01 and 62.53 seconds respectively.
 - The latest Song text-import policy UI gate passes 122/122 in both debug and
   release configurations in 74.07 and 61.19 seconds respectively.
+- The latest Sermon authoring UI gate passes 122/122 in both debug and release
+  configurations in 62.07 and 60.02 seconds respectively.
 - The latest debug hotspot report says no source files exceed 500 LOC.
 - The current media gate passes 19/19 in both debug and release configurations
   after the renderer and audience-video extractions.
