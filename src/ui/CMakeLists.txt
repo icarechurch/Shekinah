@@ -20,6 +20,7 @@ add_library(shekinah_ui STATIC
     app/main_window_theme_styles.cpp
     features/edit_song/reflow_editor_dialog.cpp
     features/edit_song/reflow_text_edit.cpp
+    features/edit_song/reflow_text_edit_markers.cpp
     features/edit_sermon/sermon_editor_dialog.cpp
     features/inspect_slide/inspector_dialog.cpp
     pages/operator/operator_page.cpp
