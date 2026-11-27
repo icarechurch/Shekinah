@@ -50,6 +50,7 @@ class LibraryDockWidget;
 class LibraryCatalogCoordinator;
 class AssetImportCoordinator;
 class SermonImportCoordinator;
+class SermonAuthoringCoordinator;
 class SongAuthoringCoordinator;
 class SongImportCoordinator;
 class OperatorPage;
@@ -95,6 +96,7 @@ private:
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
     std::unique_ptr<AssetImportCoordinator> asset_import_coordinator_;
     std::unique_ptr<SermonImportCoordinator> sermon_import_coordinator_;
+    std::unique_ptr<SermonAuthoringCoordinator> sermon_authoring_coordinator_;
     std::unique_ptr<SongAuthoringCoordinator> song_authoring_coordinator_;
     std::unique_ptr<SongImportCoordinator> song_import_coordinator_;
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
