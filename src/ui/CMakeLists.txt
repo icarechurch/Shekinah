@@ -73,6 +73,9 @@ add_library(shekinah_ui STATIC
     widgets/library_dock/library_dock_shell.cpp
     widgets/library_dock/library_dock_title_bar.cpp
     widgets/library_dock/library_dock_toolbar_navigation.cpp
+    widgets/library_dock/library_dock_tab_navigation.cpp
+    widgets/library_dock/library_dock_search_setup.cpp
+    widgets/library_dock/library_dock_asset_filter.cpp
     widgets/library_dock/library_dock_toolbar_actions.cpp
     widgets/library_dock/library_dock_toolbar_asset_actions.cpp
     widgets/library_dock/library_dock_toolbar_sermon_actions.cpp

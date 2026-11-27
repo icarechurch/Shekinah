@@ -81,6 +81,9 @@ private:
     void setup_title_bar();
     void setup_toolbar(QWidget* container);
     void setup_toolbar_navigation(QWidget* toolbar, FlowLayout* toolbar_layout);
+    void setup_tab_navigation(QWidget* toolbar, FlowLayout* toolbar_layout);
+    void setup_search_setup(QWidget* toolbar, FlowLayout* toolbar_layout);
+    void setup_asset_filter(QWidget* toolbar, FlowLayout* toolbar_layout);
     void setup_toolbar_actions(QWidget* toolbar, FlowLayout* toolbar_layout);
     void setup_asset_toolbar_actions(QWidget* toolbar, FlowLayout* toolbar_layout);
     void setup_song_toolbar_actions(QWidget* toolbar, FlowLayout* toolbar_layout);
