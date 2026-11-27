@@ -122,7 +122,9 @@ add_library(shekinah_ui STATIC
     widgets/program_status/program_status_global_controls.cpp
     widgets/program_status/program_status_header.cpp
     widgets/program_status/program_status_monitor.cpp
-    widgets/program_status/program_status_output.cpp
+    widgets/program_status/program_status_screen_list.cpp
+    widgets/program_status/program_status_cue_filter.cpp
+    widgets/program_status/program_status_screen_menu.cpp
     widgets/program_status/program_status_tabs.cpp
     widgets/program_status/program_status_theme.cpp
     widgets/program_status/program_status_theme_styles.cpp
