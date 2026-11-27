@@ -30,7 +30,6 @@ class QTimer;
 
 namespace shekinah::storage {
 class AssetRepository;
-class AssetImporter;
 class ContentArchiveRepository;
 class SermonRepository;
 class SermonDeckImporter;
@@ -50,6 +49,7 @@ struct LiveSlideDetails;
 
 class LibraryDockWidget;
 class LibraryCatalogCoordinator;
+class AssetImportCoordinator;
 class OperatorPage;
 class ContentPersistenceCoordinator;
 class CuePresentationCoordinator;
@@ -91,6 +91,7 @@ private:
     std::unique_ptr<media::AudienceOutput> audience_output_;
     std::unique_ptr<WindowResourcePools> resource_pools_;
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
+    std::unique_ptr<AssetImportCoordinator> asset_import_coordinator_;
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
     std::unique_ptr<AssetSlideInsertionCoordinator> asset_slide_insertion_coordinator_;
     std::unique_ptr<SongAssetCoordinator> song_asset_coordinator_;
@@ -118,12 +119,6 @@ private:
     void configure_feature_handlers();
     void configure_library_handlers();
     void configure_operator_feature_handlers();
-    [[nodiscard]] storage::AssetImporter* asset_importer() noexcept {
-        return session_.asset_importer();
-    }
-    [[nodiscard]] const storage::AssetImporter* asset_importer() const noexcept {
-        return session_.asset_importer();
-    }
     [[nodiscard]] storage::SermonDeckImporter* sermon_importer() noexcept {
         return session_.sermon_importer();
     }

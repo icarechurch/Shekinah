@@ -6,6 +6,7 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/support/app_icon.hpp"
+#include "asset_import_coordinator.hpp"
 #include "asset_slide_insertion_coordinator.hpp"
 #include "content_persistence_coordinator.hpp"
 #include "cue_presentation_coordinator.hpp"
@@ -32,6 +33,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
 
     resource_pools_ = std::make_unique<WindowResourcePools>();
     resource_governor_ = std::make_unique<application::ResourceGovernor>(*resource_pools_);
+    asset_import_coordinator_ = std::make_unique<AssetImportCoordinator>(session_);
     content_persistence_coordinator_ =
         std::make_unique<ContentPersistenceCoordinator>(session_, presentation_);
     asset_slide_insertion_coordinator_ = std::make_unique<AssetSlideInsertionCoordinator>(
