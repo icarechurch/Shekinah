@@ -3,10 +3,8 @@
 #include "shekinah/application/resource_governor.hpp"
 #include "shekinah/media/audience_output.hpp"
 #include "shekinah/media/memory_diagnostics.hpp"
-#include "shekinah/storage/content_repository.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
-#include "shekinah/ui/program_status_widget.hpp"
 #include "shekinah/ui/support/app_icon.hpp"
 
 #include <QTimer>
@@ -81,52 +79,5 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 ShekinahWindow::~ShekinahWindow() = default;
-
-media::AudienceOutput* ShekinahWindow::audience_output() {
-    if (!audience_output_) {
-        audience_output_ = std::make_unique<media::AudienceOutput>();
-        audience_output_->setWindowIcon(app_icon());
-        audience_output_->present(presentation_.program());
-        present_live_media();
-    }
-    return audience_output_.get();
-}
-
-void ShekinahWindow::sample_memory_usage(std::size_t working_set_bytes) {
-    if (resource_governor_) {
-        resource_governor_->on_working_set_sample(working_set_bytes);
-    }
-    if (operator_page_ != nullptr && operator_page_->program_status() != nullptr) {
-        operator_page_->program_status()->set_memory_status(
-            last_working_set_bytes(), live_media_admitted());
-    }
-}
-
-std::size_t ShekinahWindow::last_working_set_bytes() const noexcept {
-    return resource_governor_ == nullptr ? 0 : resource_governor_->last_sample_bytes();
-}
-
-bool ShekinahWindow::live_media_admitted() const noexcept {
-    return resource_governor_ == nullptr || resource_governor_->may_load_live_media();
-}
-
-domain::Status ShekinahWindow::open_project(const std::filesystem::path& root) {
-    const auto opened = session_.open(root);
-    if (!opened) {
-        return opened;
-    }
-
-    next_content_id_ = 1;
-
-    const auto order = session_.repository()->ensure_service_order(
-        domain::ServiceOrderId{"default-service"}, "Service Order");
-    if (!order) {
-        session_.close();
-        return order;
-    }
-    refresh_library();
-    refresh_service_order();
-    return domain::success();
-}
 
 }  // namespace shekinah::ui
