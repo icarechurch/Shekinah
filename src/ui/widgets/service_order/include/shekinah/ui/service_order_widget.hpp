@@ -57,6 +57,8 @@ public:
 private:
     void setup_header(QVBoxLayout* layout);
     void setup_list(QVBoxLayout* layout);
+    void build_empty_overlay();
+    void connect_list_interactions();
     void setup_controls(QVBoxLayout* layout);
     void setup_filter(QVBoxLayout* layout);
     void apply_theme();
