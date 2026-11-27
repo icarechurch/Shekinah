@@ -21,6 +21,7 @@ add_library(shekinah_ui STATIC
     app/main_window_asset_inspection.cpp
     app/main_window_asset_removal.cpp
     app/main_window_asset_assignment.cpp
+    app/main_window_asset_import_dialog.cpp
     app/main_window_background_dialog.cpp
     app/main_window_asset_imports.cpp
     app/main_window_asset_slide_insertion.cpp
