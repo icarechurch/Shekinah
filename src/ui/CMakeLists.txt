@@ -28,6 +28,7 @@ add_library(shekinah_ui STATIC
     app/main_window_sermon_asset_insertion.cpp
     app/main_window_imports.cpp
     app/main_window_sermon_imports.cpp
+    app/main_window_sermon_creation.cpp
     app/main_window_sermon_editing.cpp
     app/main_window_slide_background.cpp
     app/main_window_slide_inspector.cpp

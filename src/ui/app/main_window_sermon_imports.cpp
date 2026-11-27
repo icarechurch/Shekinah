@@ -55,21 +55,4 @@ domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
         std::move(sources), preserve_order);
 }
 
-void ShekinahWindow::create_sermon() {
-    if (!store()) {
-        return;
-    }
-    auto* editor = new SermonEditorDialog{this};
-    editor->setAttribute(Qt::WA_DeleteOnClose);
-    editor->set_title(QStringLiteral("New Sermon"));
-    QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
-        const auto imported = import_sermon_files(
-            editor->files(), editor->title().toStdString(), true);
-        if (imported) {
-            library_dock_->add_sermon(*imported);
-        }
-    });
-    editor->show();
-}
-
 }  // namespace shekinah::ui
