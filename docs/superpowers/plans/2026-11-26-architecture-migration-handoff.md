@@ -62,11 +62,12 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest pushed commit: `8d70603 refactor: isolate song persistence`
-- Worktree was clean after that commit.
+- Latest local commit: `d52643b refactor: isolate window resource pool adapter`
+- Worktree is clean at this handoff.
+- Commits after the previously recorded `8d70603` were created locally during
+  this migration and should be treated as unpushed unless the user confirms
+  otherwise.
 - Do not reset, rebase, force-push, or discard user changes.
-- The latest three commits after the previously pushed `96d0d83` were pushed
-  by the user and are present on `origin/master`.
 
 ## Completed migration commits
 
@@ -83,19 +84,24 @@ over 500 LOC without failing the build.
 The first six commits extracted application/session/presentation seams while
 preserving the UI. `7ee8d7c` added strict source-boundary checks and advisory
 hotspot reporting. `3b2019e` moved SQLite statement/binding primitives into
-`src/storage/sqlite/internal/sqlite_support.hpp`. `8d70603` moved Song save,
-load, Reflow load, and listing methods into
-`src/storage/sqlite/song_repository.cpp` without changing the public
-`SqliteContentRepository` API or schema.
+`src/storage/sqlite/internal/sqlite_support.hpp`. The persistence migration now
+also has typed Song, Sermon, Asset, Service Order, and archive adapters behind
+the compatibility facade. Asset path resolution, importer ownership, and the
+window resource-pool adapter are behind focused boundaries. The UI no longer
+reaches `ProjectStore` or constructs storage importers directly, and
+`ProjectSession` exposes typed repositories/import services instead of its
+legacy store/repository accessors.
 
 ## Verification state
 
 - Before the latest persistence split, full debug and release gates passed
   207/207 with the architecture policy enabled.
-- After `8d70603`, the focused storage gate passed 22/22 in both debug and
-  release configurations.
-- The next session must run the full debug/release gate before declaring the
-  persistence milestone complete; do not infer it from the focused result.
+- The current focused storage gate passed 22/22 in both debug and release
+  configurations.
+- The current UI gate passed 122/122 in both debug and release configurations.
+- The current debug hotspot report says no source files exceed 500 LOC.
+- A full unlabelled debug/release `ctest` gate remains a milestone check; do
+  not infer it from the focused storage/UI labels.
 - Build/test commands:
 
 ```text
@@ -112,18 +118,23 @@ cmake --build --preset windows-ucrt64-debug --target shekinah_hotspots
 
 ## Exact continuation order
 
-Resume with the remaining `content_repository.cpp` responsibilities. Each
-item is a separate coherent slice with focused storage tests, then full gates
-at the persistence milestone:
+The SQLite aggregate responsibilities are now split behind typed contracts.
+Continue with the next bounded architectural seams:
 
-1. Move Sermon save/load/list methods into `sermon_repository.cpp`.
-2. Move Asset listing/loading into `asset_repository.cpp`.
-3. Move service-order persistence into `service_order_repository.cpp`.
-4. Keep archive/count behavior in a focused aggregate/lifecycle repository or
-   split it into the smallest justified unit.
-5. Reassess and document the resulting storage facade and contracts.
+1. Reassess whether the compatibility `SqliteContentRepository` can be made
+   internal to the composition root without weakening useful test contracts.
+2. Extract application use-case/coordinator contracts from the remaining main
+   window orchestration, preserving the current UI and interaction tests.
+3. Decompose library, service order, cue grid, program status, editors, and
+   theming by feature ownership without visual changes.
+4. Split media renderer/output/cache/resource-pressure ownership.
+5. Add trustworthy application-process measurement later, separate from the
+   existing proxy benchmark.
+6. Finish comprehensive architecture handbook documentation.
+7. Perform final Fujitsu Q5010 hardware validation and record unmet targets
+   honestly.
 
-Then continue through the roadmap:
+Continue through the roadmap:
 
 - extract application use-case/coordinator contracts from `main_window.cpp`;
 - decompose library, service order, cue grid, program status, editors, and
@@ -146,7 +157,7 @@ Then continue through the roadmap:
    the worktree.
 7. Preserve unrelated user changes and never alter the established UI/UX.
 
-The current next action is therefore: read this handoff, inspect the remaining
-Sermon methods in `content_repository.cpp`, extract them, test both storage
-configurations, and continue without creating a goal or stopping at a planning
-checkpoint.
+The current next action is therefore: inspect the remaining compatibility
+facade and main-window orchestration seams, select one bounded extraction,
+test both configurations as applicable, and continue without creating a goal
+or stopping at a planning checkpoint.
