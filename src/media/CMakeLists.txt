@@ -1,4 +1,6 @@
 add_library(shekinah_media STATIC
+    audience_video_output.cpp
+    audience_video_output.hpp
     audience_output.cpp
     audience_output_media.cpp
     audience_output_rendering.cpp

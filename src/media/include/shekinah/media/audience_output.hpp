@@ -8,17 +8,20 @@
 #include <QString>
 
 #include <filesystem>
+#include <memory>
+
 class QScreen;
-class QMediaPlayer;
-class QVideoWidget;
 
 namespace shekinah::media {
 
 enum class OutputMode { hidden, movable, fullscreen };
 
+class AudienceVideoOutput;
+
 class AudienceOutput final : public QWidget {
 public:
     explicit AudienceOutput(QWidget* parent = nullptr);
+    ~AudienceOutput() override;
 
     void show_fullscreen(QScreen* screen);
     void show_movable();
@@ -34,9 +37,9 @@ public:
 
     [[nodiscard]] OutputMode mode() const noexcept { return mode_; }
     [[nodiscard]] const domain::ProgramState& program() const noexcept { return program_; }
-    [[nodiscard]] bool video_paused() const noexcept { return video_paused_; }
+    [[nodiscard]] bool video_paused() const noexcept;
     [[nodiscard]] bool slide_image_loaded() const noexcept { return slide_image_loaded_; }
-    [[nodiscard]] bool loop_video_loaded() const noexcept { return loop_video_loaded_; }
+    [[nodiscard]] bool loop_video_loaded() const noexcept;
     [[nodiscard]] const QString& live_text() const noexcept { return live_text_; }
 
 protected:
@@ -48,15 +51,12 @@ private:
 
     OutputMode mode_{OutputMode::hidden};
     domain::ProgramState program_{};
-    bool video_paused_{false};
     bool slide_image_loaded_{false};
-    bool loop_video_loaded_{false};
     QString live_text_;
     QString slide_background_path_;
     domain::FitMode slide_background_fit_{domain::FitMode::cover};
     SlideRenderer slide_renderer_;
-    QMediaPlayer* player_{nullptr};
-    QVideoWidget* video_widget_{nullptr};
+    std::unique_ptr<AudienceVideoOutput> video_output_;
 };
 
 }  // namespace shekinah::media

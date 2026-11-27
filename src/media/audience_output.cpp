@@ -1,9 +1,9 @@
 #include "shekinah/media/audience_output.hpp"
 
+#include "audience_video_output.hpp"
+
 #include <QGuiApplication>
-#include <QMediaPlayer>
 #include <QScreen>
-#include <QVideoWidget>
 
 #include <utility>
 
@@ -13,13 +13,19 @@ AudienceOutput::AudienceOutput(QWidget* parent) : QWidget(parent) {
     setWindowTitle(QStringLiteral("Shekinah Audience Output"));
     setAttribute(Qt::WA_OpaquePaintEvent);
     resize(1280, 720);
-    player_ = new QMediaPlayer{this};
-    player_->setLoops(QMediaPlayer::Infinite);
-    video_widget_ = new QVideoWidget{this};
-    video_widget_->setGeometry(rect());
-    video_widget_->setVisible(false);
-    player_->setVideoOutput(video_widget_);
+    video_output_ = std::make_unique<AudienceVideoOutput>(this);
+    video_output_->set_geometry(rect());
     update_slide_renderer();
+}
+
+AudienceOutput::~AudienceOutput() = default;
+
+bool AudienceOutput::video_paused() const noexcept {
+    return video_output_->paused();
+}
+
+bool AudienceOutput::loop_video_loaded() const noexcept {
+    return video_output_->loaded();
 }
 
 void AudienceOutput::show_fullscreen(QScreen* screen) {
@@ -44,12 +50,12 @@ void AudienceOutput::show_movable() {
 void AudienceOutput::present(const domain::ProgramState& program) {
     program_ = program;
     if (program_.mode != domain::ProgramMode::cue) {
-        video_widget_->setVisible(false);
+        video_output_->set_visible(false);
         live_text_.clear();
         slide_background_path_.clear();
         update_slide_renderer();
-    } else if (loop_video_loaded_) {
-        video_widget_->setVisible(true);
+    } else if (video_output_->loaded()) {
+        video_output_->set_visible(true);
     }
     update();
 }
@@ -61,15 +67,7 @@ void AudienceOutput::set_live_text(QString text) {
 }
 
 void AudienceOutput::set_video_paused(bool paused) noexcept {
-    video_paused_ = paused;
-    if (player_ == nullptr || !loop_video_loaded_) {
-        return;
-    }
-    if (video_paused_) {
-        player_->pause();
-    } else {
-        player_->play();
-    }
+    video_output_->set_paused(paused);
 }
 
 }  // namespace shekinah::media

@@ -1,8 +1,9 @@
 #include "shekinah/media/audience_output.hpp"
 
+#include "audience_video_output.hpp"
+
 #include <QPainter>
 #include <QResizeEvent>
-#include <QVideoWidget>
 
 namespace shekinah::media {
 
@@ -26,9 +27,7 @@ void AudienceOutput::paintEvent(QPaintEvent* event) {
 
 void AudienceOutput::resizeEvent(QResizeEvent* event) {
     QWidget::resizeEvent(event);
-    if (video_widget_ != nullptr) {
-        video_widget_->setGeometry(rect());
-    }
+    video_output_->set_geometry(rect());
 }
 
 void AudienceOutput::update_slide_renderer() {

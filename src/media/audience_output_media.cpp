@@ -1,9 +1,8 @@
 #include "shekinah/media/audience_output.hpp"
 
+#include "audience_video_output.hpp"
+
 #include <QImageReader>
-#include <QMediaPlayer>
-#include <QUrl>
-#include <QVideoWidget>
 
 namespace shekinah::media {
 
@@ -41,23 +40,11 @@ domain::Status AudienceOutput::load_loop_video(const std::filesystem::path& path
     if (!std::filesystem::is_regular_file(path)) {
         return domain::Status::fail({domain::ErrorCode::io_failure, "loop-video path is not a file"});
     }
-    player_->stop();
-    player_->setSource(QUrl::fromLocalFile(QString::fromStdString(path.string())));
-    loop_video_loaded_ = true;
-    video_paused_ = false;
-    if (program_.mode == domain::ProgramMode::cue) {
-        video_widget_->setVisible(true);
-    }
-    player_->play();
-    return domain::success();
+    return video_output_->load(path, program_.mode == domain::ProgramMode::cue);
 }
 
 void AudienceOutput::clear_loop_video() {
-    player_->stop();
-    player_->setSource(QUrl{});
-    video_widget_->setVisible(false);
-    loop_video_loaded_ = false;
-    video_paused_ = false;
+    video_output_->clear();
 }
 
 }  // namespace shekinah::media
