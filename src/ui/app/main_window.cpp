@@ -10,6 +10,7 @@
 #include "cue_presentation_coordinator.hpp"
 #include "library_catalog_coordinator.hpp"
 #include "service_order_coordinator.hpp"
+#include "service_order_view_coordinator.hpp"
 #include "window_resource_pools.hpp"
 
 #include <QTimer>
@@ -29,6 +30,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     cue_presentation_coordinator_ = std::make_unique<CuePresentationCoordinator>(session_);
     library_catalog_coordinator_ = std::make_unique<LibraryCatalogCoordinator>(session_);
     service_order_coordinator_ = std::make_unique<ServiceOrderCoordinator>(session_);
+    service_order_view_coordinator_ =
+        std::make_unique<ServiceOrderViewCoordinator>(session_, presentation_);
     resource_timer_ = new QTimer{this};
     resource_timer_->setInterval(1000);
     QObject::connect(resource_timer_, &QTimer::timeout, this, [this] {

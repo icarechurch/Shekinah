@@ -52,6 +52,7 @@ class OperatorPage;
 class ContentPersistenceCoordinator;
 class CuePresentationCoordinator;
 class ServiceOrderCoordinator;
+class ServiceOrderViewCoordinator;
 class WindowResourcePools;
 
 class ShekinahWindow final : public QMainWindow {
@@ -87,6 +88,7 @@ private:
     std::unique_ptr<CuePresentationCoordinator> cue_presentation_coordinator_;
     std::unique_ptr<LibraryCatalogCoordinator> library_catalog_coordinator_;
     std::unique_ptr<ServiceOrderCoordinator> service_order_coordinator_;
+    std::unique_ptr<ServiceOrderViewCoordinator> service_order_view_coordinator_;
     QTimer* resource_timer_{nullptr};
     QActionGroup* theme_actions_{nullptr};
     int next_content_id_{1};
