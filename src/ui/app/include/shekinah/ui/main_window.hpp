@@ -47,6 +47,7 @@ struct LiveMediaSnapshot;
 struct LiveSlideDetails;
 
 class LibraryDockWidget;
+class LibraryCatalogCoordinator;
 class OperatorPage;
 class ContentPersistenceCoordinator;
 class ServiceOrderCoordinator;
@@ -82,6 +83,7 @@ private:
     std::unique_ptr<WindowResourcePools> resource_pools_;
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
+    std::unique_ptr<LibraryCatalogCoordinator> library_catalog_coordinator_;
     std::unique_ptr<ServiceOrderCoordinator> service_order_coordinator_;
     QTimer* resource_timer_{nullptr};
     QActionGroup* theme_actions_{nullptr};

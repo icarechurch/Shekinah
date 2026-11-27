@@ -7,6 +7,7 @@
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/support/app_icon.hpp"
 #include "content_persistence_coordinator.hpp"
+#include "library_catalog_coordinator.hpp"
 #include "service_order_coordinator.hpp"
 #include "window_resource_pools.hpp"
 
@@ -24,6 +25,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     resource_governor_ = std::make_unique<application::ResourceGovernor>(*resource_pools_);
     content_persistence_coordinator_ =
         std::make_unique<ContentPersistenceCoordinator>(session_, presentation_);
+    library_catalog_coordinator_ = std::make_unique<LibraryCatalogCoordinator>(session_);
     service_order_coordinator_ = std::make_unique<ServiceOrderCoordinator>(session_);
     resource_timer_ = new QTimer{this};
     resource_timer_->setInterval(1000);
