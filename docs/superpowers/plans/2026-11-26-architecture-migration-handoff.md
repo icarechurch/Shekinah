@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `a874427 refactor: isolate Song importing`
+- Latest local commit: `c31f003 refactor: centralize Song text import policy`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -136,6 +136,9 @@ Since the previous handoff, the media and window seams were tightened further:
 - `a874427` isolates reusable Song file importing, including binary file
   reading, text parsing, allocated-ID assignment, cue-ID normalization, and
   persistence through the existing content-persistence boundary.
+- `c31f003` extends that boundary to the interactive Song text-import flow:
+  file preparation and save policy now stay in the coordinator while the
+  window retains file-dialog and Reflow-editor presentation behavior.
 
 ## Verification state
 
@@ -154,6 +157,8 @@ Since the previous handoff, the media and window seams were tightened further:
   configurations in 62.92 and 61.87 seconds respectively.
 - The latest Song importing UI gate passes 122/122 in both debug and release
   configurations in 68.01 and 62.53 seconds respectively.
+- The latest Song text-import policy UI gate passes 122/122 in both debug and
+  release configurations in 74.07 and 61.19 seconds respectively.
 - The latest debug hotspot report says no source files exceed 500 LOC.
 - The current media gate passes 19/19 in both debug and release configurations
   after the renderer and audience-video extractions.
