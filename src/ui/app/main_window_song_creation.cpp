@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_authoring.hpp"
+#include "content_id_allocator.hpp"
 #include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
@@ -14,7 +15,7 @@ void ShekinahWindow::create_song() {
     }
     auto* editor = new ReflowEditorDialog{this};
     editor->setAttribute(Qt::WA_DeleteOnClose);
-    editor->load_song(domain::SongId{allocate_song_id()});
+    editor->load_song(content_id_allocator_->allocate_song_id());
     editor->set_title(QStringLiteral("Untitled Song"));
     QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
         const auto draft = editor->draft_song();

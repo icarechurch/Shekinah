@@ -55,6 +55,7 @@ class SongAuthoringCoordinator;
 class SongImportCoordinator;
 class OperatorPage;
 class ContentPersistenceCoordinator;
+class ContentIdAllocator;
 class CuePresentationCoordinator;
 class AssetSlideInsertionCoordinator;
 class SongAssetCoordinator;
@@ -100,6 +101,7 @@ private:
     std::unique_ptr<SongAuthoringCoordinator> song_authoring_coordinator_;
     std::unique_ptr<SongImportCoordinator> song_import_coordinator_;
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
+    std::unique_ptr<ContentIdAllocator> content_id_allocator_;
     std::unique_ptr<AssetSlideInsertionCoordinator> asset_slide_insertion_coordinator_;
     std::unique_ptr<SongAssetCoordinator> song_asset_coordinator_;
     std::unique_ptr<SlideMutationCoordinator> slide_mutation_coordinator_;
@@ -113,7 +115,6 @@ private:
     std::unique_ptr<ServiceOrderViewCoordinator> service_order_view_coordinator_;
     QTimer* resource_timer_{nullptr};
     QActionGroup* theme_actions_{nullptr};
-    int next_content_id_{1};
     application::PresentationService presentation_;
 
     void apply_theme();
@@ -162,8 +163,6 @@ private:
                               domain::FitMode fit);
     void duplicate_slide(const domain::CueId& cue);
     void delete_slide(const domain::CueId& cue);
-    std::string allocate_song_id();
-    std::string allocate_sermon_id();
 };
 
 }  // namespace shekinah::ui

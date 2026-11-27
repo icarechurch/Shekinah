@@ -1,31 +1,10 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "song_authoring_coordinator.hpp"
-#include "shekinah/storage/sermon_repository.hpp"
-#include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/reflow_editor_dialog.hpp"
 
-#include <string>
 namespace shekinah::ui {
-
-std::string ShekinahWindow::allocate_song_id() {
-    for (;;) {
-        const auto candidate = "song-" + std::to_string(next_content_id_++);
-        if (!songs() || !songs()->load_song(domain::SongId{candidate})) {
-            return candidate;
-        }
-    }
-}
-
-std::string ShekinahWindow::allocate_sermon_id() {
-    for (;;) {
-        const auto candidate = "sermon-" + std::to_string(next_content_id_++);
-        if (!sermons() || !sermons()->load_deck(domain::SermonId{candidate})) {
-            return candidate;
-        }
-    }
-}
 
 void ShekinahWindow::edit_song(const domain::SongId& id) {
     const auto edit_state = song_authoring_coordinator_->load_for_edit(id);

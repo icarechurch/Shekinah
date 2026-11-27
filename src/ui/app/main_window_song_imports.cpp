@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_authoring.hpp"
+#include "content_id_allocator.hpp"
 #include "song_import_coordinator.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/reflow_editor_dialog.hpp"
@@ -20,7 +21,7 @@ void ShekinahWindow::import_song_text() {
         return;
     }
     const auto prepared = song_import_coordinator_->prepare_file(
-        domain::SongId{allocate_song_id()}, path.toStdString());
+        content_id_allocator_->allocate_song_id(), path.toStdString());
     if (!prepared) {
         return;
     }

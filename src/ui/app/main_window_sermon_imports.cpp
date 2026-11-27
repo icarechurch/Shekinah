@@ -1,5 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
+#include "content_id_allocator.hpp"
 #include "sermon_import_coordinator.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/sermon_editor_dialog.hpp"
@@ -51,7 +52,8 @@ domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
             {domain::ErrorCode::storage_failure, "Open a project before importing sermons"});
     }
     return sermon_import_coordinator_->import_files(
-        domain::SermonId{allocate_sermon_id()}, std::move(title), std::move(sources), preserve_order);
+        content_id_allocator_->allocate_sermon_id(), std::move(title), std::move(sources),
+        preserve_order);
 }
 
 }  // namespace shekinah::ui
