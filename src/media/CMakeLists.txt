@@ -10,6 +10,7 @@ add_library(shekinah_media STATIC
     slide_renderer_background.hpp
     slide_renderer_geometry.hpp
     slide_renderer_text.cpp
+    slide_renderer_text.hpp
 )
 
 target_include_directories(shekinah_media

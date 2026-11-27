@@ -2,11 +2,8 @@
 
 #include "shekinah/domain/model.hpp"
 
-#include <QImage>
-#include <QPointF>
 #include <QRect>
 #include <QString>
-#include <QTextLayout>
 
 #include <memory>
 
@@ -15,6 +12,7 @@ class QPainter;
 namespace shekinah::media {
 
 class SlideBackgroundRenderer;
+class SlideTextRenderer;
 
 enum class SlideTextMode {
     preview,
@@ -44,14 +42,9 @@ public:
     void paint(QPainter& painter, const QRect& viewport);
 
 private:
-    void ensure_text_layout();
-
     SlideRenderData content_;
     std::unique_ptr<SlideBackgroundRenderer> background_;
-    std::shared_ptr<QTextLayout> text_layout_;
-    QPointF text_draw_origin_;
-    bool text_fits_height_{true};
-    bool text_layout_ready_{false};
+    std::unique_ptr<SlideTextRenderer> text_;
 };
 
 }  // namespace shekinah::media

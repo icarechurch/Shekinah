@@ -2,6 +2,7 @@
 
 #include <QGuiApplication>
 #include <QMediaPlayer>
+#include <QScreen>
 #include <QVideoWidget>
 
 #include <utility>

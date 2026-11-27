@@ -1,23 +1,17 @@
 #include "shekinah/media/slide_renderer.hpp"
 
 #include "slide_renderer_background.hpp"
-#include "slide_renderer_geometry.hpp"
+#include "slide_renderer_text.hpp"
 
 #include <QPainter>
 
-#include <algorithm>
 #include <utility>
 
 namespace shekinah::media {
 
-using slide_renderer_internal::kCanonicalHeight;
-using slide_renderer_internal::kCanonicalPadX;
-using slide_renderer_internal::kCanonicalPadY;
-using slide_renderer_internal::kCanonicalShadowOffset;
-using slide_renderer_internal::kCanonicalWidth;
-
 SlideRenderer::SlideRenderer()
-    : background_(std::make_unique<SlideBackgroundRenderer>()) {}
+    : background_(std::make_unique<SlideBackgroundRenderer>()),
+      text_(std::make_unique<SlideTextRenderer>()) {}
 
 SlideRenderer::~SlideRenderer() = default;
 
@@ -29,10 +23,7 @@ void SlideRenderer::set_content(SlideRenderData content) {
     content_ = std::move(content);
     background_->set_content(
         content_.background_path, content_.background_fit, content_.checkerboard_fallback);
-    text_layout_.reset();
-    text_draw_origin_ = {};
-    text_fits_height_ = true;
-    text_layout_ready_ = false;
+    text_->set_content(content_.text, content_.show_text);
 }
 
 void SlideRenderer::paint(QPainter& painter, const QRect& viewport) {
@@ -43,41 +34,7 @@ void SlideRenderer::paint(QPainter& painter, const QRect& viewport) {
     painter.save();
     painter.setClipRect(viewport);
     background_->paint(painter, viewport);
-
-    ensure_text_layout();
-    if (text_layout_) {
-        painter.setRenderHint(QPainter::Antialiasing, true);
-        painter.setRenderHint(QPainter::TextAntialiasing, true);
-
-        const qreal scale = std::min(
-            static_cast<qreal>(viewport.width()) / static_cast<qreal>(kCanonicalWidth),
-            static_cast<qreal>(viewport.height()) / static_cast<qreal>(kCanonicalHeight));
-        const qreal stage_w = static_cast<qreal>(kCanonicalWidth) * scale;
-        const qreal stage_h = static_cast<qreal>(kCanonicalHeight) * scale;
-        const qreal origin_x = static_cast<qreal>(viewport.x()) +
-                               (static_cast<qreal>(viewport.width()) - stage_w) * 0.5;
-        const qreal origin_y = static_cast<qreal>(viewport.y()) +
-                               (static_cast<qreal>(viewport.height()) - stage_h) * 0.5;
-
-        painter.translate(origin_x, origin_y);
-        painter.scale(scale, scale);
-
-        const QRectF clip_rect = text_fits_height_
-            ? QRectF{static_cast<qreal>(kCanonicalPadX),
-                     static_cast<qreal>(kCanonicalPadY),
-                     static_cast<qreal>(kCanonicalWidth - 2 * kCanonicalPadX) + kCanonicalShadowOffset.x(),
-                     static_cast<qreal>(kCanonicalHeight - 2 * kCanonicalPadY) + kCanonicalShadowOffset.y()}
-            : QRectF{static_cast<qreal>(kCanonicalPadX),
-                     static_cast<qreal>(kCanonicalPadY),
-                     static_cast<qreal>(kCanonicalWidth - 2 * kCanonicalPadX),
-                     static_cast<qreal>(kCanonicalHeight - 2 * kCanonicalPadY)};
-        painter.setClipRect(clip_rect);
-
-        painter.setPen(QColor{QStringLiteral("#080808")});
-        text_layout_->draw(&painter, text_draw_origin_ + kCanonicalShadowOffset);
-        painter.setPen(Qt::white);
-        text_layout_->draw(&painter, text_draw_origin_);
-    }
+    text_->paint(painter, viewport);
     painter.restore();
 }
 
