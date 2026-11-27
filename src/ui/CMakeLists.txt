@@ -154,7 +154,8 @@ add_library(shekinah_ui STATIC
     widgets/service_order/service_order_list_drop_state.cpp
     widgets/service_order/service_order_list_event_filter.cpp
     widgets/service_order/service_order_list_drag_events.cpp
-    widgets/service_order/service_order_list_input.cpp
+    widgets/service_order/service_order_list_paint.cpp
+    widgets/service_order/service_order_list_keyboard.cpp
     widgets/cue_grid/cue_grid_widget.cpp
     widgets/cue_grid/cue_grid_empty_view.cpp
     widgets/cue_grid/cue_grid_grid_view.cpp
