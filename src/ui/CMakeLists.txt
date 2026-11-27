@@ -169,6 +169,8 @@ add_library(shekinah_ui STATIC
     widgets/service_order/service_order_theme.cpp
     widgets/service_order/service_order_stylesheet.cpp
     widgets/service_order/service_order_stylesheet.hpp
+    widgets/service_order/service_order_row_surface.cpp
+    widgets/service_order/service_order_row_surface.hpp
     widgets/service_order/service_order_theme_icons.cpp
     widgets/service_order/service_order_list.hpp
     widgets/service_order/service_order_list.cpp
