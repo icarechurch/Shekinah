@@ -1,5 +1,6 @@
 #include "shekinah/media/slide_renderer.hpp"
 
+#include "slide_renderer_background.hpp"
 #include "slide_renderer_geometry.hpp"
 
 #include <QPainter>
@@ -15,10 +16,19 @@ using slide_renderer_internal::kCanonicalPadY;
 using slide_renderer_internal::kCanonicalShadowOffset;
 using slide_renderer_internal::kCanonicalWidth;
 
+SlideRenderer::SlideRenderer()
+    : background_(std::make_unique<SlideBackgroundRenderer>()) {}
+
+SlideRenderer::~SlideRenderer() = default;
+
+SlideRenderer::SlideRenderer(SlideRenderer&&) noexcept = default;
+
+SlideRenderer& SlideRenderer::operator=(SlideRenderer&&) noexcept = default;
+
 void SlideRenderer::set_content(SlideRenderData content) {
     content_ = std::move(content);
-    background_image_ = {};
-    background_image_size_ = {};
+    background_->set_content(
+        content_.background_path, content_.background_fit, content_.checkerboard_fallback);
     text_layout_.reset();
     text_draw_origin_ = {};
     text_fits_height_ = true;
@@ -32,37 +42,7 @@ void SlideRenderer::paint(QPainter& painter, const QRect& viewport) {
 
     painter.save();
     painter.setClipRect(viewport);
-    ensure_background_image(viewport);
-    if (!background_image_.isNull()) {
-        if (content_.background_fit == domain::FitMode::stretch) {
-            painter.drawImage(viewport, background_image_);
-        } else {
-            QSize draw_size = background_image_.size();
-            draw_size.scale(
-                viewport.size(),
-                content_.background_fit == domain::FitMode::contain
-                    ? Qt::KeepAspectRatio
-                    : Qt::KeepAspectRatioByExpanding);
-            const QRect draw_rect{
-                viewport.center() - QPoint{draw_size.width() / 2, draw_size.height() / 2},
-                draw_size};
-            painter.drawImage(draw_rect, background_image_);
-        }
-    } else if (content_.checkerboard_fallback) {
-        constexpr int tile_size = 16;
-        for (int y = viewport.top(); y <= viewport.bottom(); y += tile_size) {
-            for (int x = viewport.left(); x <= viewport.right(); x += tile_size) {
-                const auto tile = ((x - viewport.left()) / tile_size +
-                                   (y - viewport.top()) / tile_size) % 2;
-                painter.fillRect(
-                    QRect{x, y, tile_size, tile_size},
-                    tile == 0 ? QColor{QStringLiteral("#111111")}
-                              : QColor{QStringLiteral("#282828")});
-            }
-        }
-    } else {
-        painter.fillRect(viewport, QColor{QStringLiteral("#182337")});
-    }
+    background_->paint(painter, viewport);
 
     ensure_text_layout();
     if (text_layout_) {

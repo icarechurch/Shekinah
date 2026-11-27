@@ -14,6 +14,8 @@ class QPainter;
 
 namespace shekinah::media {
 
+class SlideBackgroundRenderer;
+
 enum class SlideTextMode {
     preview,
     audience,
@@ -30,16 +32,22 @@ struct SlideRenderData {
 
 class SlideRenderer final {
 public:
+    SlideRenderer();
+    ~SlideRenderer();
+
+    SlideRenderer(const SlideRenderer&) = delete;
+    SlideRenderer& operator=(const SlideRenderer&) = delete;
+    SlideRenderer(SlideRenderer&&) noexcept;
+    SlideRenderer& operator=(SlideRenderer&&) noexcept;
+
     void set_content(SlideRenderData content);
     void paint(QPainter& painter, const QRect& viewport);
 
 private:
-    void ensure_background_image(const QRect& viewport);
     void ensure_text_layout();
 
     SlideRenderData content_;
-    QImage background_image_;
-    QSize background_image_size_;
+    std::unique_ptr<SlideBackgroundRenderer> background_;
     std::shared_ptr<QTextLayout> text_layout_;
     QPointF text_draw_origin_;
     bool text_fits_height_{true};
