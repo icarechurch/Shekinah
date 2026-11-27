@@ -56,6 +56,7 @@ class CuePresentationCoordinator;
 class AssetSlideInsertionCoordinator;
 class ServiceOrderCoordinator;
 class ServiceOrderViewCoordinator;
+class ProjectLifecycleCoordinator;
 class WindowResourcePools;
 
 class ShekinahWindow final : public QMainWindow {
@@ -93,6 +94,7 @@ private:
     std::unique_ptr<main_window_internal::LiveMediaCoordinator> live_media_coordinator_;
     std::unique_ptr<main_window_internal::LiveOutputCoordinator> live_output_coordinator_;
     std::unique_ptr<LibraryCatalogCoordinator> library_catalog_coordinator_;
+    std::unique_ptr<ProjectLifecycleCoordinator> project_lifecycle_coordinator_;
     std::unique_ptr<ServiceOrderCoordinator> service_order_coordinator_;
     std::unique_ptr<ServiceOrderViewCoordinator> service_order_view_coordinator_;
     QTimer* resource_timer_{nullptr};
@@ -134,6 +136,7 @@ private:
     void configure_operator_output_handlers();
     void refresh_library();
     void refresh_service_order();
+    void close_project();
     void refresh_cues();
     void update_program_status();
     void present_live_media();

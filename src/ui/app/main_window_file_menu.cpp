@@ -31,10 +31,7 @@ void ShekinahWindow::configure_file_menu() {
     auto* close_project_action = file_menu->addAction(QStringLiteral("Close Project"));
     close_project_action->setObjectName(QStringLiteral("close-project"));
     QObject::connect(close_project_action, &QAction::triggered, this, [this] {
-        session_.close();
-        presentation_.reset();
-        refresh_library();
-        refresh_service_order();
+        close_project();
     });
 }
 

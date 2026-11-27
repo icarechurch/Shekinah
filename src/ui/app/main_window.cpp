@@ -12,6 +12,7 @@
 #include "library_catalog_coordinator.hpp"
 #include "main_window_live_media.hpp"
 #include "live_output_coordinator.hpp"
+#include "project_lifecycle_coordinator.hpp"
 #include "service_order_coordinator.hpp"
 #include "service_order_view_coordinator.hpp"
 #include "window_resource_pools.hpp"
@@ -37,6 +38,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         std::make_unique<main_window_internal::LiveMediaCoordinator>(session_);
     library_catalog_coordinator_ = std::make_unique<LibraryCatalogCoordinator>(session_);
     service_order_coordinator_ = std::make_unique<ServiceOrderCoordinator>(session_);
+    project_lifecycle_coordinator_ = std::make_unique<ProjectLifecycleCoordinator>(
+        session_, presentation_, *service_order_coordinator_);
     service_order_view_coordinator_ =
         std::make_unique<ServiceOrderViewCoordinator>(session_, presentation_);
     resource_timer_ = new QTimer{this};
