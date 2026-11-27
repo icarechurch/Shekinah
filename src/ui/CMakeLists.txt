@@ -27,6 +27,7 @@ add_library(shekinah_ui STATIC
     pages/operator/operator_page_context.cpp
     support/app_icon.cpp
     support/include/shekinah/ui/support/app_icon.hpp
+    support/flow_layout.cpp
     support/include/shekinah/ui/support/theme.hpp
     support/theme.cpp
     support/theme_dialog_stylesheet.cpp
