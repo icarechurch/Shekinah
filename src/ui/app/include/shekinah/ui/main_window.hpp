@@ -55,6 +55,7 @@ class ContentPersistenceCoordinator;
 class CuePresentationCoordinator;
 class AssetSlideInsertionCoordinator;
 class SongAssetCoordinator;
+class SlideMutationCoordinator;
 class ServiceOrderCoordinator;
 class ServiceOrderViewCoordinator;
 class ProjectLifecycleCoordinator;
@@ -92,6 +93,7 @@ private:
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
     std::unique_ptr<AssetSlideInsertionCoordinator> asset_slide_insertion_coordinator_;
     std::unique_ptr<SongAssetCoordinator> song_asset_coordinator_;
+    std::unique_ptr<SlideMutationCoordinator> slide_mutation_coordinator_;
     std::unique_ptr<CuePresentationCoordinator> cue_presentation_coordinator_;
     std::unique_ptr<main_window_internal::LiveMediaCoordinator> live_media_coordinator_;
     std::unique_ptr<main_window_internal::LiveOutputCoordinator> live_output_coordinator_;

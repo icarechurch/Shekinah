@@ -16,6 +16,7 @@
 #include "service_order_coordinator.hpp"
 #include "service_order_view_coordinator.hpp"
 #include "song_asset_coordinator.hpp"
+#include "slide_mutation_coordinator.hpp"
 #include "window_resource_pools.hpp"
 
 #include <QTimer>
@@ -36,6 +37,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
         session_, *content_persistence_coordinator_);
     song_asset_coordinator_ =
         std::make_unique<SongAssetCoordinator>(session_, *content_persistence_coordinator_);
+    slide_mutation_coordinator_ =
+        std::make_unique<SlideMutationCoordinator>(session_, *content_persistence_coordinator_);
     cue_presentation_coordinator_ = std::make_unique<CuePresentationCoordinator>(session_);
     live_media_coordinator_ =
         std::make_unique<main_window_internal::LiveMediaCoordinator>(session_);
