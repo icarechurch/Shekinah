@@ -86,6 +86,7 @@ private:
         return session_.repository();
     }
     void configure_operator();
+    void configure_operator_output_handlers();
     void refresh_library();
     void refresh_service_order();
     void refresh_cues();

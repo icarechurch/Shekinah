@@ -13,6 +13,7 @@ add_library(shekinah_ui STATIC
     app/main_window_presentation_menu.cpp
     app/main_window_view_menu.cpp
     app/main_window_operator_bindings.cpp
+    app/main_window_operator_output_bindings.cpp
     app/main_window_cue_refresh.cpp
     app/main_window_library_refresh.cpp
     app/main_window_live_refresh.cpp
