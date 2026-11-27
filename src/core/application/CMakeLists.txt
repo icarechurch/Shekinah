@@ -3,7 +3,8 @@ add_library(shekinah_application STATIC
     cue_presenter_asset_resolution.cpp
     cue_presenter_song.cpp
     cue_presenter_sermon.cpp
-    live_slide_presenter.cpp
+    live_slide_song_presenter.cpp
+    live_slide_sermon_presenter.cpp
     presentation_service.cpp
     presentation_service_content_registry.cpp
     presentation_service_backgrounds.cpp
