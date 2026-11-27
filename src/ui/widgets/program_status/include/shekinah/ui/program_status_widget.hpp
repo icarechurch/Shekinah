@@ -88,6 +88,7 @@ private:
     void build_drawer_tabs(QVBoxLayout* layout);
     void build_drawer_pages(QVBoxLayout* layout);
     void build_live_drawer_page();
+    void build_next_up_card(QWidget* live_page, QVBoxLayout* live_page_layout);
     void build_screens_drawer_page();
     void build_cues_drawer_page();
     void apply_theme();
