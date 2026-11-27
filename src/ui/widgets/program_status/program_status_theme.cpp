@@ -1,6 +1,6 @@
 #include "shekinah/ui/program_status_widget.hpp"
 
-#include "program_status_components.hpp"
+#include "program_status_icons.hpp"
 #include "program_status_theme_styles.hpp"
 
 #include "shekinah/ui/support/theme.hpp"
@@ -13,13 +13,19 @@ void ProgramStatusWidget::apply_theme() {
     const auto& p = ThemeManager::instance().palette();
     setStyleSheet(program_status_internal::build_program_status_stylesheet(p));
 
-    quick_clear_button_->setIcon(make_glyph_icon(IconGlyph::clear_all, p.quick_clear_fg, 12));
-    screen_menu_button_->setIcon(make_glyph_icon(IconGlyph::chevron_down, p.icon_muted, 12));
-    previous_button_->setIcon(make_glyph_icon(IconGlyph::previous, p.icon_neutral, 11));
-    next_button_->setIcon(make_glyph_icon(IconGlyph::next, p.icon_neutral, 11));
-    clear_button_->setIcon(make_glyph_icon(IconGlyph::clear_layer, p.icon_neutral, 11));
+    quick_clear_button_->setIcon(
+        program_status::make_glyph_icon(program_status::IconGlyph::clear_all, p.quick_clear_fg, 12));
+    screen_menu_button_->setIcon(
+        program_status::make_glyph_icon(program_status::IconGlyph::chevron_down, p.icon_muted, 12));
+    previous_button_->setIcon(
+        program_status::make_glyph_icon(program_status::IconGlyph::previous, p.icon_neutral, 11));
+    next_button_->setIcon(
+        program_status::make_glyph_icon(program_status::IconGlyph::next, p.icon_neutral, 11));
+    clear_button_->setIcon(
+        program_status::make_glyph_icon(program_status::IconGlyph::clear_layer, p.icon_neutral, 11));
     if (next_up_header_button_ != nullptr) {
-        next_up_header_button_->setIcon(make_glyph_icon(IconGlyph::arrow_right, p.icon_muted, 13));
+        next_up_header_button_->setIcon(program_status::make_glyph_icon(
+            program_status::IconGlyph::arrow_right, p.icon_muted, 13));
     }
 
     set_active_tab(active_tab_);

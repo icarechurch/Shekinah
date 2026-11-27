@@ -1,5 +1,5 @@
 #include "shekinah/ui/program_status_widget.hpp"
-#include "program_status_components.hpp"
+#include "program_status_icons.hpp"
 
 #include "shekinah/media/slide_renderer.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
@@ -35,10 +35,10 @@ void ProgramStatusWidget::set_active_tab(int index) {
     drawer_stack_->setCurrentIndex(clamped);
 
     const auto& p = ThemeManager::instance().palette();
-    const std::pair<QPushButton*, IconGlyph> tabs[] = {
-        {tab_live_button_, IconGlyph::layers},
-        {tab_screens_button_, IconGlyph::display},
-        {tab_cues_button_, IconGlyph::list},
+    const std::pair<QPushButton*, program_status::IconGlyph> tabs[] = {
+        {tab_live_button_, program_status::IconGlyph::layers},
+        {tab_screens_button_, program_status::IconGlyph::display},
+        {tab_cues_button_, program_status::IconGlyph::list},
     };
     for (int i = 0; i < 3; ++i) {
         const bool active = (i == clamped);
@@ -49,7 +49,7 @@ void ProgramStatusWidget::set_active_tab(int index) {
                                      .arg(p.tab_active_bg.name())
                                : QStringLiteral("background-color: %1; border: none;")
                                      .arg(p.tab_inactive_bg.name()));
-        btn->setIcon(make_glyph_icon(
+        btn->setIcon(program_status::make_glyph_icon(
             tabs[i].second,
             active ? p.tab_active_fg : p.tab_inactive_fg,
             15));
@@ -101,24 +101,29 @@ void ProgramStatusWidget::update_status_chrome() {
     rail_black_button_->setChecked(is_black);
     rail_audience_button_->setChecked(output_visible_);
 
-    rail_clear_button_->setIcon(make_glyph_icon(IconGlyph::slide, p.rail_icon, 15));
-    rail_background_button_->setIcon(make_glyph_icon(IconGlyph::media_image, p.rail_icon, 15));
+    rail_clear_button_->setIcon(
+        program_status::make_glyph_icon(program_status::IconGlyph::slide, p.rail_icon, 15));
+    rail_background_button_->setIcon(
+        program_status::make_glyph_icon(program_status::IconGlyph::media_image, p.rail_icon, 15));
     rail_black_button_->setIcon(
-        make_glyph_icon(IconGlyph::blackout, is_black ? p.text_on_accent : p.rail_icon, 15));
+        program_status::make_glyph_icon(
+            program_status::IconGlyph::blackout, is_black ? p.text_on_accent : p.rail_icon, 15));
     rail_audience_button_->setIcon(
-        make_glyph_icon(IconGlyph::display, output_visible_ ? p.text_on_accent : p.rail_icon, 15));
-    rail_inspector_button_->setIcon(make_glyph_icon(IconGlyph::sliders, p.rail_icon, 15));
+        program_status::make_glyph_icon(
+            program_status::IconGlyph::display, output_visible_ ? p.text_on_accent : p.rail_icon, 15));
+    rail_inspector_button_->setIcon(
+        program_status::make_glyph_icon(program_status::IconGlyph::sliders, p.rail_icon, 15));
 
-    status_screen_indicator_->setIcon(make_glyph_icon(
-        IconGlyph::slide,
+    status_screen_indicator_->setIcon(program_status::make_glyph_icon(
+        program_status::IconGlyph::slide,
         is_live ? p.accent : is_black ? p.danger_fg : p.icon_dim,
         14));
-    status_media_indicator_->setIcon(make_glyph_icon(
-        IconGlyph::media_image,
+    status_media_indicator_->setIcon(program_status::make_glyph_icon(
+        program_status::IconGlyph::media_image,
         (is_live && live_details_.has_background) ? p.accent : p.icon_dim,
         14));
-    status_audience_indicator_->setIcon(make_glyph_icon(
-        IconGlyph::display,
+    status_audience_indicator_->setIcon(program_status::make_glyph_icon(
+        program_status::IconGlyph::display,
         output_visible_ ? p.accent : p.icon_dim,
         14));
 
@@ -128,7 +133,8 @@ void ProgramStatusWidget::update_status_chrome() {
                   .arg(p.danger_bg.name(), p.danger_border.name())
             : QString{});
     black_button_->setIcon(
-        make_glyph_icon(IconGlyph::blackout, is_black ? QColor{Qt::white} : p.icon_neutral, 11));
+        program_status::make_glyph_icon(
+            program_status::IconGlyph::blackout, is_black ? QColor{Qt::white} : p.icon_neutral, 11));
 }
 
 }  // namespace shekinah::ui

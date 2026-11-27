@@ -1,35 +1,12 @@
-#pragma once
+#include "program_status_icons.hpp"
 
-#include "shekinah/ui/program_status_widget.hpp"
-
-#include "shekinah/ui/support/theme.hpp"
-
-#include <QIcon>
 #include <QPainter>
 #include <QPainterPath>
 #include <QPixmap>
 
-namespace shekinah::ui {
-namespace {
+namespace shekinah::ui::program_status {
 
-enum class IconGlyph {
-    clear_all,
-    slide,
-    media_image,
-    blackout,
-    display,
-    sliders,
-    chevron_down,
-    previous,
-    next,
-    clear_layer,
-    layers,
-    list,
-    plus,
-    arrow_right,
-};
-
-[[maybe_unused]] QIcon make_glyph_icon(IconGlyph glyph, const QColor& color, int size = 18) {
+QIcon make_glyph_icon(IconGlyph glyph, const QColor& color, int size) {
     QPixmap pixmap{size * 2, size * 2};
     pixmap.fill(Qt::transparent);
     pixmap.setDevicePixelRatio(2.0);
@@ -143,5 +120,4 @@ enum class IconGlyph {
     return QIcon{pixmap};
 }
 
-}  // namespace
-}  // namespace shekinah::ui
+}  // namespace shekinah::ui::program_status
