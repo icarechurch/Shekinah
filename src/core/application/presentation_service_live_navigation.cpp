@@ -60,4 +60,12 @@ domain::Status PresentationService::move_live(int direction) {
     return take_live(selected->id, cues[static_cast<std::size_t>(target_index)]);
 }
 
+const domain::ServiceOrderItem* PresentationService::find_item_for_content(
+    const domain::ContentRef& content) const noexcept {
+    const auto item = std::find_if(service_order_.begin(), service_order_.end(), [&](const auto& candidate) {
+        return candidate.content == content;
+    });
+    return item == service_order_.end() ? nullptr : &*item;
+}
+
 }  // namespace shekinah::application

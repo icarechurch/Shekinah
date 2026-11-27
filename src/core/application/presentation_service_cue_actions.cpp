@@ -52,20 +52,4 @@ domain::Status PresentationService::take_live(
     return domain::success();
 }
 
-void PresentationService::clear() noexcept {
-    program_ = domain::ProgramState{domain::ProgramMode::clear, std::nullopt};
-}
-
-void PresentationService::black() noexcept {
-    program_ = domain::ProgramState{domain::ProgramMode::black, std::nullopt};
-}
-
-const domain::ServiceOrderItem* PresentationService::find_item_for_content(
-    const domain::ContentRef& content) const noexcept {
-    const auto item = std::find_if(service_order_.begin(), service_order_.end(), [&](const auto& candidate) {
-        return candidate.content == content;
-    });
-    return item == service_order_.end() ? nullptr : &*item;
-}
-
 }  // namespace shekinah::application

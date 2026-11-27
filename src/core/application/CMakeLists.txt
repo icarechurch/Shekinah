@@ -8,7 +8,8 @@ add_library(shekinah_application STATIC
     presentation_service.cpp
     presentation_service_content_registry.cpp
     presentation_service_backgrounds.cpp
-    presentation_service_navigation.cpp
+    presentation_service_cue_actions.cpp
+    presentation_service_program_controls.cpp
     presentation_service_live_navigation.cpp
     resource_governor.cpp
     song_authoring.cpp
