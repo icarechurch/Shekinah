@@ -3,6 +3,7 @@
 #include "internal/sqlite_song_repository.hpp"
 #include "internal/sqlite_sermon_repository.hpp"
 #include "internal/sqlite_asset_repository.hpp"
+#include "internal/sqlite_service_order_repository.hpp"
 
 #include <memory>
 
@@ -12,7 +13,8 @@ SqliteContentRepository::SqliteContentRepository(ProjectStore& store)
     : store_(store),
       songs_(std::make_unique<SqliteSongRepository>(store)),
       sermons_(std::make_unique<SqliteSermonRepository>(store)),
-      assets_(std::make_unique<SqliteAssetRepository>(store)) {}
+      assets_(std::make_unique<SqliteAssetRepository>(store)),
+      service_orders_(std::make_unique<SqliteServiceOrderRepository>(store)) {}
 
 SqliteContentRepository::~SqliteContentRepository() = default;
 

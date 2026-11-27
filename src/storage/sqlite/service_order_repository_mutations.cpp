@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_service_order_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -16,7 +16,7 @@ using sqlite_internal::step_done;
 
 }  // namespace
 
-domain::Status SqliteContentRepository::ensure_service_order(
+domain::Status SqliteServiceOrderRepository::ensure_service_order(
     const domain::ServiceOrderId& id, std::string title) {
     if (id.empty() || title.empty()) {
         return domain::Status::fail(
@@ -39,7 +39,8 @@ domain::Status SqliteContentRepository::ensure_service_order(
     });
 }
 
-domain::Status SqliteContentRepository::remove_from_order(const domain::ServiceOrderItemId& item_id) {
+domain::Status SqliteServiceOrderRepository::remove_from_order(
+    const domain::ServiceOrderItemId& item_id) {
     return store_.transaction([&](sqlite3* database) {
         Statement statement{database, "DELETE FROM service_order_items WHERE id=?1;"};
         if (!statement.ready()) {

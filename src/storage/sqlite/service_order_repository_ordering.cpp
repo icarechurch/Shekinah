@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_service_order_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -9,7 +9,7 @@
 
 namespace shekinah::storage {
 
-domain::Status SqliteContentRepository::move_in_order(
+domain::Status SqliteServiceOrderRepository::move_in_order(
     const domain::ServiceOrderItemId& item_id, std::int64_t target_ordinal) {
     using sqlite_internal::Statement;
     using sqlite_internal::bind_integer;

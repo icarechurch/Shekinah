@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_service_order_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -8,7 +8,7 @@
 
 namespace shekinah::storage {
 
-domain::Result<std::vector<domain::ServiceOrderItem>> SqliteContentRepository::load_order(
+domain::Result<std::vector<domain::ServiceOrderItem>> SqliteServiceOrderRepository::load_order(
     const domain::ServiceOrderId& order_id) const {
     using sqlite_internal::Statement;
     using sqlite_internal::bind_text;

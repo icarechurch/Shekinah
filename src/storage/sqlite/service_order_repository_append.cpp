@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_service_order_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -35,7 +35,7 @@ domain::Result<bool> content_exists(sqlite3* database, const domain::ContentRef&
 
 }  // namespace
 
-domain::Result<domain::ServiceOrderItem> SqliteContentRepository::append_to_order(
+domain::Result<domain::ServiceOrderItem> SqliteServiceOrderRepository::append_to_order(
     const domain::ServiceOrderId& order_id, domain::ContentRef content) {
     if (order_id.empty()) {
         return domain::Result<domain::ServiceOrderItem>::fail(
