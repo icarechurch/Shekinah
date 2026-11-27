@@ -2,7 +2,6 @@
 
 #include "shekinah/storage/asset_repository.hpp"
 #include "shekinah/storage/content_archive_repository.hpp"
-#include "shekinah/storage/project_store.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 #include "shekinah/storage/service_order_repository.hpp"
 #include "shekinah/storage/song_repository.hpp"
@@ -11,6 +10,7 @@
 
 namespace shekinah::storage {
 
+class ProjectStore;
 class SqliteSongRepository;
 class SqliteSermonRepository;
 class SqliteAssetRepository;
