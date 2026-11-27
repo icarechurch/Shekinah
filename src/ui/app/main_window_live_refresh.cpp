@@ -10,13 +10,12 @@ namespace shekinah::ui {
 using namespace main_window_internal;
 
 void ShekinahWindow::present_live_media() {
-    if (!songs() || !sermons() || !assets()) {
+    if (!live_media_coordinator_->ready()) {
         operator_page_->program_status()->set_slide_preview({});
         operator_page_->program_status()->set_live_details({});
         return;
     }
-    const auto snapshot = resolve_live_media(
-        *songs(), *sermons(), *assets(), presentation_.program());
+    const auto snapshot = live_media_coordinator_->resolve(presentation_.program());
     if (!snapshot.has_value()) {
         operator_page_->program_status()->set_slide_preview({});
         operator_page_->program_status()->set_live_details({});

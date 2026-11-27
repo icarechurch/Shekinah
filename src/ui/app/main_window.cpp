@@ -9,6 +9,7 @@
 #include "content_persistence_coordinator.hpp"
 #include "cue_presentation_coordinator.hpp"
 #include "library_catalog_coordinator.hpp"
+#include "main_window_live_media.hpp"
 #include "service_order_coordinator.hpp"
 #include "service_order_view_coordinator.hpp"
 #include "window_resource_pools.hpp"
@@ -28,6 +29,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     content_persistence_coordinator_ =
         std::make_unique<ContentPersistenceCoordinator>(session_, presentation_);
     cue_presentation_coordinator_ = std::make_unique<CuePresentationCoordinator>(session_);
+    live_media_coordinator_ =
+        std::make_unique<main_window_internal::LiveMediaCoordinator>(session_);
     library_catalog_coordinator_ = std::make_unique<LibraryCatalogCoordinator>(session_);
     service_order_coordinator_ = std::make_unique<ServiceOrderCoordinator>(session_);
     service_order_view_coordinator_ =

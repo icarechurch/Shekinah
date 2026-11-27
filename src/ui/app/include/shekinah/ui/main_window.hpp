@@ -42,6 +42,7 @@ namespace shekinah::ui {
 
 namespace main_window_internal {
 struct LiveMediaSnapshot;
+class LiveMediaCoordinator;
 }
 
 struct LiveSlideDetails;
@@ -86,6 +87,7 @@ private:
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
     std::unique_ptr<CuePresentationCoordinator> cue_presentation_coordinator_;
+    std::unique_ptr<main_window_internal::LiveMediaCoordinator> live_media_coordinator_;
     std::unique_ptr<LibraryCatalogCoordinator> library_catalog_coordinator_;
     std::unique_ptr<ServiceOrderCoordinator> service_order_coordinator_;
     std::unique_ptr<ServiceOrderViewCoordinator> service_order_view_coordinator_;
