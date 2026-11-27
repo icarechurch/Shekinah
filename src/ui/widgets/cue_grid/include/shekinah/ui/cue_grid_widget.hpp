@@ -14,6 +14,7 @@
 #include <vector>
 
 class QScrollArea;
+class QVBoxLayout;
 
 namespace shekinah::ui {
 
@@ -85,6 +86,8 @@ private:
     };
 
     void apply_theme();
+    void setup_empty_view(QVBoxLayout* outer_layout);
+    void setup_grid_view(QVBoxLayout* outer_layout);
     void rebuild_cards();
     void relayout_cards(bool force);
     void handle_left_click(const domain::CueId& cue);
