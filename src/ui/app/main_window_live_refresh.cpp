@@ -1,18 +1,15 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/application/live_slide_presenter.hpp"
+#include "main_window_live_media.hpp"
+
 #include "shekinah/media/audience_output.hpp"
-#include "shekinah/storage/content_repository.hpp"
-#include "shekinah/storage/project_store.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
 
 #include <QString>
 
-#include <filesystem>
-#include <optional>
-
 namespace shekinah::ui {
+using namespace main_window_internal;
 
 void ShekinahWindow::present_live_media() {
     if (!repository()) {
@@ -20,8 +17,8 @@ void ShekinahWindow::present_live_media() {
         operator_page_->program_status()->set_live_details({});
         return;
     }
-    const auto& program = presentation_.program();
-    if (program.mode != domain::ProgramMode::cue || !program.live_cue.has_value()) {
+    const auto snapshot = resolve_live_media(*repository(), presentation_.program(), store()->root());
+    if (!snapshot.has_value()) {
         operator_page_->program_status()->set_slide_preview({});
         operator_page_->program_status()->set_live_details({});
         if (audience_output_) {
@@ -32,40 +29,15 @@ void ShekinahWindow::present_live_media() {
         return;
     }
 
-    const auto& cue = *program.live_cue;
-    application::LiveSlidePresentation presented;
-    if (cue.content.kind == domain::ContentKind::song) {
-        const auto song = repository()->load_song(std::get<domain::SongId>(cue.content.id));
-        if (song) {
-            presented = application::build_live_song_presentation(*song, cue.cue);
-        }
-    } else {
-        const auto deck = repository()->load_deck(std::get<domain::SermonId>(cue.content.id));
-        if (deck) {
-            presented = application::build_live_sermon_presentation(*deck, cue.cue);
-        }
-    }
-
-    std::optional<domain::AssetId> asset_id = presented.background_asset;
+    const auto& presented = snapshot->presentation;
     QString preview_text = QString::fromStdString(presented.slide_text);
-    domain::FitMode preview_fit = presented.background_fit;
-    LiveSlideDetails details{};
-    details.item_title = QString::fromStdString(presented.item_title);
-    details.section = QString::fromStdString(presented.section);
-    details.slide_text = preview_text;
-    details.next_section = QString::fromStdString(presented.next_section);
-    details.next_summary = QString::fromStdString(presented.next_summary);
-    details.slide_index = presented.slide_index;
-    details.total_slides = presented.total_slides;
-    if (asset_id.has_value()) {
-        details.fit_mode = preview_fit;
-    }
+    const auto details = make_live_details(presented, snapshot->asset);
 
     if (audience_output_) {
         audience_output_->set_live_text(preview_text);
     }
 
-    if (!asset_id.has_value()) {
+    if (!presented.background_asset.has_value()) {
         operator_page_->program_status()->set_slide_preview(std::move(preview_text));
         operator_page_->program_status()->set_live_details(std::move(details));
         if (audience_output_) {
@@ -74,25 +46,21 @@ void ShekinahWindow::present_live_media() {
         }
         return;
     }
-    const auto asset = repository()->load_asset(*asset_id);
-    if (!asset) {
+    if (!snapshot->asset.has_value()) {
         operator_page_->program_status()->set_slide_preview(std::move(preview_text));
         operator_page_->program_status()->set_live_details(std::move(details));
         return;
     }
-    const auto filename = std::filesystem::path{asset->relative_path}.filename().string();
-    details.has_background = true;
-    details.is_video = (asset->kind == domain::AssetKind::video);
-    details.asset_name = QString::fromStdString(filename.empty() ? asset->relative_path : filename);
 
-    const auto path = store()->root() / asset->relative_path;
-    if (asset->kind == domain::AssetKind::image) {
+    const auto& asset = *snapshot->asset;
+    const auto& path = snapshot->asset_path;
+    if (asset.kind == domain::AssetKind::image) {
         operator_page_->program_status()->set_slide_preview(
-            std::move(preview_text), QString::fromStdString(path.string()), preview_fit);
+            std::move(preview_text), QString::fromStdString(path.string()), presented.background_fit);
         operator_page_->program_status()->set_live_details(std::move(details));
         if (audience_output_) {
             audience_output_->clear_loop_video();
-            audience_output_->load_slide_image(path, preview_fit);
+            audience_output_->load_slide_image(path, presented.background_fit);
         }
     } else {
         operator_page_->program_status()->set_slide_preview(std::move(preview_text));
