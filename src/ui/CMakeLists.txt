@@ -51,6 +51,8 @@ add_library(shekinah_ui STATIC
     app/main_window_stylesheet.hpp
     app/content_persistence_coordinator.cpp
     app/content_persistence_coordinator.hpp
+    app/cue_presentation_coordinator.cpp
+    app/cue_presentation_coordinator.hpp
     app/library_catalog_coordinator.cpp
     app/library_catalog_coordinator.hpp
     app/service_order_coordinator.cpp
