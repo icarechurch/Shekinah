@@ -7,7 +7,7 @@
 
 using namespace shekinah::storage;
 
-TEST_CASE("project session opens a project and exposes its owned storage boundary") {
+TEST_CASE("project session opens a project and exposes typed feature boundaries") {
     auto project = TestProject::create();
     ProjectSession session;
 
@@ -15,8 +15,13 @@ TEST_CASE("project session opens a project and exposes its owned storage boundar
     REQUIRE(session.open(project.root() / "Sunday"));
     REQUIRE(session.is_open());
     REQUIRE(session.root() == project.root() / "Sunday");
-    REQUIRE(session.store() != nullptr);
-    REQUIRE(session.repository() != nullptr);
+    REQUIRE(session.songs() != nullptr);
+    REQUIRE(session.sermons() != nullptr);
+    REQUIRE(session.assets() != nullptr);
+    REQUIRE(session.service_orders() != nullptr);
+    REQUIRE(session.content_archive() != nullptr);
+    REQUIRE(session.asset_importer() != nullptr);
+    REQUIRE(session.sermon_importer() != nullptr);
 }
 
 TEST_CASE("project session close releases the project boundary") {
@@ -28,8 +33,13 @@ TEST_CASE("project session close releases the project boundary") {
 
     REQUIRE_FALSE(session.is_open());
     REQUIRE(session.root().empty());
-    REQUIRE(session.store() == nullptr);
-    REQUIRE(session.repository() == nullptr);
+    REQUIRE(session.songs() == nullptr);
+    REQUIRE(session.sermons() == nullptr);
+    REQUIRE(session.assets() == nullptr);
+    REQUIRE(session.service_orders() == nullptr);
+    REQUIRE(session.content_archive() == nullptr);
+    REQUIRE(session.asset_importer() == nullptr);
+    REQUIRE(session.sermon_importer() == nullptr);
 }
 
 TEST_CASE("failed project open leaves the session closed") {
@@ -43,6 +53,11 @@ TEST_CASE("failed project open leaves the session closed") {
     REQUIRE_FALSE(session.open(invalid_root));
     REQUIRE_FALSE(session.is_open());
     REQUIRE(session.root().empty());
-    REQUIRE(session.store() == nullptr);
-    REQUIRE(session.repository() == nullptr);
+    REQUIRE(session.songs() == nullptr);
+    REQUIRE(session.sermons() == nullptr);
+    REQUIRE(session.assets() == nullptr);
+    REQUIRE(session.service_orders() == nullptr);
+    REQUIRE(session.content_archive() == nullptr);
+    REQUIRE(session.asset_importer() == nullptr);
+    REQUIRE(session.sermon_importer() == nullptr);
 }
