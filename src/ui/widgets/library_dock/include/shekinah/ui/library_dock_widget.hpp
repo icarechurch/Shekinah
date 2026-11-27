@@ -3,6 +3,7 @@
 #include "shekinah/domain/model.hpp"
 
 #include <QCache>
+#include <QColor>
 #include <QDockWidget>
 #include <QIcon>
 
@@ -13,6 +14,7 @@
 
 class QAction;
 class QButtonGroup;
+class QHBoxLayout;
 class QLabel;
 class QLineEdit;
 class QListWidget;
@@ -24,6 +26,9 @@ class QWidget;
 namespace shekinah::ui {
 
 class FlowLayout;
+namespace library_internal {
+enum class LibraryGlyph;
+}
 
 enum class LibraryTab { assets, songs, sermons };
 
@@ -77,6 +82,19 @@ private:
     void setup_toolbar(QWidget* container);
     void setup_toolbar_navigation(QWidget* toolbar, FlowLayout* toolbar_layout);
     void setup_toolbar_actions(QWidget* toolbar, FlowLayout* toolbar_layout);
+    void setup_asset_toolbar_actions(QWidget* toolbar, FlowLayout* toolbar_layout);
+    void setup_song_toolbar_actions(QWidget* toolbar, FlowLayout* toolbar_layout);
+    void setup_sermon_toolbar_actions(QWidget* toolbar, FlowLayout* toolbar_layout);
+    [[nodiscard]] std::pair<QWidget*, QHBoxLayout*> create_toolbar_action_group(
+        QWidget* toolbar, FlowLayout* toolbar_layout);
+    [[nodiscard]] QPushButton* add_toolbar_action(QWidget* group_parent,
+                                                   QHBoxLayout* group_layout,
+                                                   const QString& label,
+                                                   const QString& object_name,
+                                                   const QString& tooltip,
+                                                   library_internal::LibraryGlyph glyph,
+                                                   const QColor& icon_color,
+                                                   std::function<void()> handler);
     void setup_content(QWidget* container);
     void setup_interactions();
     void apply_theme();
