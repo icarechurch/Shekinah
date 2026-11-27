@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `4fac711 refactor: unify authoring persistence`
+- Latest local commit: `3c79ae6 refactor: isolate live media resolution`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -105,11 +105,16 @@ Since the previous handoff, the media and window seams were tightened further:
 - `f94956b`, `c5d39ee`, and `4fac711` centralize aggregate persistence and
   presentation-registry refreshes across background, insertion, deletion,
   duplication, import, and editor flows.
+- `27ea277` isolates the Library catalog projection.
+- `85dbc77` isolates cue presentation loading and asset-path resolution.
+- `0ed2083` isolates service-order view projection and removes the raw-repository
+  view-builder seam.
+- `3c79ae6` isolates live-media resolution behind the project session.
 
 ## Verification state
 
-- The full debug gate currently passes 207/207 in 87.05 seconds, and the full
-  release gate passes 207/207 in 96.52 seconds, with the architecture policy
+- The full debug gate currently passes 207/207 in 89.24 seconds, and the full
+  release gate passes 207/207 in 88.76 seconds, with the architecture policy
   enabled.
 - The current focused storage gate passed 22/22 in both debug and release
   configurations.
