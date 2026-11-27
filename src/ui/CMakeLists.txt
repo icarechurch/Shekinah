@@ -42,6 +42,8 @@ add_library(shekinah_ui STATIC
     app/song_asset_coordinator.hpp
     app/slide_mutation_coordinator.cpp
     app/slide_mutation_coordinator.hpp
+    app/slide_inspection_coordinator.cpp
+    app/slide_inspection_coordinator.hpp
     app/main_window_imports.cpp
     app/main_window_sermon_imports.cpp
     app/main_window_sermon_creation.cpp
