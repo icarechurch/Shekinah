@@ -65,6 +65,8 @@ private:
     void build_screen_selector(QVBoxLayout* layout);
     void build_status_strip(QVBoxLayout* layout);
     void build_global_controls(QVBoxLayout* layout);
+    void build_global_progress(QVBoxLayout* layout);
+    void build_global_actions(QVBoxLayout* layout);
     void build_drawer_tabs(QVBoxLayout* layout);
     void build_drawer_pages(QVBoxLayout* layout);
     void build_live_drawer_page();

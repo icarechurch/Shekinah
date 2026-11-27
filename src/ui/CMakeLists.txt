@@ -120,6 +120,8 @@ add_library(shekinah_ui STATIC
     widgets/program_status/program_status_layout.cpp
     widgets/program_status/program_status_output_controls.cpp
     widgets/program_status/program_status_global_controls.cpp
+    widgets/program_status/program_status_progress.cpp
+    widgets/program_status/program_status_global_actions.cpp
     widgets/program_status/program_status_header.cpp
     widgets/program_status/program_status_monitor.cpp
     widgets/program_status/program_status_monitor_preview.cpp
