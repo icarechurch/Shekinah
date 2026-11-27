@@ -39,14 +39,16 @@ domain::Result<application::CuePresentationSet> CuePresentationCoordinator::load
         if (!song) {
             return domain::Result<application::CuePresentationSet>::fail(song.error());
         }
-        return application::build_song_cue_presentation(*song, resolve_asset_path);
+        return domain::Result<application::CuePresentationSet>::ok(
+            application::build_song_cue_presentation(*song, resolve_asset_path));
     }
 
     const auto sermon = session_.sermons()->load_deck(std::get<domain::SermonId>(content.id));
     if (!sermon) {
         return domain::Result<application::CuePresentationSet>::fail(sermon.error());
     }
-    return application::build_sermon_cue_presentation(*sermon, resolve_asset_path);
+    return domain::Result<application::CuePresentationSet>::ok(
+        application::build_sermon_cue_presentation(*sermon, resolve_asset_path));
 }
 
 }  // namespace shekinah::ui
