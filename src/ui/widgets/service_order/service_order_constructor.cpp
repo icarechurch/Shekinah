@@ -1,6 +1,5 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
-#include "service_order_primitives.hpp"
 #include "service_order_list.hpp"
 
 #include "shekinah/ui/support/asset_drag.hpp"

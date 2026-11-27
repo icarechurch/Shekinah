@@ -1,6 +1,6 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
-#include "service_order_primitives.hpp"
+#include "service_order_roles.hpp"
 
 #include <QLabel>
 #include <QListWidget>
@@ -8,6 +8,7 @@
 #include <utility>
 
 namespace shekinah::ui {
+using namespace service_order_internal;
 
 void ServiceOrderWidget::set_items(std::vector<ServiceOrderView> items) {
     items_ = std::move(items);

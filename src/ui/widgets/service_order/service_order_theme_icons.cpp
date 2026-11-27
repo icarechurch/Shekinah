@@ -1,6 +1,6 @@
 #include "shekinah/ui/service_order_widget.hpp"
 
-#include "service_order_primitives.hpp"
+#include "service_order_icons.hpp"
 #include "shekinah/ui/support/theme.hpp"
 
 #include <QIcon>
@@ -9,6 +9,7 @@
 #include <QPushButton>
 
 namespace shekinah::ui {
+using namespace service_order_internal;
 
 void ServiceOrderWidget::apply_theme_icons() {
     const auto& p = ThemeManager::instance().palette();

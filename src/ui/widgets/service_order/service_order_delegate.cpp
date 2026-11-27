@@ -1,17 +1,20 @@
 #include "service_order_delegate.hpp"
 
-#include "service_order_primitives.hpp"
+#include "service_order_badge.hpp"
+#include "service_order_roles.hpp"
 
 #include "shekinah/ui/support/theme.hpp"
 
 #include <QFont>
 #include <QFontMetrics>
+#include <QPainter>
 #include <QStyle>
 #include <QStyledItemDelegate>
 
 #include <algorithm>
 
 namespace shekinah::ui {
+using namespace service_order_internal;
 namespace {
 
 class ServiceOrderItemDelegate final : public QStyledItemDelegate {

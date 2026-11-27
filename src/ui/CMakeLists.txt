@@ -108,7 +108,11 @@ add_library(shekinah_ui STATIC
     widgets/program_status/program_status_widget.cpp
     widgets/service_order/service_order_delegate.cpp
     widgets/service_order/service_order_delegate.hpp
-    widgets/service_order/service_order_primitives.hpp
+    widgets/service_order/service_order_roles.hpp
+    widgets/service_order/service_order_icons.hpp
+    widgets/service_order/service_order_icons.cpp
+    widgets/service_order/service_order_badge.hpp
+    widgets/service_order/service_order_badge.cpp
     widgets/service_order/service_order_constructor.cpp
     widgets/service_order/service_order_controls.cpp
     widgets/service_order/service_order_filter.cpp
