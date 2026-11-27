@@ -17,6 +17,7 @@
 #include "service_order_coordinator.hpp"
 #include "service_order_view_coordinator.hpp"
 #include "sermon_import_coordinator.hpp"
+#include "song_authoring_coordinator.hpp"
 #include "song_asset_coordinator.hpp"
 #include "slide_mutation_coordinator.hpp"
 #include "slide_inspection_coordinator.hpp"
@@ -38,6 +39,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     sermon_import_coordinator_ = std::make_unique<SermonImportCoordinator>(session_);
     content_persistence_coordinator_ =
         std::make_unique<ContentPersistenceCoordinator>(session_, presentation_);
+    song_authoring_coordinator_ =
+        std::make_unique<SongAuthoringCoordinator>(session_, *content_persistence_coordinator_);
     asset_slide_insertion_coordinator_ = std::make_unique<AssetSlideInsertionCoordinator>(
         session_, *content_persistence_coordinator_);
     song_asset_coordinator_ =
