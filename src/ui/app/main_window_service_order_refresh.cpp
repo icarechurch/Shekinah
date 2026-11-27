@@ -13,7 +13,7 @@ namespace shekinah::ui {
 
 void ShekinahWindow::refresh_service_order() {
     presentation_.reset();
-    if (!repository()) {
+    if (!songs() || !sermons() || !service_orders()) {
         operator_page_->set_service_order({});
         operator_page_->cue_grid()->set_cues({});
         operator_page_->set_active_presentation_title({});

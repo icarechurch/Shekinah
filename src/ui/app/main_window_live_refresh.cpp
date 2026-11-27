@@ -11,7 +11,7 @@ namespace shekinah::ui {
 using namespace main_window_internal;
 
 void ShekinahWindow::present_live_media() {
-    if (!repository()) {
+    if (!songs() || !sermons() || !assets()) {
         operator_page_->program_status()->set_slide_preview({});
         operator_page_->program_status()->set_live_details({});
         return;

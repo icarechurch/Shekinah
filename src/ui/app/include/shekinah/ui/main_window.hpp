@@ -93,12 +93,6 @@ private:
     void configure_operator_feature_handlers();
     [[nodiscard]] storage::ProjectStore* store() noexcept { return session_.store(); }
     [[nodiscard]] const storage::ProjectStore* store() const noexcept { return session_.store(); }
-    [[nodiscard]] storage::SqliteContentRepository* repository() noexcept {
-        return session_.repository();
-    }
-    [[nodiscard]] const storage::SqliteContentRepository* repository() const noexcept {
-        return session_.repository();
-    }
     [[nodiscard]] storage::SongRepository* songs() noexcept { return session_.songs(); }
     [[nodiscard]] const storage::SongRepository* songs() const noexcept { return session_.songs(); }
     [[nodiscard]] storage::SermonRepository* sermons() noexcept { return session_.sermons(); }
