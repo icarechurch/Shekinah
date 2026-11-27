@@ -55,12 +55,6 @@ InspectorDialog::InspectorDialog(QWidget* parent) : QDialog(parent) {
                      [this](ThemeId) { apply_theme(); });
 }
 
-void InspectorDialog::apply_theme() {
-    const auto& p = ThemeManager::instance().palette();
-    setPalette(ThemeManager::build_qpalette(p));
-    setStyleSheet(ThemeManager::dialog_stylesheet(p));
-}
-
 void InspectorDialog::show_inspector(domain::ContentRef content, domain::CueId cue) {
     content_ = std::move(content);
     cue_ = std::move(cue);
@@ -94,22 +88,6 @@ void InspectorDialog::show_slide(domain::ContentRef content,
     show();
     raise();
     activateWindow();
-}
-
-void InspectorDialog::emit_save() {
-    if (!save_handler_ || cue_.empty()) {
-        return;
-    }
-    std::vector<std::string> lines;
-    const auto values = lyrics_->toPlainText().split(QLatin1Char('\n'), Qt::KeepEmptyParts);
-    lines.reserve(static_cast<std::size_t>(values.size()));
-    for (const auto& value : values) {
-        lines.push_back(value.toStdString());
-    }
-    const auto fit = fit_mode_->currentIndex() == 0
-                         ? domain::FitMode::contain
-                         : fit_mode_->currentIndex() == 1 ? domain::FitMode::cover : domain::FitMode::stretch;
-    save_handler_(cue_, section_->text().trimmed().toStdString(), std::move(lines), fit);
 }
 
 }  // namespace shekinah::ui

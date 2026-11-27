@@ -45,6 +45,8 @@ add_library(shekinah_ui STATIC
     features/edit_sermon/sermon_editor_dialog_state.cpp
     features/edit_sermon/sermon_editor_dialog_theme.cpp
     features/inspect_slide/inspector_dialog.cpp
+    features/inspect_slide/inspector_dialog_save.cpp
+    features/inspect_slide/inspector_dialog_theme.cpp
     pages/operator/operator_page.cpp
     pages/operator/operator_page_theme.cpp
     pages/operator/operator_page_bindings.cpp
