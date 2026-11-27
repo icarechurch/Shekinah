@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_content_archive_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -57,11 +57,11 @@ domain::Status archive_content(ProjectStore& store, std::string table, std::stri
 
 }  // namespace
 
-domain::Status SqliteContentRepository::archive_song(const domain::SongId& id) {
+domain::Status SqliteContentArchiveRepository::archive_song(const domain::SongId& id) {
     return archive_content(store_, "songs", "song", id.value);
 }
 
-domain::Status SqliteContentRepository::archive_deck(const domain::SermonId& id) {
+domain::Status SqliteContentArchiveRepository::archive_deck(const domain::SermonId& id) {
     return archive_content(store_, "sermon_decks", "sermon", id.value);
 }
 

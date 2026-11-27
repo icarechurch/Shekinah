@@ -5,6 +5,7 @@ add_library(shekinah_storage STATIC
     content_repository.cpp
     content_repository_asset.cpp
     content_repository_archive.cpp
+    content_repository_archive_delegate.cpp
     content_repository_song.cpp
     content_repository_sermon.cpp
     content_repository_service_order.cpp
@@ -30,6 +31,7 @@ add_library(shekinah_storage STATIC
     internal/sqlite_song_repository.hpp
     internal/sqlite_sermon_repository.hpp
     internal/sqlite_asset_repository.hpp
+    internal/sqlite_content_archive_repository.hpp
     internal/sqlite_service_order_repository.hpp
 )
 
