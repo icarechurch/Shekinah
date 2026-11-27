@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_sermon_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -12,7 +12,7 @@ using sqlite_internal::Statement;
 
 }  // namespace
 
-domain::Result<std::vector<domain::SermonDeck>> SqliteContentRepository::list_decks() const {
+domain::Result<std::vector<domain::SermonDeck>> SqliteSermonRepository::list_decks() const {
     Statement statement{store_.native_handle(),
                         "SELECT id FROM sermon_decks WHERE archived=0 "
                         "ORDER BY title COLLATE NOCASE ASC, id ASC;"};

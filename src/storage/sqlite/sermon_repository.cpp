@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_sermon_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -13,7 +13,7 @@ using sqlite_internal::bind_text;
 
 }  // namespace
 
-domain::Result<domain::SermonDeck> SqliteContentRepository::load_deck(const domain::SermonId& id) const {
+domain::Result<domain::SermonDeck> SqliteSermonRepository::load_deck(const domain::SermonId& id) const {
     Statement deck_statement{store_.native_handle(),
                              "SELECT title FROM sermon_decks WHERE id=?1 AND archived=0 LIMIT 1;"};
     if (!deck_statement.ready()) {

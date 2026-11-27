@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_sermon_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -15,7 +15,7 @@ using sqlite_internal::step_done;
 
 }  // namespace
 
-domain::Result<domain::SermonDeck> SqliteContentRepository::save_deck(
+domain::Result<domain::SermonDeck> SqliteSermonRepository::save_deck(
     const domain::SermonDeck& deck) {
     if (deck.id.empty() || deck.title.empty()) {
         return domain::Result<domain::SermonDeck>::fail(
