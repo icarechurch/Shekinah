@@ -8,6 +8,7 @@ add_library(shekinah_storage STATIC
     project_store_transactions.cpp
     project_session.cpp
     sermon_deck_importer.cpp
+    sermon_deck_importer_order.cpp
     sermon_repository.cpp
     sermon_repository_writes.cpp
     service_order_repository_append.cpp
