@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/asset_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/operator_page.hpp"
 
 #include <algorithm>
@@ -9,7 +10,7 @@ namespace shekinah::ui {
 
 domain::Status ShekinahWindow::set_slide_background(
     const domain::CueId& cue, const domain::AssetId& asset) {
-    if (!repository()) {
+    if (!assets() || !songs()) {
         return domain::Status::fail(
             {domain::ErrorCode::storage_failure, "Open a project before setting a background"});
     }
@@ -18,11 +19,11 @@ domain::Status ShekinahWindow::set_slide_background(
         return domain::Status::fail(
             {domain::ErrorCode::invalid_input, "Only selected Song cues accept editable backgrounds"});
     }
-    const auto asset_record = repository()->load_asset(asset);
+    const auto asset_record = assets()->load_asset(asset);
     if (!asset_record) {
         return domain::Status::fail(asset_record.error());
     }
-    auto song = repository()->load_song(std::get<domain::SongId>(selected->content.id));
+    auto song = songs()->load_song(std::get<domain::SongId>(selected->content.id));
     if (!song) {
         return domain::Status::fail(song.error());
     }
@@ -33,7 +34,7 @@ domain::Status ShekinahWindow::set_slide_background(
         return domain::Status::fail({domain::ErrorCode::not_found, "Song cue was not found"});
     }
     slide->background = domain::BackgroundRef{asset_record->id, domain::FitMode::cover};
-    const auto saved = repository()->save_song(*song);
+    const auto saved = songs()->save_song(*song);
     if (!saved) {
         return domain::Status::fail(saved.error());
     }

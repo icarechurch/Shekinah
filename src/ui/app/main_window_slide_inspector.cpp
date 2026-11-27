@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/sermon_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/operator_page.hpp"
 
 #include <algorithm>
@@ -12,7 +13,7 @@
 namespace shekinah::ui {
 
 void ShekinahWindow::show_inspector(const domain::CueId& cue) {
-    if (!repository()) {
+    if (!songs() || !sermons()) {
         return;
     }
     const auto selected = presentation_.selected_item();
@@ -21,7 +22,7 @@ void ShekinahWindow::show_inspector(const domain::CueId& cue) {
     }
     if (selected->content.kind == domain::ContentKind::song) {
         const auto song_id = std::get<domain::SongId>(selected->content.id);
-        const auto song = repository()->load_song(song_id);
+        const auto song = songs()->load_song(song_id);
         if (!song) {
             return;
         }
@@ -38,7 +39,7 @@ void ShekinahWindow::show_inspector(const domain::CueId& cue) {
     }
 
     const auto sermon_id = std::get<domain::SermonId>(selected->content.id);
-    const auto sermon = repository()->load_deck(sermon_id);
+    const auto sermon = sermons()->load_deck(sermon_id);
     if (!sermon) {
         return;
     }
@@ -55,7 +56,7 @@ void ShekinahWindow::save_inspected_slide(domain::CueId cue,
                                           std::string section,
                                           std::vector<std::string> lines,
                                           domain::FitMode fit) {
-    if (!repository()) {
+    if (!songs()) {
         return;
     }
     const auto selected = presentation_.selected_item();
@@ -63,7 +64,7 @@ void ShekinahWindow::save_inspected_slide(domain::CueId cue,
         return;
     }
     const auto song_id = std::get<domain::SongId>(selected->content.id);
-    auto song = repository()->load_song(song_id);
+    auto song = songs()->load_song(song_id);
     if (!song) {
         return;
     }
@@ -78,7 +79,7 @@ void ShekinahWindow::save_inspected_slide(domain::CueId cue,
     if (slide->background.has_value()) {
         slide->background->fit = fit;
     }
-    const auto saved = repository()->save_song(*song);
+    const auto saved = songs()->save_song(*song);
     if (!saved) {
         return;
     }

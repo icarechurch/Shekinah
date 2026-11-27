@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/sermon_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 
 #include <algorithm>
 #include <string>
@@ -9,7 +10,7 @@
 namespace shekinah::ui {
 
 void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
-    if (!repository()) {
+    if (!songs() || !sermons()) {
         return;
     }
     const auto selected = presentation_.selected_item();
@@ -18,7 +19,7 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
     }
     if (selected->content.kind == domain::ContentKind::song) {
         const auto id = std::get<domain::SongId>(selected->content.id);
-        auto song = repository()->load_song(id);
+        auto song = songs()->load_song(id);
         if (!song) {
             return;
         }
@@ -31,7 +32,7 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
         auto duplicate = *position;
         duplicate.id = domain::CueId{song->id.value + "-copy-" + std::to_string(song->slides.size())};
         song->slides.insert(position + 1, std::move(duplicate));
-        const auto saved = repository()->save_song(*song);
+        const auto saved = songs()->save_song(*song);
         if (saved) {
             presentation_.register_song(*saved);
             refresh_cues();
@@ -40,7 +41,7 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
     }
 
     const auto id = std::get<domain::SermonId>(selected->content.id);
-    auto sermon = repository()->load_deck(id);
+    auto sermon = sermons()->load_deck(id);
     if (!sermon || sermon->slides.size() == 0) {
         return;
     }
@@ -53,7 +54,7 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
     auto duplicate = *position;
     duplicate.id = domain::CueId{sermon->id.value + "-copy-" + std::to_string(sermon->slides.size())};
     sermon->slides.insert(position + 1, std::move(duplicate));
-    const auto saved = repository()->save_deck(*sermon);
+    const auto saved = sermons()->save_deck(*sermon);
     if (saved) {
         presentation_.register_sermon(*saved);
         refresh_cues();

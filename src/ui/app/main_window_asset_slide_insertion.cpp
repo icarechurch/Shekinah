@@ -1,20 +1,22 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/asset_repository.hpp"
+#include "shekinah/storage/sermon_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 
 namespace shekinah::ui {
 
 void ShekinahWindow::insert_asset_at_slide_position(std::size_t index, domain::AssetId asset) {
-    if (!repository()) {
+    if (!assets() || !songs() || !sermons()) {
         return;
     }
     const auto selected = presentation_.selected_item();
     if (!selected.has_value()) {
         return;
     }
-    const auto asset_record = repository()->load_asset(asset);
+    const auto asset_record = assets()->load_asset(asset);
     if (!asset_record) {
         return;
     }

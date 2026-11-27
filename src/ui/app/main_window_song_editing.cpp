@@ -1,7 +1,8 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_authoring.hpp"
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/sermon_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/reflow_editor_dialog.hpp"
 
@@ -13,7 +14,7 @@ namespace shekinah::ui {
 std::string ShekinahWindow::allocate_song_id() {
     for (;;) {
         const auto candidate = "song-" + std::to_string(next_content_id_++);
-        if (!repository() || !repository()->load_song(domain::SongId{candidate})) {
+        if (!songs() || !songs()->load_song(domain::SongId{candidate})) {
             return candidate;
         }
     }
@@ -22,18 +23,18 @@ std::string ShekinahWindow::allocate_song_id() {
 std::string ShekinahWindow::allocate_sermon_id() {
     for (;;) {
         const auto candidate = "sermon-" + std::to_string(next_content_id_++);
-        if (!repository() || !repository()->load_deck(domain::SermonId{candidate})) {
+        if (!sermons() || !sermons()->load_deck(domain::SermonId{candidate})) {
             return candidate;
         }
     }
 }
 
 void ShekinahWindow::edit_song(const domain::SongId& id) {
-    if (!repository()) {
+    if (!songs()) {
         return;
     }
-    const auto existing = repository()->load_song(id);
-    const auto reflow = repository()->load_song_reflow(id);
+    const auto existing = songs()->load_song(id);
+    const auto reflow = songs()->load_song_reflow(id);
     if (!existing || !reflow) {
         return;
     }
@@ -45,7 +46,7 @@ void ShekinahWindow::edit_song(const domain::SongId& id) {
     editor->set_reflow_document(*reflow);
     QObject::connect(editor, &QDialog::accepted, this, [this, editor, existing] {
         const auto draft = editor->draft_song();
-        if (!draft || !repository()) {
+        if (!draft || !songs()) {
             return;
         }
         auto song = *draft;
@@ -59,7 +60,7 @@ void ShekinahWindow::edit_song(const domain::SongId& id) {
                     song.id.value + "-slide-" + std::to_string(index)};
             }
         }
-        const auto saved = repository()->save_song(song);
+        const auto saved = songs()->save_song(song);
         if (saved) {
             refresh_library();
             presentation_.register_song(*saved);

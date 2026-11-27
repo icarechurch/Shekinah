@@ -1,12 +1,12 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_backgrounds.hpp"
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 
 namespace shekinah::ui {
 
 void ShekinahWindow::remove_asset_from_song(const domain::CueId& cue) {
-    if (!repository()) {
+    if (!songs()) {
         return;
     }
     const auto selected = presentation_.selected_item();
@@ -17,12 +17,12 @@ void ShekinahWindow::remove_asset_from_song(const domain::CueId& cue) {
     if (!background || !background->has_value()) {
         return;
     }
-    auto song = repository()->load_song(std::get<domain::SongId>(selected->content.id));
+    auto song = songs()->load_song(std::get<domain::SongId>(selected->content.id));
     if (!song) {
         return;
     }
     application::remove_asset_from_song(*song, background->value().asset);
-    const auto saved = repository()->save_song(*song);
+    const auto saved = songs()->save_song(*song);
     if (!saved) {
         return;
     }

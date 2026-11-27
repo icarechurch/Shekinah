@@ -2,7 +2,7 @@
 
 #include "shekinah/application/song_authoring.hpp"
 #include "shekinah/application/song_text_importer.hpp"
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/reflow_editor_dialog.hpp"
 
@@ -16,7 +16,7 @@
 namespace shekinah::ui {
 
 void ShekinahWindow::import_song_text() {
-    if (!repository()) {
+    if (!songs()) {
         return;
     }
     const auto path = QFileDialog::getOpenFileName(
@@ -44,12 +44,12 @@ void ShekinahWindow::import_song_text() {
     editor->set_reflow_document(application::reflow_document_for_song(imported));
     QObject::connect(editor, &QDialog::accepted, this, [this, editor] {
         const auto draft = editor->draft_song();
-        if (!draft || !repository()) {
+        if (!draft || !songs()) {
             return;
         }
         auto song = *draft;
         application::normalize_song_cue_ids(song);
-        const auto saved = repository()->save_song(song);
+        const auto saved = songs()->save_song(song);
         if (saved) {
             library_dock_->add_song(*saved);
         }

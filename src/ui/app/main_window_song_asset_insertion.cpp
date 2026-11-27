@@ -1,7 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/slide_insertion.hpp"
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/operator_page.hpp"
 
 namespace shekinah::ui {
@@ -10,7 +10,7 @@ std::optional<int> ShekinahWindow::insert_asset_into_song(
     std::size_t index,
     const domain::ContentRef& selected_content,
     const domain::AssetRecord& asset) {
-    auto song = repository()->load_song(std::get<domain::SongId>(selected_content.id));
+    auto song = songs()->load_song(std::get<domain::SongId>(selected_content.id));
     if (!song) {
         return std::nullopt;
     }
@@ -19,7 +19,7 @@ std::optional<int> ShekinahWindow::insert_asset_into_song(
     if (!inserted) {
         return std::nullopt;
     }
-    const auto saved = repository()->save_song(*song);
+    const auto saved = songs()->save_song(*song);
     if (!saved) {
         return std::nullopt;
     }
