@@ -31,6 +31,8 @@ add_library(shekinah_ui STATIC
     app/main_window_song_editing.cpp
     app/main_window_theme.cpp
     app/main_window_theme_styles.cpp
+    app/main_window_stylesheet.cpp
+    app/main_window_stylesheet.hpp
     features/edit_song/reflow_editor_dialog.cpp
     features/edit_song/reflow_editor_state.cpp
     features/edit_song/reflow_editor_thumbnails.cpp
