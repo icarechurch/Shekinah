@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `d52643b refactor: isolate window resource pool adapter`
+- Latest local commit: `ed42779 refactor: release redundant audience slide buffers`
 - Worktree is clean at this handoff.
 - Commits after the previously recorded `8d70603` were created locally during
   this migration and should be treated as unpushed unless the user confirms
@@ -90,7 +90,9 @@ the compatibility facade. Asset path resolution, importer ownership, and the
 window resource-pool adapter are behind focused boundaries. The UI no longer
 reaches `ProjectStore` or constructs storage importers directly, and
 `ProjectSession` exposes typed repositories/import services instead of its
-legacy store/repository accessors.
+legacy store/repository accessors. Audience output no longer retains a
+redundant decoded slide buffer in addition to the renderer's bounded image;
+the existing loaded/cleared state contract is unchanged.
 
 ## Verification state
 
@@ -100,6 +102,8 @@ legacy store/repository accessors.
   configurations.
 - The current UI gate passed 122/122 in both debug and release configurations.
 - The current debug hotspot report says no source files exceed 500 LOC.
+- The current media gate passed 19/19 in both debug and release configurations
+  after the audience-output buffer reduction.
 - A full unlabelled debug/release `ctest` gate remains a milestone check; do
   not infer it from the focused storage/UI labels.
 - Build/test commands:
