@@ -8,7 +8,6 @@
 namespace shekinah::storage {
 
 class ProjectStore;
-class SqliteContentRepository;
 class AssetImporter;
 class AssetRepository;
 class ContentArchiveRepository;
@@ -53,7 +52,11 @@ public:
 private:
     std::filesystem::path root_;
     std::unique_ptr<ProjectStore> store_;
-    std::unique_ptr<SqliteContentRepository> repository_;
+    std::unique_ptr<SongRepository> songs_;
+    std::unique_ptr<SermonRepository> sermons_;
+    std::unique_ptr<AssetRepository> assets_;
+    std::unique_ptr<ServiceOrderRepository> service_orders_;
+    std::unique_ptr<ContentArchiveRepository> content_archive_;
     std::unique_ptr<AssetImporter> asset_importer_;
     std::unique_ptr<SermonDeckImporter> sermon_importer_;
 };
