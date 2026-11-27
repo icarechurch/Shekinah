@@ -16,6 +16,7 @@ add_library(shekinah_storage STATIC
     service_order_repository_reads.cpp
     song_repository_reads.cpp
     song_repository_reflow.cpp
+    song_repository_write_parts.cpp
     song_repository_writes.cpp
 )
 
