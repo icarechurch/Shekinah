@@ -91,6 +91,9 @@ add_library(shekinah_ui STATIC
     widgets/library_dock/library_dock_content_list_setup.cpp
     widgets/library_dock/library_dock_content_overlay_setup.cpp
     widgets/library_dock/library_dock_interactions.cpp
+    widgets/library_dock/library_dock_song_interactions.cpp
+    widgets/library_dock/library_dock_sermon_interactions.cpp
+    widgets/library_dock/library_dock_search_interactions.cpp
     widgets/library_dock/library_lists.hpp
     widgets/library_dock/library_dock_theme.cpp
     widgets/library_dock/library_dock_theme_styles.cpp

@@ -100,6 +100,9 @@ private:
     void setup_content_lists();
     void setup_content_empty_overlay();
     void setup_interactions();
+    void setup_song_interactions();
+    void setup_sermon_interactions();
+    void setup_search_interactions();
     void apply_theme();
     void set_tab(LibraryTab tab, int index);
     void apply_filter();
