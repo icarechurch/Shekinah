@@ -1,22 +1,12 @@
 #include "shekinah/application/cue_presenter.hpp"
 
+#include "application_text.hpp"
+
 #include <optional>
-#include <sstream>
 #include <utility>
 
 namespace shekinah::application {
 namespace {
-
-std::string join_lines(const std::vector<std::string>& lines) {
-    std::ostringstream out;
-    for (std::size_t index = 0; index != lines.size(); ++index) {
-        if (index != 0) {
-            out << '\n';
-        }
-        out << lines[index];
-    }
-    return out.str();
-}
 
 std::optional<std::filesystem::path> resolve_asset(
     const AssetPathResolver& resolver, const domain::AssetId& asset) {
@@ -38,7 +28,7 @@ CuePresentationSet build_song_cue_presentation(
     std::optional<domain::BackgroundRef> previous_background;
     for (std::size_t index = 0; index != song.slides.size(); ++index) {
         const auto& slide = song.slides[index];
-        const auto summary = join_lines(slide.lines);
+        const auto summary = internal::join_lines(slide.lines);
         const auto background = slide.background.has_value()
                                   ? slide.background
                                   : song.default_background;
