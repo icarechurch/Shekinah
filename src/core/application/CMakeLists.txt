@@ -1,5 +1,6 @@
 add_library(shekinah_application STATIC
-    cue_presenter.cpp
+    cue_presenter_song.cpp
+    cue_presenter_sermon.cpp
     live_slide_presenter.cpp
     presentation_service.cpp
     presentation_service_backgrounds.cpp
