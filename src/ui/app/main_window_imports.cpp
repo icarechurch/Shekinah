@@ -2,6 +2,7 @@
 
 #include "shekinah/application/song_authoring.hpp"
 #include "shekinah/application/song_text_importer.hpp"
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/song_repository.hpp"
 
 #include <filesystem>
@@ -30,7 +31,7 @@ domain::Result<domain::Song> ShekinahWindow::import_song_file(
     auto song = parsed.value();
     song.id = domain::SongId{allocate_song_id()};
     application::normalize_song_cue_ids(song);
-    const auto saved = songs()->save_song(song);
+    const auto saved = content_persistence_coordinator_->save_song(song);
     if (!saved) {
         return domain::Result<domain::Song>::fail(saved.error());
     }

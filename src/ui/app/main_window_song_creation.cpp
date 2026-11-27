@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_authoring.hpp"
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/reflow_editor_dialog.hpp"
@@ -22,7 +23,7 @@ void ShekinahWindow::create_song() {
         }
         auto song = *draft;
         application::normalize_song_cue_ids(song);
-        const auto saved = songs()->save_song(song);
+        const auto saved = content_persistence_coordinator_->save_song(song);
         if (saved) {
             library_dock_->add_song(*saved);
         }

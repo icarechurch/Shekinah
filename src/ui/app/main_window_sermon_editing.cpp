@@ -1,5 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/asset_repository.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 #include "shekinah/ui/sermon_editor_dialog.hpp"
@@ -53,10 +54,9 @@ void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
         auto updated = *existing;
         updated.title = editor->title().toStdString();
         updated.slides = std::move(slides);
-        const auto saved = sermons()->save_deck(updated);
+        const auto saved = content_persistence_coordinator_->save_sermon(updated);
         if (saved) {
             refresh_library();
-            presentation_.register_sermon(*saved);
             refresh_cues();
             update_program_status();
         }

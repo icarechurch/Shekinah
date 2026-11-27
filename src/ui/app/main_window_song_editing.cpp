@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_authoring.hpp"
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 #include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
@@ -60,10 +61,9 @@ void ShekinahWindow::edit_song(const domain::SongId& id) {
                     song.id.value + "-slide-" + std::to_string(index)};
             }
         }
-        const auto saved = songs()->save_song(song);
+        const auto saved = content_persistence_coordinator_->save_song(song);
         if (saved) {
             refresh_library();
-            presentation_.register_song(*saved);
             refresh_cues();
             update_program_status();
         }

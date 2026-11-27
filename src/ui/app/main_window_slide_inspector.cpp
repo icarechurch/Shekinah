@@ -1,5 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 #include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/operator_page.hpp"
@@ -79,11 +80,10 @@ void ShekinahWindow::save_inspected_slide(domain::CueId cue,
     if (slide->background.has_value()) {
         slide->background->fit = fit;
     }
-    const auto saved = songs()->save_song(*song);
+    const auto saved = content_persistence_coordinator_->save_song(*song);
     if (!saved) {
         return;
     }
-    presentation_.register_song(*saved);
     refresh_library();
     refresh_cues();
     if (presentation_.program().live_cue.has_value() &&
