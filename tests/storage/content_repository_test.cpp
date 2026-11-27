@@ -115,6 +115,10 @@ TEST_CASE("SQLite content repository loads stored asset metadata by id") {
     REQUIRE(loaded->kind == AssetKind::image);
     REQUIRE(loaded->relative_path == imported->relative_path);
     REQUIRE(loaded->size_bytes == imported->size_bytes);
+
+    const auto path = repository.resolve_asset_path(imported->id);
+    REQUIRE(path);
+    REQUIRE(*path == project.root() / "Sunday" / imported->relative_path);
 }
 
 TEST_CASE("SQLite content repository round-trips a Song Reflow document and split markers") {

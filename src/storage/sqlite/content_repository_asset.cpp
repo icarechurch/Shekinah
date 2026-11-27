@@ -13,4 +13,9 @@ domain::Result<domain::AssetRecord> SqliteContentRepository::load_asset(
     return assets_->load_asset(id);
 }
 
+domain::Result<std::filesystem::path> SqliteContentRepository::resolve_asset_path(
+    const domain::AssetId& id) const {
+    return assets_->resolve_asset_path(id);
+}
+
 }  // namespace shekinah::storage

@@ -22,8 +22,7 @@ struct LiveMediaSnapshot {
     const storage::SongRepository& songs,
     const storage::SermonRepository& sermons,
     const storage::AssetRepository& assets,
-    const domain::ProgramState& program,
-    const std::filesystem::path& project_root);
+    const domain::ProgramState& program);
 
 [[nodiscard]] LiveSlideDetails make_live_details(
     const application::LiveSlidePresentation& presentation,

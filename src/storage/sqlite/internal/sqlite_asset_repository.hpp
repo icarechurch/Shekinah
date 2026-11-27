@@ -11,6 +11,8 @@ public:
 
     domain::Result<std::vector<domain::AssetRecord>> list_assets() const override;
     domain::Result<domain::AssetRecord> load_asset(const domain::AssetId& id) const override;
+    domain::Result<std::filesystem::path> resolve_asset_path(
+        const domain::AssetId& id) const override;
 
 private:
     ProjectStore& store_;

@@ -3,7 +3,6 @@
 #include "shekinah/application/cue_presenter.hpp"
 #include "main_window_cue_views.hpp"
 #include "shekinah/storage/asset_repository.hpp"
-#include "shekinah/storage/project_store.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 #include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
@@ -26,14 +25,14 @@ void ShekinahWindow::refresh_cues() {
 
     const auto resolve_asset_path = [this](const domain::AssetId& asset_id)
         -> std::optional<std::filesystem::path> {
-        if (!assets() || !store()) {
+        if (!assets()) {
             return std::nullopt;
         }
-        const auto asset = assets()->load_asset(asset_id);
+        const auto asset = assets()->resolve_asset_path(asset_id);
         if (!asset) {
             return std::nullopt;
         }
-        return store()->root() / asset->relative_path;
+        return *asset;
     };
 
     application::CuePresentationSet presented;

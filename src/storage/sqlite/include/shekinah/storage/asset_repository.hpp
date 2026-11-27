@@ -3,6 +3,7 @@
 #include "shekinah/domain/model.hpp"
 #include "shekinah/domain/result.hpp"
 
+#include <filesystem>
 #include <vector>
 
 namespace shekinah::storage {
@@ -13,6 +14,8 @@ public:
 
     virtual domain::Result<std::vector<domain::AssetRecord>> list_assets() const = 0;
     virtual domain::Result<domain::AssetRecord> load_asset(const domain::AssetId& id) const = 0;
+    virtual domain::Result<std::filesystem::path> resolve_asset_path(
+        const domain::AssetId& id) const = 0;
 };
 
 }  // namespace shekinah::storage

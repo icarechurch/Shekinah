@@ -37,6 +37,8 @@ public:
     domain::Result<std::vector<domain::SermonDeck>> list_decks() const override;
     domain::Result<std::vector<domain::AssetRecord>> list_assets() const override;
     domain::Result<domain::AssetRecord> load_asset(const domain::AssetId& id) const override;
+    domain::Result<std::filesystem::path> resolve_asset_path(
+        const domain::AssetId& id) const override;
     domain::Status archive_song(const domain::SongId& id) override;
     domain::Status archive_deck(const domain::SermonId& id) override;
     domain::Status ensure_service_order(const domain::ServiceOrderId& id,

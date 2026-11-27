@@ -29,7 +29,11 @@ void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
         if (!asset) {
             return;
         }
-        files.push_back(store()->root() / asset->relative_path);
+        const auto path = assets()->resolve_asset_path(slide.image);
+        if (!path) {
+            return;
+        }
+        files.push_back(*path);
     }
 
     auto* editor = new SermonEditorDialog{this};

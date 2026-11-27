@@ -6,8 +6,7 @@ std::optional<LiveMediaSnapshot> resolve_live_media(
     const storage::SongRepository& songs,
     const storage::SermonRepository& sermons,
     const storage::AssetRepository& assets,
-    const domain::ProgramState& program,
-    const std::filesystem::path& project_root) {
+    const domain::ProgramState& program) {
     if (program.mode != domain::ProgramMode::cue || !program.live_cue.has_value()) {
         return std::nullopt;
     }
@@ -30,7 +29,10 @@ std::optional<LiveMediaSnapshot> resolve_live_media(
         const auto asset = assets.load_asset(*snapshot.presentation.background_asset);
         if (asset) {
             snapshot.asset = *asset;
-            snapshot.asset_path = project_root / snapshot.asset->relative_path;
+            const auto asset_path = assets.resolve_asset_path(*snapshot.presentation.background_asset);
+            if (asset_path) {
+                snapshot.asset_path = *asset_path;
+            }
         }
     }
     return snapshot;

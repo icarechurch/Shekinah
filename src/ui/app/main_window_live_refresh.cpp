@@ -3,7 +3,6 @@
 #include "main_window_live_media.hpp"
 
 #include "shekinah/media/audience_output.hpp"
-#include "shekinah/storage/project_store.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
 
@@ -17,7 +16,7 @@ void ShekinahWindow::present_live_media() {
         return;
     }
     const auto snapshot = resolve_live_media(
-        *songs(), *sermons(), *assets(), presentation_.program(), store()->root());
+        *songs(), *sermons(), *assets(), presentation_.program());
     if (!snapshot.has_value()) {
         operator_page_->program_status()->set_slide_preview({});
         operator_page_->program_status()->set_live_details({});
