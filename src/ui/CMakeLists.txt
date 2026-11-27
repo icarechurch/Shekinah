@@ -120,6 +120,8 @@ add_library(shekinah_ui STATIC
     widgets/program_status/program_status_chrome.cpp
     widgets/program_status/program_status_preview.cpp
     widgets/program_status/program_status_preview.hpp
+    widgets/program_status/program_status_preview_paint.cpp
+    widgets/program_status/program_status_preview_paint.hpp
     widgets/program_status/program_status_sections.hpp
     widgets/program_status/program_status_constructor.cpp
     widgets/program_status/program_status_drawer_cues.cpp
