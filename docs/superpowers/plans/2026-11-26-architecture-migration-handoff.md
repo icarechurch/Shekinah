@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `a0d8f0b refactor: isolate Sermon authoring`
+- Latest local commit: `d93e6f3 refactor: isolate content ID allocation`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -142,6 +142,8 @@ Since the previous handoff, the media and window seams were tightened further:
 - `a0d8f0b` isolates Sermon editing policy, including stored-deck loading,
   asset-path projection, replacement-media importing, slide-ID rebuilding,
   and persistence. The window retains editor lifecycle and refresh behavior.
+- `d93e6f3` isolates shared Song/Sermon ID allocation and project-open reset
+  policy, preserving the existing collision loop and generated-ID behavior.
 
 ## Verification state
 
@@ -164,6 +166,8 @@ Since the previous handoff, the media and window seams were tightened further:
   release configurations in 74.07 and 61.19 seconds respectively.
 - The latest Sermon authoring UI gate passes 122/122 in both debug and release
   configurations in 62.07 and 60.02 seconds respectively.
+- The latest content-ID allocation UI gate passes 122/122 in both debug and
+  release configurations in 70.69 and 71.05 seconds respectively.
 - The latest debug hotspot report says no source files exceed 500 LOC.
 - The current media gate passes 19/19 in both debug and release configurations
   after the renderer and audience-video extractions.
