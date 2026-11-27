@@ -60,6 +60,11 @@ QRect quick_add_rect_for_card(const QRect& card_rect);
 
 QAbstractItemDelegate* make_asset_card_delegate(QObject* parent);
 QAbstractItemDelegate* make_content_card_delegate(QObject* parent);
+int paint_content_card_surface(QPainter& painter,
+                               const QStyleOptionViewItem& option,
+                               const QRect& card,
+                               bool selected,
+                               bool hovered);
 
 void refresh_widget_polish(QWidget* widget);
 

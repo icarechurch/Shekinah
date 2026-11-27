@@ -29,15 +29,7 @@ public:
         const QString title = index.data(Qt::DisplayRole).toString();
 
         const auto& p = ThemeManager::instance().palette();
-        const QColor card_bg = selected ? p.card_selected_bg
-                               : hovered ? p.card_hover_bg
-                                         : p.card_bg;
-        const QColor card_border = selected ? p.accent
-                                   : hovered ? p.border_hover
-                                             : p.border_card;
-        painter->setBrush(card_bg);
-        painter->setPen(QPen{card_border, selected ? 1.5 : 1.0});
-        painter->drawRoundedRect(card, 6.0, 6.0);
+        const int right_reserved = paint_content_card_surface(*painter, option, card, selected, hovered);
 
         const bool is_song = (kind == domain::ContentKind::song);
         const QRectF badge_rect{
@@ -53,21 +45,6 @@ public:
         painter->setBrush(badge_fill);
         painter->drawRoundedRect(badge_rect, 5.0, 5.0);
         draw_content_badge_glyph(*painter, badge_rect, kind, badge_fg);
-
-        int right_reserved = 10;
-        if (hovered || selected) {
-            const QRect add_pill = quick_add_rect_for_card(card);
-            painter->setPen(QPen{selected ? p.add_pill_selected_border : p.add_pill_border, 1.0});
-            painter->setBrush(selected ? p.add_pill_selected_bg : p.add_pill_bg);
-            painter->drawRoundedRect(add_pill, 4.0, 4.0);
-            QFont pill_font = option.font;
-            pill_font.setPixelSize(9);
-            pill_font.setBold(true);
-            painter->setFont(pill_font);
-            painter->setPen(selected ? p.add_pill_selected_fg : p.add_pill_fg);
-            painter->drawText(add_pill, Qt::AlignCenter, QStringLiteral("+ Add"));
-            right_reserved = 56;
-        }
 
         const int text_left = static_cast<int>(badge_rect.right()) + 9;
         const int text_width = std::max(0, card.right() - right_reserved - text_left);
