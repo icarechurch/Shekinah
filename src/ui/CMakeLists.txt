@@ -93,11 +93,11 @@ add_library(shekinah_ui STATIC
     widgets/service_order/service_order_list_setup.cpp
     widgets/service_order/service_order_state.cpp
     widgets/service_order/service_order_actions.cpp
+    widgets/service_order/service_order_theme.cpp
     widgets/service_order/service_order_list.hpp
     widgets/service_order/service_order_list.cpp
     widgets/service_order/service_order_list_dragdrop.cpp
     widgets/service_order/service_order_list_input.cpp
-    widgets/service_order/service_order_widget.cpp
     widgets/cue_grid/cue_grid_widget.cpp
     widgets/cue_grid/cue_grid_interaction.cpp
     widgets/cue_grid/cue_grid_insert_target.cpp

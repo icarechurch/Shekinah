@@ -1,32 +1,12 @@
 #include "shekinah/ui/service_order_widget.hpp"
+
 #include "service_order_primitives.hpp"
-#include "shekinah/ui/support/asset_drag.hpp"
-#include "shekinah/ui/support/content_drag.hpp"
-#include "shekinah/ui/support/elided_label.hpp"
 #include "shekinah/ui/support/theme.hpp"
 
-#include <QAbstractItemView>
-#include <QDragEnterEvent>
-#include <QDragLeaveEvent>
-#include <QDragMoveEvent>
-#include <QDropEvent>
-#include <QFrame>
-#include <QHBoxLayout>
 #include <QIcon>
-#include <QKeyEvent>
 #include <QLabel>
-#include <QLineEdit>
 #include <QListWidget>
-#include <QMenu>
-#include <QPainter>
-#include <QPainterPath>
-#include <QPixmap>
 #include <QPushButton>
-#include <QResizeEvent>
-#include <QStyledItemDelegate>
-#include <QVBoxLayout>
-
-#include <algorithm>
 
 namespace shekinah::ui {
 void ServiceOrderWidget::apply_theme() {
