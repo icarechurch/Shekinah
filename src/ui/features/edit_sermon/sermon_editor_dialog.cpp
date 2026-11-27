@@ -10,8 +10,6 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include <utility>
-
 namespace shekinah::ui {
 
 SermonEditorDialog::SermonEditorDialog(QWidget* parent) : QDialog(parent) {
@@ -60,24 +58,6 @@ SermonEditorDialog::SermonEditorDialog(QWidget* parent) : QDialog(parent) {
     apply_theme();
     QObject::connect(&ThemeManager::instance(), &ThemeManager::theme_changed, this,
                      [this](ThemeId) { apply_theme(); });
-}
-
-void SermonEditorDialog::apply_theme() {
-    const auto& p = ThemeManager::instance().palette();
-    setPalette(ThemeManager::build_qpalette(p));
-    setStyleSheet(ThemeManager::dialog_stylesheet(p));
-}
-
-void SermonEditorDialog::set_title(QString title) { title_->setText(std::move(title)); }
-
-QString SermonEditorDialog::title() const { return title_->text().trimmed(); }
-
-int SermonEditorDialog::file_count() const noexcept { return files_->count(); }
-
-void SermonEditorDialog::accept_if_valid() {
-    if (!title().isEmpty() && files_->count() != 0) {
-        accept();
-    }
 }
 
 }  // namespace shekinah::ui
