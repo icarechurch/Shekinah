@@ -1,16 +1,12 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/application/service_order_presenter.hpp"
-#include "shekinah/storage/content_repository.hpp"
+#include "main_window_service_order_views.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
 #include "shekinah/ui/service_order_widget.hpp"
 
-#include <QString>
-
 #include <utility>
-#include <vector>
 
 namespace shekinah::ui {
 
@@ -33,42 +29,9 @@ void ShekinahWindow::refresh_service_order() {
         return;
     }
 
-    std::vector<ServiceOrderView> views;
-    views.reserve(loaded->size());
     const auto program = presentation_.program();
-    for (const auto& item : *loaded) {
-        application::ServiceOrderItemPresentation presented;
-        if (item.content.kind == domain::ContentKind::song) {
-            const auto content_id = std::get<domain::SongId>(item.content.id);
-            const auto song = repository()->load_song(content_id);
-            if (song) {
-                presentation_.register_song(*song);
-                presented = application::present_service_order_item(
-                    item, &*song, nullptr, program);
-            } else {
-                presented = application::present_service_order_item(
-                    item, nullptr, nullptr, program);
-            }
-        } else {
-            const auto content_id = std::get<domain::SermonId>(item.content.id);
-            const auto sermon = repository()->load_deck(content_id);
-            if (sermon) {
-                presentation_.register_sermon(*sermon);
-                presented = application::present_service_order_item(
-                    item, nullptr, &*sermon, program);
-            } else {
-                presented = application::present_service_order_item(
-                    item, nullptr, nullptr, program);
-            }
-        }
-        views.push_back(ServiceOrderView{
-            item,
-            QString::fromStdString(presented.label),
-            presented.slide_count,
-            presented.has_background,
-            presented.is_live,
-        });
-    }
+    auto views = main_window_internal::make_service_order_views(
+        *repository(), presentation_, *loaded, program);
     presentation_.set_service_order(*loaded);
     operator_page_->set_service_order(std::move(views));
     if (!loaded->empty()) {

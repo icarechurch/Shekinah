@@ -21,6 +21,7 @@ add_library(shekinah_ui STATIC
     app/main_window_program_status.cpp
     app/main_window_live_output.cpp
     app/main_window_service_order_refresh.cpp
+    app/main_window_service_order_views.cpp
     app/main_window_asset_inspection.cpp
     app/main_window_asset_removal.cpp
     app/main_window_asset_assignment.cpp
