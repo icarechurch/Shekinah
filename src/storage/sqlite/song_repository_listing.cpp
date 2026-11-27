@@ -9,7 +9,6 @@ namespace shekinah::storage {
 namespace {
 
 using sqlite_internal::Statement;
-using sqlite_internal::bind_text;
 
 }  // namespace
 
@@ -40,6 +39,20 @@ domain::Result<std::vector<domain::Song>> SqliteContentRepository::list_songs() 
             {domain::ErrorCode::storage_failure, "Could not iterate Song listing"});
     }
     return domain::Result<std::vector<domain::Song>>::ok(std::move(songs));
+}
+
+domain::Result<std::size_t> SqliteContentRepository::song_count() const {
+    Statement statement{store_.native_handle(), "SELECT COUNT(*) FROM songs WHERE archived=0;"};
+    if (!statement.ready()) {
+        return domain::Result<std::size_t>::fail(
+            {domain::ErrorCode::storage_failure, "Could not prepare Song count"});
+    }
+    if (sqlite3_step(statement.get()) != SQLITE_ROW) {
+        return domain::Result<std::size_t>::fail(
+            {domain::ErrorCode::storage_failure, "Could not read Song count"});
+    }
+    return domain::Result<std::size_t>::ok(
+        static_cast<std::size_t>(sqlite3_column_int64(statement.get(), 0)));
 }
 
 }  // namespace shekinah::storage
