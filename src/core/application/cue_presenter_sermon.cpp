@@ -1,18 +1,12 @@
 #include "shekinah/application/cue_presenter.hpp"
 
+#include "cue_presenter_asset_resolution.hpp"
+
 #include <optional>
 #include <utility>
 
 namespace shekinah::application {
 namespace {
-
-std::optional<std::filesystem::path> resolve_asset(
-    const AssetPathResolver& resolver, const domain::AssetId& asset) {
-    if (!resolver) {
-        return std::nullopt;
-    }
-    return resolver(asset);
-}
 
 }  // namespace
 
@@ -28,7 +22,7 @@ CuePresentationSet build_sermon_cue_presentation(
         const auto number = static_cast<int>(index + 1);
         const auto label = "Slide " + std::to_string(number);
         std::filesystem::path background_path;
-        if (const auto resolved = resolve_asset(resolve_asset_path, slide.image);
+        if (const auto resolved = internal::resolve_asset_path(resolve_asset_path, slide.image);
             resolved.has_value()) {
             background_path = *resolved;
         }

@@ -1,20 +1,13 @@
 #include "shekinah/application/cue_presenter.hpp"
 
 #include "application_text.hpp"
+#include "cue_presenter_asset_resolution.hpp"
 
 #include <optional>
 #include <utility>
 
 namespace shekinah::application {
 namespace {
-
-std::optional<std::filesystem::path> resolve_asset(
-    const AssetPathResolver& resolver, const domain::AssetId& asset) {
-    if (!resolver) {
-        return std::nullopt;
-    }
-    return resolver(asset);
-}
 
 }  // namespace
 
@@ -40,7 +33,7 @@ CuePresentationSet build_song_cue_presentation(
         std::filesystem::path background_path;
         auto background_fit = domain::FitMode::cover;
         if (starts_asset_range) {
-            const auto resolved = resolve_asset(resolve_asset_path, background->asset);
+            const auto resolved = internal::resolve_asset_path(resolve_asset_path, background->asset);
             if (resolved.has_value()) {
                 background_path = *resolved;
                 background_fit = background->fit;
