@@ -78,6 +78,7 @@ add_library(shekinah_ui STATIC
     widgets/program_status/program_status_drawer_tabs.cpp
     widgets/program_status/program_status_layout.cpp
     widgets/program_status/program_status_output_controls.cpp
+    widgets/program_status/program_status_global_controls.cpp
     widgets/program_status/program_status_output.cpp
     widgets/program_status/program_status_tabs.cpp
     widgets/program_status/program_status_theme.cpp
