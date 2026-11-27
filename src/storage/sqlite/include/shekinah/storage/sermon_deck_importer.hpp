@@ -9,9 +9,12 @@
 
 namespace shekinah::storage {
 
+class SermonRepository;
+
 class SermonDeckImporter {
 public:
-    explicit SermonDeckImporter(ProjectStore& store) : store_(store) {}
+    SermonDeckImporter(ProjectStore& store, SermonRepository& sermons)
+        : store_(store), sermons_(sermons) {}
 
     domain::Result<domain::SermonDeck> import_files(
         domain::SermonId id,
@@ -21,6 +24,7 @@ public:
 
 private:
     ProjectStore& store_;
+    SermonRepository& sermons_;
 };
 
 }  // namespace shekinah::storage

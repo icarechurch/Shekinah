@@ -3,7 +3,7 @@
 #include "internal/sermon_deck_importer_order.hpp"
 
 #include "shekinah/storage/asset_importer.hpp"
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/sermon_repository.hpp"
 
 #include <string>
 #include <utility>
@@ -42,7 +42,7 @@ domain::Result<domain::SermonDeck> SermonDeckImporter::import_files(
     }
 
     domain::SermonDeck deck{std::move(id), std::move(title), std::move(slides)};
-    return SqliteContentRepository{store_}.save_deck(deck);
+    return sermons_.save_deck(deck);
 }
 
 }  // namespace shekinah::storage

@@ -24,7 +24,8 @@ TEST_CASE("sermon deck importer naturally orders sermon files") {
     std::ofstream(slide_2, std::ios::binary) << "two";
     std::ofstream(slide_1, std::ios::binary) << "one";
 
-    SermonDeckImporter importer{*store};
+    SqliteContentRepository repository{*store};
+    SermonDeckImporter importer{*store, repository};
     const auto deck = importer.import_files(
         SermonId{"sermon-a"}, "Sunday Sermon", {slide_10, slide_2, slide_1});
 
@@ -61,14 +62,14 @@ TEST_CASE("sermon deck importer accepts mixed supported media") {
     std::ofstream(gif, std::ios::binary) << "gif-bytes";
     std::ofstream(mp4, std::ios::binary) << "mp4-bytes";
 
-    SermonDeckImporter importer{*store};
+    SqliteContentRepository repository{*store};
+    SermonDeckImporter importer{*store, repository};
     const auto deck = importer.import_files(
         SermonId{"sermon-media"}, "Media Sermon", {jpg, gif, mp4}, true);
 
     REQUIRE(deck);
     REQUIRE(deck->slides.size() == 3);
 
-    SqliteContentRepository repository{*store};
     const auto first = repository.load_asset(deck->slides[0].image);
     const auto second = repository.load_asset(deck->slides[1].image);
     const auto third = repository.load_asset(deck->slides[2].image);
@@ -95,7 +96,8 @@ TEST_CASE("sermon deck importer accepts every supported asset media extension") 
         paths.push_back(path);
     }
 
-    SermonDeckImporter importer{*store};
+    SqliteContentRepository repository{*store};
+    SermonDeckImporter importer{*store, repository};
     const auto deck = importer.import_files(
         SermonId{"sermon-all-media"}, "All Media Sermon", std::move(paths), true);
 
@@ -115,7 +117,8 @@ TEST_CASE("sermon deck importer rejects duplicate names and unsupported media") 
     std::ofstream(duplicate, std::ios::binary) << "duplicate";
     std::ofstream(unsupported, std::ios::binary) << "text";
 
-    SermonDeckImporter importer{*store};
+    SqliteContentRepository repository{*store};
+    SermonDeckImporter importer{*store, repository};
     const auto duplicate_result = importer.import_files(
         SermonId{"sermon-a"}, "Sunday Sermon", {first, duplicate});
     REQUIRE_FALSE(duplicate_result);
@@ -139,7 +142,8 @@ TEST_CASE("sermon deck importer preserves the operator-defined order when reques
     std::ofstream(first, std::ios::binary) << "one";
     std::ofstream(second, std::ios::binary) << "two";
 
-    SermonDeckImporter importer{*store};
+    SqliteContentRepository repository{*store};
+    SermonDeckImporter importer{*store, repository};
     const auto deck = importer.import_files(
         SermonId{"sermon-ordered"}, "Ordered Sermon", {third, first, second}, true);
 
