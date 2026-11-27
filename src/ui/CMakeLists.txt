@@ -34,8 +34,8 @@ add_library(shekinah_ui STATIC
     app/main_window_background_dialog.cpp
     app/main_window_asset_imports.cpp
     app/main_window_asset_slide_insertion.cpp
-    app/main_window_song_asset_insertion.cpp
-    app/main_window_sermon_asset_insertion.cpp
+    app/asset_slide_insertion_coordinator.cpp
+    app/asset_slide_insertion_coordinator.hpp
     app/main_window_imports.cpp
     app/main_window_sermon_imports.cpp
     app/main_window_sermon_creation.cpp

@@ -53,6 +53,7 @@ class LibraryCatalogCoordinator;
 class OperatorPage;
 class ContentPersistenceCoordinator;
 class CuePresentationCoordinator;
+class AssetSlideInsertionCoordinator;
 class ServiceOrderCoordinator;
 class ServiceOrderViewCoordinator;
 class WindowResourcePools;
@@ -87,6 +88,7 @@ private:
     std::unique_ptr<WindowResourcePools> resource_pools_;
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
+    std::unique_ptr<AssetSlideInsertionCoordinator> asset_slide_insertion_coordinator_;
     std::unique_ptr<CuePresentationCoordinator> cue_presentation_coordinator_;
     std::unique_ptr<main_window_internal::LiveMediaCoordinator> live_media_coordinator_;
     std::unique_ptr<main_window_internal::LiveOutputCoordinator> live_output_coordinator_;
@@ -140,12 +142,6 @@ private:
     void apply_asset_to_song(domain::ContentRef content, domain::AssetId asset);
     void apply_asset_to_slide(domain::CueId cue, domain::AssetId asset);
     void insert_asset_at_slide_position(std::size_t index, domain::AssetId asset);
-    std::optional<int> insert_asset_into_song(std::size_t index,
-                                              const domain::ContentRef& selected_content,
-                                              const domain::AssetRecord& asset);
-    std::optional<int> insert_asset_into_sermon(std::size_t index,
-                                                const domain::ContentRef& selected_content,
-                                                const domain::AssetRecord& asset);
     void choose_background(const domain::CueId& cue);
     void import_asset();
     void import_song_text();
