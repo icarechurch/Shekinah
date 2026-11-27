@@ -13,6 +13,7 @@ add_library(shekinah_application STATIC
     slide_insertion.cpp
     song_backgrounds.cpp
     song_reflow.cpp
+    song_reflow_projection.cpp
     song_text_importer.cpp
 )
 
