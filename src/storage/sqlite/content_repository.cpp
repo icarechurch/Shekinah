@@ -2,6 +2,7 @@
 
 #include "internal/sqlite_song_repository.hpp"
 #include "internal/sqlite_sermon_repository.hpp"
+#include "internal/sqlite_asset_repository.hpp"
 
 #include <memory>
 
@@ -10,7 +11,8 @@ namespace shekinah::storage {
 SqliteContentRepository::SqliteContentRepository(ProjectStore& store)
     : store_(store),
       songs_(std::make_unique<SqliteSongRepository>(store)),
-      sermons_(std::make_unique<SqliteSermonRepository>(store)) {}
+      sermons_(std::make_unique<SqliteSermonRepository>(store)),
+      assets_(std::make_unique<SqliteAssetRepository>(store)) {}
 
 SqliteContentRepository::~SqliteContentRepository() = default;
 

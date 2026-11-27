@@ -3,6 +3,7 @@ add_library(shekinah_storage STATIC
     asset_importer_file.cpp
     asset_repository.cpp
     content_repository.cpp
+    content_repository_asset.cpp
     content_repository_archive.cpp
     content_repository_song.cpp
     content_repository_sermon.cpp
@@ -27,6 +28,7 @@ add_library(shekinah_storage STATIC
     song_repository_writes.cpp
     internal/sqlite_song_repository.hpp
     internal/sqlite_sermon_repository.hpp
+    internal/sqlite_asset_repository.hpp
 )
 
 target_include_directories(shekinah_storage

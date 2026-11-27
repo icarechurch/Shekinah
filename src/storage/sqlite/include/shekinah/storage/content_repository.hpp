@@ -13,6 +13,7 @@ namespace shekinah::storage {
 
 class SqliteSongRepository;
 class SqliteSermonRepository;
+class SqliteAssetRepository;
 
 class SqliteContentRepository final : public SongRepository,
                                       public SermonRepository,
@@ -50,6 +51,7 @@ private:
     ProjectStore& store_;
     std::unique_ptr<SqliteSongRepository> songs_;
     std::unique_ptr<SqliteSermonRepository> sermons_;
+    std::unique_ptr<SqliteAssetRepository> assets_;
 };
 
 }  // namespace shekinah::storage

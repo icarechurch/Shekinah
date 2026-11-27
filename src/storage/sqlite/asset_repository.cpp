@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_asset_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -14,7 +14,7 @@ using sqlite_internal::bind_text;
 
 }  // namespace
 
-domain::Result<std::vector<domain::AssetRecord>> SqliteContentRepository::list_assets() const {
+domain::Result<std::vector<domain::AssetRecord>> SqliteAssetRepository::list_assets() const {
     Statement statement{store_.native_handle(),
                         "SELECT id,kind,sha256,relative_path,size_bytes FROM assets WHERE archived=0 "
                         "ORDER BY relative_path COLLATE NOCASE ASC, id ASC;"};
@@ -51,7 +51,7 @@ domain::Result<std::vector<domain::AssetRecord>> SqliteContentRepository::list_a
     return domain::Result<std::vector<domain::AssetRecord>>::ok(std::move(assets));
 }
 
-domain::Result<domain::AssetRecord> SqliteContentRepository::load_asset(
+domain::Result<domain::AssetRecord> SqliteAssetRepository::load_asset(
     const domain::AssetId& id) const {
     if (id.empty()) {
         return domain::Result<domain::AssetRecord>::fail(
