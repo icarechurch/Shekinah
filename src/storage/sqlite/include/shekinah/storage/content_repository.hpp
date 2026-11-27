@@ -1,40 +1,44 @@
 #pragma once
 
-#include "shekinah/domain/model.hpp"
-#include "shekinah/domain/result.hpp"
-#include "shekinah/application/song_reflow.hpp"
+#include "shekinah/storage/asset_repository.hpp"
+#include "shekinah/storage/content_archive_repository.hpp"
 #include "shekinah/storage/project_store.hpp"
-
-#include <cstddef>
-#include <cstdint>
-#include <vector>
+#include "shekinah/storage/sermon_repository.hpp"
+#include "shekinah/storage/service_order_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 
 namespace shekinah::storage {
 
-class SqliteContentRepository {
+class SqliteContentRepository final : public SongRepository,
+                                      public SermonRepository,
+                                      public AssetRepository,
+                                      public ServiceOrderRepository,
+                                      public ContentArchiveRepository {
 public:
     explicit SqliteContentRepository(ProjectStore& store) : store_(store) {}
 
-    domain::Result<domain::Song> save_song(const domain::Song& song);
-    domain::Result<domain::Song> load_song(const domain::SongId& id) const;
-    domain::Result<application::SongReflowDocument> load_song_reflow(const domain::SongId& id) const;
-    domain::Result<std::vector<domain::Song>> list_songs() const;
-    domain::Result<domain::SermonDeck> save_deck(const domain::SermonDeck& deck);
-    domain::Result<domain::SermonDeck> load_deck(const domain::SermonId& id) const;
-    domain::Result<std::vector<domain::SermonDeck>> list_decks() const;
-    domain::Result<std::vector<domain::AssetRecord>> list_assets() const;
-    domain::Result<domain::AssetRecord> load_asset(const domain::AssetId& id) const;
-    domain::Status archive_song(const domain::SongId& id);
-    domain::Status archive_deck(const domain::SermonId& id);
-    domain::Status ensure_service_order(const domain::ServiceOrderId& id, std::string title);
+    domain::Result<domain::Song> save_song(const domain::Song& song) override;
+    domain::Result<domain::Song> load_song(const domain::SongId& id) const override;
+    domain::Result<application::SongReflowDocument> load_song_reflow(
+        const domain::SongId& id) const override;
+    domain::Result<std::vector<domain::Song>> list_songs() const override;
+    domain::Result<std::size_t> song_count() const override;
+    domain::Result<domain::SermonDeck> save_deck(const domain::SermonDeck& deck) override;
+    domain::Result<domain::SermonDeck> load_deck(const domain::SermonId& id) const override;
+    domain::Result<std::vector<domain::SermonDeck>> list_decks() const override;
+    domain::Result<std::vector<domain::AssetRecord>> list_assets() const override;
+    domain::Result<domain::AssetRecord> load_asset(const domain::AssetId& id) const override;
+    domain::Status archive_song(const domain::SongId& id) override;
+    domain::Status archive_deck(const domain::SermonId& id) override;
+    domain::Status ensure_service_order(const domain::ServiceOrderId& id,
+                                        std::string title) override;
     domain::Result<domain::ServiceOrderItem> append_to_order(
-        const domain::ServiceOrderId& order_id, domain::ContentRef content);
-    domain::Status remove_from_order(const domain::ServiceOrderItemId& item_id);
+        const domain::ServiceOrderId& order_id, domain::ContentRef content) override;
+    domain::Status remove_from_order(const domain::ServiceOrderItemId& item_id) override;
     domain::Status move_in_order(const domain::ServiceOrderItemId& item_id,
-                                 std::int64_t target_ordinal);
+                                 std::int64_t target_ordinal) override;
     domain::Result<std::vector<domain::ServiceOrderItem>> load_order(
-        const domain::ServiceOrderId& order_id) const;
-    domain::Result<std::size_t> song_count() const;
+        const domain::ServiceOrderId& order_id) const override;
 
 private:
     ProjectStore& store_;
