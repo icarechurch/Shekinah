@@ -32,7 +32,6 @@ namespace shekinah::storage {
 class AssetRepository;
 class ContentArchiveRepository;
 class SermonRepository;
-class SermonDeckImporter;
 class ServiceOrderRepository;
 class SongRepository;
 }
@@ -50,6 +49,7 @@ struct LiveSlideDetails;
 class LibraryDockWidget;
 class LibraryCatalogCoordinator;
 class AssetImportCoordinator;
+class SermonImportCoordinator;
 class OperatorPage;
 class ContentPersistenceCoordinator;
 class CuePresentationCoordinator;
@@ -92,6 +92,7 @@ private:
     std::unique_ptr<WindowResourcePools> resource_pools_;
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
     std::unique_ptr<AssetImportCoordinator> asset_import_coordinator_;
+    std::unique_ptr<SermonImportCoordinator> sermon_import_coordinator_;
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
     std::unique_ptr<AssetSlideInsertionCoordinator> asset_slide_insertion_coordinator_;
     std::unique_ptr<SongAssetCoordinator> song_asset_coordinator_;
@@ -119,12 +120,6 @@ private:
     void configure_feature_handlers();
     void configure_library_handlers();
     void configure_operator_feature_handlers();
-    [[nodiscard]] storage::SermonDeckImporter* sermon_importer() noexcept {
-        return session_.sermon_importer();
-    }
-    [[nodiscard]] const storage::SermonDeckImporter* sermon_importer() const noexcept {
-        return session_.sermon_importer();
-    }
     [[nodiscard]] storage::SongRepository* songs() noexcept { return session_.songs(); }
     [[nodiscard]] const storage::SongRepository* songs() const noexcept { return session_.songs(); }
     [[nodiscard]] storage::SermonRepository* sermons() noexcept { return session_.sermons(); }

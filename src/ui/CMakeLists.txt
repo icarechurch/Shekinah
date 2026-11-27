@@ -38,6 +38,8 @@ add_library(shekinah_ui STATIC
     app/asset_slide_insertion_coordinator.hpp
     app/asset_import_coordinator.cpp
     app/asset_import_coordinator.hpp
+    app/sermon_import_coordinator.cpp
+    app/sermon_import_coordinator.hpp
     app/project_lifecycle_coordinator.cpp
     app/project_lifecycle_coordinator.hpp
     app/song_asset_coordinator.cpp

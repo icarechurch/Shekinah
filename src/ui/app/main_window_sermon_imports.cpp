@@ -1,6 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/sermon_deck_importer.hpp"
+#include "sermon_import_coordinator.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/sermon_editor_dialog.hpp"
 
@@ -15,7 +15,7 @@
 namespace shekinah::ui {
 
 void ShekinahWindow::import_sermon_deck() {
-    if (!project_open() || !sermon_importer()) {
+    if (!project_open()) {
         return;
     }
     const auto paths = QFileDialog::getOpenFileNames(
@@ -46,13 +46,12 @@ void ShekinahWindow::import_sermon_deck() {
 
 domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
     std::vector<std::filesystem::path> sources, std::string title, bool preserve_order) {
-    if (!project_open() || !sermon_importer()) {
+    if (!project_open()) {
         return domain::Result<domain::SermonDeck>::fail(
             {domain::ErrorCode::storage_failure, "Open a project before importing sermons"});
     }
-    return sermon_importer()->import_files(
-        domain::SermonId{allocate_sermon_id()}, std::move(title),
-        std::move(sources), preserve_order);
+    return sermon_import_coordinator_->import_files(
+        domain::SermonId{allocate_sermon_id()}, std::move(title), std::move(sources), preserve_order);
 }
 
 }  // namespace shekinah::ui
