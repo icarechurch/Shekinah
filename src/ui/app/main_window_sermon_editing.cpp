@@ -1,6 +1,5 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/asset_importer.hpp"
 #include "shekinah/storage/asset_repository.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 #include "shekinah/ui/sermon_editor_dialog.hpp"
@@ -15,7 +14,7 @@
 namespace shekinah::ui {
 
 void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
-    if (!store() || !sermons() || !assets()) {
+    if (!project_open() || !sermons() || !assets()) {
         return;
     }
     const auto existing = sermons()->load_deck(id);
@@ -25,10 +24,6 @@ void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
     std::vector<std::filesystem::path> files;
     files.reserve(existing->slides.size());
     for (const auto& slide : existing->slides) {
-        const auto asset = assets()->load_asset(slide.image);
-        if (!asset) {
-            return;
-        }
         const auto path = assets()->resolve_asset_path(slide.image);
         if (!path) {
             return;
@@ -41,15 +36,14 @@ void ShekinahWindow::edit_sermon(const domain::SermonId& id) {
     editor->set_title(QString::fromStdString(existing->title));
     editor->set_files(std::move(files));
     QObject::connect(editor, &QDialog::accepted, this, [this, editor, existing] {
-        if (!store() || !sermons()) {
+        if (!project_open() || !sermons()) {
             return;
         }
         const auto files = editor->files();
         std::vector<domain::SermonSlide> slides;
         slides.reserve(files.size());
-        storage::AssetImporter assets{*store()};
         for (std::size_t index = 0; index != files.size(); ++index) {
-            const auto imported = assets.import_file(files[index]);
+            const auto imported = import_asset_file(files[index]);
             if (!imported) {
                 return;
             }

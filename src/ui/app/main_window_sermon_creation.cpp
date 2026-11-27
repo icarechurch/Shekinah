@@ -8,7 +8,7 @@
 namespace shekinah::ui {
 
 void ShekinahWindow::create_sermon() {
-    if (!store()) {
+    if (!project_open()) {
         return;
     }
     auto* editor = new SermonEditorDialog{this};

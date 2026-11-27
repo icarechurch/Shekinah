@@ -2,6 +2,8 @@
 
 #include "shekinah/storage/content_repository.hpp"
 #include "shekinah/storage/project_store.hpp"
+#include "shekinah/storage/asset_importer.hpp"
+#include "shekinah/storage/sermon_deck_importer.hpp"
 
 #include <utility>
 
@@ -20,11 +22,15 @@ domain::Status ProjectSession::open(const std::filesystem::path& root) {
 
     store_ = std::make_unique<ProjectStore>(std::move(opened.value()));
     repository_ = std::make_unique<SqliteContentRepository>(*store_);
+    asset_importer_ = std::make_unique<AssetImporter>(*store_);
+    sermon_importer_ = std::make_unique<SermonDeckImporter>(*store_, *sermons());
     root_ = store_->root();
     return domain::success();
 }
 
 void ProjectSession::close() noexcept {
+    sermon_importer_.reset();
+    asset_importer_.reset();
     repository_.reset();
     store_.reset();
     root_.clear();

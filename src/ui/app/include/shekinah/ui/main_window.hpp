@@ -30,8 +30,10 @@ class QTimer;
 
 namespace shekinah::storage {
 class AssetRepository;
+class AssetImporter;
 class ContentArchiveRepository;
 class SermonRepository;
+class SermonDeckImporter;
 class ServiceOrderRepository;
 class SongRepository;
 }
@@ -91,8 +93,18 @@ private:
     void configure_feature_handlers();
     void configure_library_handlers();
     void configure_operator_feature_handlers();
-    [[nodiscard]] storage::ProjectStore* store() noexcept { return session_.store(); }
-    [[nodiscard]] const storage::ProjectStore* store() const noexcept { return session_.store(); }
+    [[nodiscard]] storage::AssetImporter* asset_importer() noexcept {
+        return session_.asset_importer();
+    }
+    [[nodiscard]] const storage::AssetImporter* asset_importer() const noexcept {
+        return session_.asset_importer();
+    }
+    [[nodiscard]] storage::SermonDeckImporter* sermon_importer() noexcept {
+        return session_.sermon_importer();
+    }
+    [[nodiscard]] const storage::SermonDeckImporter* sermon_importer() const noexcept {
+        return session_.sermon_importer();
+    }
     [[nodiscard]] storage::SongRepository* songs() noexcept { return session_.songs(); }
     [[nodiscard]] const storage::SongRepository* songs() const noexcept { return session_.songs(); }
     [[nodiscard]] storage::SermonRepository* sermons() noexcept { return session_.sermons(); }

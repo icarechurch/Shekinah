@@ -1,6 +1,5 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/project_store.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 
 #include <QFileDialog>
@@ -9,7 +8,7 @@
 namespace shekinah::ui {
 
 void ShekinahWindow::import_asset() {
-    if (!store()) {
+    if (!project_open()) {
         return;
     }
     const auto path = QFileDialog::getOpenFileName(

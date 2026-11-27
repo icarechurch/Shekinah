@@ -15,7 +15,7 @@
 namespace shekinah::ui {
 
 void ShekinahWindow::import_sermon_deck() {
-    if (!store()) {
+    if (!project_open() || !sermon_importer()) {
         return;
     }
     const auto paths = QFileDialog::getOpenFileNames(
@@ -46,11 +46,11 @@ void ShekinahWindow::import_sermon_deck() {
 
 domain::Result<domain::SermonDeck> ShekinahWindow::import_sermon_files(
     std::vector<std::filesystem::path> sources, std::string title, bool preserve_order) {
-    if (!store()) {
+    if (!project_open() || !sermon_importer()) {
         return domain::Result<domain::SermonDeck>::fail(
             {domain::ErrorCode::storage_failure, "Open a project before importing sermons"});
     }
-    return storage::SermonDeckImporter{*store(), *sermons()}.import_files(
+    return sermon_importer()->import_files(
         domain::SermonId{allocate_sermon_id()}, std::move(title),
         std::move(sources), preserve_order);
 }
