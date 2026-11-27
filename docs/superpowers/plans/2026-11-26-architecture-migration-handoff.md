@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `5a6047a refactor: isolate Song authoring`
+- Latest local commit: `a874427 refactor: isolate Song importing`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -133,12 +133,16 @@ Since the previous handoff, the media and window seams were tightened further:
 - `5a6047a` isolates reusable Song editing load/save policy, including Reflow
   loading, cue-ID preservation, background preservation, and appended-slide ID
   generation.
+- `a874427` isolates reusable Song file importing, including binary file
+  reading, text parsing, allocated-ID assignment, cue-ID normalization, and
+  persistence through the existing content-persistence boundary.
 
 ## Verification state
 
-- The full debug gate currently passes 207/207 in 89.96 seconds, and the full
-  release gate passes 207/207 in 90.03 seconds, with the architecture policy
-  enabled.
+- The last complete full debug gate passed 207/207 in 89.96 seconds, and the
+  last complete full release gate passed 207/207 in 90.03 seconds, with the
+  architecture policy enabled. Re-run both full gates at the next milestone
+  after the current focused migration slices.
 - The focused storage gate passes 22/22 in both debug and release
   configurations after typed-session composition.
 - The UI gate passes 122/122 in both debug and release configurations after
@@ -148,7 +152,9 @@ Since the previous handoff, the media and window seams were tightened further:
   configurations in 62.42 and 61.57 seconds respectively.
 - The latest Song authoring UI gate passes 122/122 in both debug and release
   configurations in 62.92 and 61.87 seconds respectively.
-- The current debug hotspot report says no source files exceed 500 LOC.
+- The latest Song importing UI gate passes 122/122 in both debug and release
+  configurations in 68.01 and 62.53 seconds respectively.
+- The latest debug hotspot report says no source files exceed 500 LOC.
 - The current media gate passes 19/19 in both debug and release configurations
   after the renderer and audience-video extractions.
 - The current UI gate passes 122/122 in both debug and release configurations
