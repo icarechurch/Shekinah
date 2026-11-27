@@ -22,7 +22,6 @@ domain::Status AudienceOutput::load_slide_image(
     if (image.isNull()) {
         return domain::Status::fail({domain::ErrorCode::io_failure, "unable to decode slide image"});
     }
-    slide_image_ = image;
     slide_image_loaded_ = true;
     slide_background_path_ = QString::fromStdString(path.string());
     slide_background_fit_ = background_fit;
@@ -32,7 +31,6 @@ domain::Status AudienceOutput::load_slide_image(
 }
 
 void AudienceOutput::clear_slide_image() noexcept {
-    slide_image_ = QImage{};
     slide_image_loaded_ = false;
     slide_background_path_.clear();
     update_slide_renderer();

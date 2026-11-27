@@ -5,7 +5,6 @@
 #include "shekinah/media/slide_renderer.hpp"
 
 #include <QWidget>
-#include <QImage>
 #include <QString>
 
 #include <filesystem>
@@ -53,7 +52,6 @@ private:
     bool slide_image_loaded_{false};
     bool loop_video_loaded_{false};
     QString live_text_;
-    QImage slide_image_;
     QString slide_background_path_;
     domain::FitMode slide_background_fit_{domain::FitMode::cover};
     SlideRenderer slide_renderer_;
