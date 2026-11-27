@@ -100,6 +100,7 @@ add_library(shekinah_ui STATIC
     widgets/program_status/program_status_widget_state.cpp
     widgets/program_status/program_status_live_state.cpp
     widgets/program_status/program_status_widget.cpp
+    widgets/service_order/service_order_delegate.cpp
     widgets/service_order/service_order_delegate.hpp
     widgets/service_order/service_order_primitives.hpp
     widgets/service_order/service_order_constructor.cpp

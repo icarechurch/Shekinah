@@ -7,7 +7,7 @@ namespace shekinah::ui::service_order_internal {
 ServiceOrderListWidget::ServiceOrderListWidget(QWidget* parent) : QListWidget(parent) {
     viewport()->installEventFilter(this);
     setMouseTracking(true);
-    setItemDelegate(new ServiceOrderItemDelegate{this});
+    setItemDelegate(make_service_order_item_delegate(this));
 }
 
 void ServiceOrderListWidget::set_asset_drop_handler(AssetDropHandler handler) {
