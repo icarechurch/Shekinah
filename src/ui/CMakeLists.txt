@@ -36,6 +36,9 @@ add_library(shekinah_ui STATIC
     features/edit_song/reflow_editor_thumbnails.cpp
     features/edit_song/reflow_editor_theme.cpp
     features/edit_song/reflow_text_edit.cpp
+    features/edit_song/reflow_text_edit_document.cpp
+    features/edit_song/reflow_text_edit_cursor.cpp
+    features/edit_song/reflow_text_edit_input.cpp
     features/edit_song/reflow_text_edit_markers.cpp
     features/edit_sermon/sermon_editor_dialog.cpp
     features/edit_sermon/sermon_editor_dialog_files.cpp
