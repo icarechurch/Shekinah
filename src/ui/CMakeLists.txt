@@ -4,6 +4,8 @@ add_library(shekinah_ui STATIC
     app/main_window_memory.cpp
     app/main_window_projects.cpp
     app/main_window_bindings.cpp
+    app/main_window_library_bindings.cpp
+    app/main_window_operator_feature_bindings.cpp
     app/main_window_menus.cpp
     app/main_window_window_menu.cpp
     app/main_window_file_menu.cpp

@@ -74,6 +74,8 @@ private:
     void configure_presentation_menu();
     void configure_view_menu();
     void configure_feature_handlers();
+    void configure_library_handlers();
+    void configure_operator_feature_handlers();
     [[nodiscard]] storage::ProjectStore* store() noexcept { return session_.store(); }
     [[nodiscard]] const storage::ProjectStore* store() const noexcept { return session_.store(); }
     [[nodiscard]] storage::SqliteContentRepository* repository() noexcept {
