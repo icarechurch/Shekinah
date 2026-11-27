@@ -2,13 +2,9 @@
 
 #include "cue_presenter_asset_resolution.hpp"
 
-#include <optional>
 #include <utility>
 
 namespace shekinah::application {
-namespace {
-
-}  // namespace
 
 CuePresentationSet build_sermon_cue_presentation(
     const domain::SermonDeck& sermon, const AssetPathResolver& resolve_asset_path) {

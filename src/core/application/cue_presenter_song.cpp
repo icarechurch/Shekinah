@@ -7,9 +7,6 @@
 #include <utility>
 
 namespace shekinah::application {
-namespace {
-
-}  // namespace
 
 CuePresentationSet build_song_cue_presentation(
     const domain::Song& song, const AssetPathResolver& resolve_asset_path) {
