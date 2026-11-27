@@ -10,6 +10,7 @@ add_library(shekinah_storage STATIC
     sermon_deck_importer.cpp
     sermon_repository.cpp
     sermon_repository_writes.cpp
+    service_order_repository_append.cpp
     service_order_repository_mutations.cpp
     service_order_repository_ordering.cpp
     service_order_repository_reads.cpp
