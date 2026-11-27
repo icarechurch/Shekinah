@@ -62,7 +62,7 @@ over 500 LOC without failing the build.
 ## Repository state at handoff
 
 - Branch: `master`
-- Latest local commit: `acb99cb refactor: isolate asset slide insertion`
+- Latest local commit: `76d8253 refactor: isolate slide mutations`
 - Worktree is clean at this handoff.
 - The user confirmed that the previously accumulated migration history through
   `b7bd33d` was pushed before the current sprint. The migration commits after
@@ -118,6 +118,12 @@ Since the previous handoff, the media and window seams were tightened further:
   adapters instead of using the aggregate compatibility facade at runtime.
 - `acb99cb` isolates Song and Sermon asset-slide insertion, including asset
   lookup, domain mutation, persistence, and returned slide-count projection.
+- `7f62370` isolates Song asset background assignment, forward-range assignment,
+  removal, and exact single-slide background persistence behind a typed
+  coordinator.
+- `76d8253` isolates Song and Sermon slide deletion and duplication, including
+  cue lookup, minimum-slide protection, existing `*-copy-N` ID generation, and
+  persistence. The window retains live-cue clearing and refresh policy.
 
 ## Verification state
 
@@ -127,12 +133,13 @@ Since the previous handoff, the media and window seams were tightened further:
 - The focused storage gate passes 22/22 in both debug and release
   configurations after typed-session composition.
 - The UI gate passes 122/122 in both debug and release configurations after
-  live-output and asset-insertion extraction.
+  the Song asset and slide-mutation extractions. The latest slide-mutation run
+  completed in 68.25 seconds for debug and 63.95 seconds for release.
 - The current debug hotspot report says no source files exceed 500 LOC.
 - The current media gate passes 19/19 in both debug and release configurations
   after the renderer and audience-video extractions.
 - The current UI gate passes 122/122 in both debug and release configurations
-  after the window coordinator extractions.
+  after the window coordinator, Song asset, and slide-mutation extractions.
 - Build/test commands:
 
 ```text
