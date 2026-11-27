@@ -68,6 +68,7 @@ private:
     void setup_controls(QVBoxLayout* layout);
     void setup_filter(QVBoxLayout* layout);
     void apply_theme();
+    void apply_theme_icons();
     void apply_filter();
     void update_controls_state();
     void update_empty_state();
