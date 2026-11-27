@@ -1,0 +1,107 @@
+#include "shekinah/ui/program_status_widget.hpp"
+
+#include "shekinah/ui/cue_grid_widget.hpp"
+#include "shekinah/ui/support/theme.hpp"
+
+#include "program_status_preview.hpp"
+
+#include <QLabel>
+#include <QProgressBar>
+#include <QPushButton>
+
+#include <algorithm>
+#include <cmath>
+#include <utility>
+
+namespace shekinah::ui {
+
+void ProgramStatusWidget::set_live_details(LiveSlideDetails details) {
+    live_details_ = std::move(details);
+    const auto& p = ThemeManager::instance().palette();
+
+    const bool has_live =
+        current_program_.mode == domain::ProgramMode::cue && current_program_.live_cue.has_value();
+
+    if (!has_live && live_details_.slide_text.isEmpty() && live_details_.item_title.isEmpty()) {
+        live_section_badge_->setText(
+            current_program_.mode == domain::ProgramMode::black ? QStringLiteral("BLACK")
+                                                                : QStringLiteral("IDLE"));
+        live_section_badge_->setStyleSheet(
+            QStringLiteral("background-color: %1; color: %2; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;")
+                .arg(p.badge_bg.name(), p.badge_fg.name()));
+        live_item_title_label_->setText(
+            active_item_title_.isEmpty() ? QStringLiteral("Ready for service") : active_item_title_);
+        live_slide_counter_label_->setText(QStringLiteral("--"));
+        live_lyrics_label_->setText(
+            QStringLiteral("Click any cue in the grid to project it live to the Audience Output."));
+        live_asset_label_->setText(QStringLiteral("Background: None"));
+        slide_progress_->setValue(0);
+    } else {
+        const QString section_label = live_details_.section.trimmed().isEmpty()
+                                          ? QStringLiteral("SLIDE")
+                                          : live_details_.section.trimmed().toUpper();
+        const QColor section_color = CueGridWidget::footer_color_for_section(live_details_.section);
+        live_section_badge_->setText(section_label);
+        live_section_badge_->setStyleSheet(
+            QStringLiteral("background-color: %1; color: #ffffff; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;")
+                .arg(section_color.name()));
+        live_item_title_label_->setText(
+            live_details_.item_title.isEmpty() ? QStringLiteral("Live Cue") : live_details_.item_title);
+        if (live_details_.total_slides > 0 && live_details_.slide_index > 0) {
+            live_slide_counter_label_->setText(
+                QStringLiteral("%1 / %2").arg(live_details_.slide_index).arg(live_details_.total_slides));
+            const int pct = std::clamp(
+                static_cast<int>(std::lround(100.0 * static_cast<double>(live_details_.slide_index) /
+                                             static_cast<double>(live_details_.total_slides))),
+                0,
+                100);
+            slide_progress_->setValue(pct);
+        } else {
+            live_slide_counter_label_->setText(QStringLiteral("LIVE"));
+            slide_progress_->setValue(100);
+        }
+        live_lyrics_label_->setText(
+            live_details_.slide_text.trimmed().isEmpty()
+                ? QStringLiteral("Media / image slide active")
+                : live_details_.slide_text.trimmed());
+        if (live_details_.has_background) {
+            const QString kind = live_details_.is_video ? QStringLiteral("Video")
+                                                        : fit_mode_text(live_details_.fit_mode);
+            live_asset_label_->setText(
+                live_details_.asset_name.isEmpty()
+                    ? QStringLiteral("Background: Active (%1)").arg(kind)
+                    : QStringLiteral("Bg: %1 Ã‚Â· %2").arg(live_details_.asset_name, kind));
+        } else {
+            live_asset_label_->setText(QStringLiteral("Background: None"));
+        }
+    }
+
+    if (!live_details_.next_summary.trimmed().isEmpty() || !live_details_.next_section.trimmed().isEmpty()) {
+        const QString next_sec = live_details_.next_section.trimmed().isEmpty()
+                                     ? QStringLiteral("NEXT")
+                                     : live_details_.next_section.trimmed().toUpper();
+        const QColor next_color = CueGridWidget::footer_color_for_section(live_details_.next_section);
+        next_section_badge_->setText(next_sec);
+        next_section_badge_->setStyleSheet(
+            QStringLiteral("background-color: %1; color: #ffffff; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;")
+                .arg(next_color.name()));
+        next_summary_label_->setText(
+            live_details_.next_summary.trimmed().isEmpty()
+                ? QStringLiteral("Media / Sermon slide")
+                : live_details_.next_summary.trimmed());
+        next_up_action_button_->setText(QStringLiteral("Go to Next Slide"));
+    } else {
+        next_section_badge_->setText(has_live ? QStringLiteral("END") : QStringLiteral("STANDBY"));
+        next_section_badge_->setStyleSheet(
+            QStringLiteral("background-color: %1; color: %2; border-radius: 3px; padding: 2px 6px; font-size: 10px; font-weight: 700;")
+                .arg(p.badge_bg.name(), p.badge_fg.name()));
+        next_summary_label_->setText(
+            has_live
+                ? QStringLiteral("End of current presentation item.")
+                : QStringLiteral("Select a Song or Sermon in the Service Order to cue slides."));
+        next_up_action_button_->setText(QStringLiteral("Show Audience Window"));
+    }
+    update_status_chrome();
+}
+
+}  // namespace shekinah::ui
