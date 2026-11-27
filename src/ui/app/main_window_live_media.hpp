@@ -2,7 +2,9 @@
 
 #include "shekinah/application/live_slide_presenter.hpp"
 #include "shekinah/domain/model.hpp"
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/asset_repository.hpp"
+#include "shekinah/storage/sermon_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/program_status_types.hpp"
 
 #include <filesystem>
@@ -17,7 +19,9 @@ struct LiveMediaSnapshot {
 };
 
 [[nodiscard]] std::optional<LiveMediaSnapshot> resolve_live_media(
-    const storage::SqliteContentRepository& repository,
+    const storage::SongRepository& songs,
+    const storage::SermonRepository& sermons,
+    const storage::AssetRepository& assets,
     const domain::ProgramState& program,
     const std::filesystem::path& project_root);
 
