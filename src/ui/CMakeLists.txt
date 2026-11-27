@@ -2,6 +2,10 @@ add_library(shekinah_ui STATIC
     app/main_window.cpp
     app/main_window_bindings.cpp
     app/main_window_menus.cpp
+    app/main_window_window_menu.cpp
+    app/main_window_file_menu.cpp
+    app/main_window_presentation_menu.cpp
+    app/main_window_view_menu.cpp
     app/main_window_operator_bindings.cpp
     app/main_window_cue_refresh.cpp
     app/main_window_library_refresh.cpp
