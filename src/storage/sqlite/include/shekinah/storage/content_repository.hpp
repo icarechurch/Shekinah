@@ -7,7 +7,11 @@
 #include "shekinah/storage/service_order_repository.hpp"
 #include "shekinah/storage/song_repository.hpp"
 
+#include <memory>
+
 namespace shekinah::storage {
+
+class SqliteSongRepository;
 
 class SqliteContentRepository final : public SongRepository,
                                       public SermonRepository,
@@ -15,7 +19,8 @@ class SqliteContentRepository final : public SongRepository,
                                       public ServiceOrderRepository,
                                       public ContentArchiveRepository {
 public:
-    explicit SqliteContentRepository(ProjectStore& store) : store_(store) {}
+    explicit SqliteContentRepository(ProjectStore& store);
+    ~SqliteContentRepository() override;
 
     domain::Result<domain::Song> save_song(const domain::Song& song) override;
     domain::Result<domain::Song> load_song(const domain::SongId& id) const override;
@@ -42,6 +47,7 @@ public:
 
 private:
     ProjectStore& store_;
+    std::unique_ptr<SqliteSongRepository> songs_;
 };
 
 }  // namespace shekinah::storage

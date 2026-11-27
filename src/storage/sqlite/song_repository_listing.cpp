@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_song_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -12,7 +12,7 @@ using sqlite_internal::Statement;
 
 }  // namespace
 
-domain::Result<std::vector<domain::Song>> SqliteContentRepository::list_songs() const {
+domain::Result<std::vector<domain::Song>> SqliteSongRepository::list_songs() const {
     Statement statement{store_.native_handle(),
                         "SELECT id FROM songs WHERE archived=0 ORDER BY title COLLATE NOCASE ASC, id ASC;"};
     if (!statement.ready()) {
@@ -41,7 +41,7 @@ domain::Result<std::vector<domain::Song>> SqliteContentRepository::list_songs() 
     return domain::Result<std::vector<domain::Song>>::ok(std::move(songs));
 }
 
-domain::Result<std::size_t> SqliteContentRepository::song_count() const {
+domain::Result<std::size_t> SqliteSongRepository::song_count() const {
     Statement statement{store_.native_handle(), "SELECT COUNT(*) FROM songs WHERE archived=0;"};
     if (!statement.ready()) {
         return domain::Result<std::size_t>::fail(

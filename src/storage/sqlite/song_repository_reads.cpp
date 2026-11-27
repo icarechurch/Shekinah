@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_song_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -16,7 +16,7 @@ using sqlite_internal::bind_text;
 
 }  // namespace
 
-domain::Result<domain::Song> SqliteContentRepository::load_song(const domain::SongId& id) const {
+domain::Result<domain::Song> SqliteSongRepository::load_song(const domain::SongId& id) const {
     Statement song_statement{store_.native_handle(),
                              "SELECT title,default_background_asset_id FROM songs "
                              "WHERE id=?1 AND archived=0 LIMIT 1;"};

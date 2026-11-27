@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_song_repository.hpp"
 
 #include "internal/song_repository_writes.hpp"
 #include "internal/sqlite_support.hpp"
@@ -18,7 +18,7 @@ using sqlite_internal::step_done;
 
 }  // namespace
 
-domain::Result<domain::Song> SqliteContentRepository::save_song(const domain::Song& song) {
+domain::Result<domain::Song> SqliteSongRepository::save_song(const domain::Song& song) {
     if (song.id.empty() || song.title.empty()) {
         return domain::Result<domain::Song>::fail(
             {domain::ErrorCode::invalid_input, "A Song needs a non-empty id and title"});

@@ -1,4 +1,4 @@
-#include "shekinah/storage/content_repository.hpp"
+#include "internal/sqlite_song_repository.hpp"
 
 #include "internal/sqlite_support.hpp"
 
@@ -14,7 +14,7 @@ using sqlite_internal::bind_text;
 
 }  // namespace
 
-domain::Result<application::SongReflowDocument> SqliteContentRepository::load_song_reflow(
+domain::Result<application::SongReflowDocument> SqliteSongRepository::load_song_reflow(
     const domain::SongId& id) const {
     Statement document{store_.native_handle(),
                        "SELECT utf8_text FROM song_reflow_documents WHERE song_id=?1 LIMIT 1;"};

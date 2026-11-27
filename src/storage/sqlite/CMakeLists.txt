@@ -2,7 +2,9 @@ add_library(shekinah_storage STATIC
     asset_importer.cpp
     asset_importer_file.cpp
     asset_repository.cpp
+    content_repository.cpp
     content_repository_archive.cpp
+    content_repository_song.cpp
     project_store.cpp
     project_store_schema.hpp
     project_store_transactions.cpp
@@ -22,6 +24,7 @@ add_library(shekinah_storage STATIC
     song_repository_write_reflow.cpp
     song_repository_write_slides.cpp
     song_repository_writes.cpp
+    internal/sqlite_song_repository.hpp
 )
 
 target_include_directories(shekinah_storage
