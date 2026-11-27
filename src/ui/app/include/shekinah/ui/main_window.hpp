@@ -48,6 +48,7 @@ struct LiveSlideDetails;
 
 class LibraryDockWidget;
 class OperatorPage;
+class ServiceOrderCoordinator;
 class WindowResourcePools;
 
 class ShekinahWindow final : public QMainWindow {
@@ -79,6 +80,7 @@ private:
     std::unique_ptr<media::AudienceOutput> audience_output_;
     std::unique_ptr<WindowResourcePools> resource_pools_;
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
+    std::unique_ptr<ServiceOrderCoordinator> service_order_coordinator_;
     QTimer* resource_timer_{nullptr};
     QActionGroup* theme_actions_{nullptr};
     int next_content_id_{1};
@@ -114,12 +116,6 @@ private:
     }
     [[nodiscard]] storage::AssetRepository* assets() noexcept { return session_.assets(); }
     [[nodiscard]] const storage::AssetRepository* assets() const noexcept { return session_.assets(); }
-    [[nodiscard]] storage::ServiceOrderRepository* service_orders() noexcept {
-        return session_.service_orders();
-    }
-    [[nodiscard]] const storage::ServiceOrderRepository* service_orders() const noexcept {
-        return session_.service_orders();
-    }
     void configure_operator();
     void configure_operator_output_handlers();
     void refresh_library();

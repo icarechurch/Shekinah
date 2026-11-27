@@ -6,6 +6,7 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/support/app_icon.hpp"
+#include "service_order_coordinator.hpp"
 #include "window_resource_pools.hpp"
 
 #include <QTimer>
@@ -20,6 +21,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
 
     resource_pools_ = std::make_unique<WindowResourcePools>();
     resource_governor_ = std::make_unique<application::ResourceGovernor>(*resource_pools_);
+    service_order_coordinator_ = std::make_unique<ServiceOrderCoordinator>(session_);
     resource_timer_ = new QTimer{this};
     resource_timer_->setInterval(1000);
     QObject::connect(resource_timer_, &QTimer::timeout, this, [this] {
