@@ -16,7 +16,8 @@ add_library(shekinah_application STATIC
     service_order_service.cpp
     service_order_presenter.cpp
     slide_insertion.cpp
-    song_backgrounds.cpp
+    song_background_resolution.cpp
+    song_background_mutations.cpp
     song_reflow.cpp
     song_reflow_projection.cpp
     song_text_importer.cpp
