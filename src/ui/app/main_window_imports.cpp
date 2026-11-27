@@ -2,7 +2,7 @@
 
 #include "shekinah/application/song_authoring.hpp"
 #include "shekinah/application/song_text_importer.hpp"
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/song_repository.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -13,7 +13,7 @@ namespace shekinah::ui {
 
 domain::Result<domain::Song> ShekinahWindow::import_song_file(
     const std::filesystem::path& source) {
-    if (!repository()) {
+    if (!songs()) {
         return domain::Result<domain::Song>::fail(
             {domain::ErrorCode::storage_failure, "Open a project before importing songs"});
     }
@@ -30,7 +30,7 @@ domain::Result<domain::Song> ShekinahWindow::import_song_file(
     auto song = parsed.value();
     song.id = domain::SongId{allocate_song_id()};
     application::normalize_song_cue_ids(song);
-    const auto saved = repository()->save_song(song);
+    const auto saved = songs()->save_song(song);
     if (!saved) {
         return domain::Result<domain::Song>::fail(saved.error());
     }

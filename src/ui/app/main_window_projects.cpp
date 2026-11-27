@@ -1,6 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/service_order_repository.hpp"
 
 namespace shekinah::ui {
 
@@ -12,7 +12,7 @@ domain::Status ShekinahWindow::open_project(const std::filesystem::path& root) {
 
     next_content_id_ = 1;
 
-    const auto order = session_.repository()->ensure_service_order(
+    const auto order = session_.service_orders()->ensure_service_order(
         domain::ServiceOrderId{"default-service"}, "Service Order");
     if (!order) {
         session_.close();

@@ -1,6 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/service_order_repository.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 
 #include <utility>
@@ -17,10 +17,10 @@ void ShekinahWindow::configure_library_handlers() {
     library_dock_->set_edit_song_handler([this](domain::SongId id) { edit_song(id); });
 
     library_dock_->set_add_content_handler([this](domain::ContentRef content) {
-        if (!repository()) {
+        if (!service_orders()) {
             return;
         }
-        const auto appended = repository()->append_to_order(
+        const auto appended = service_orders()->append_to_order(
             domain::ServiceOrderId{"default-service"}, std::move(content));
         if (appended) {
             refresh_service_order();

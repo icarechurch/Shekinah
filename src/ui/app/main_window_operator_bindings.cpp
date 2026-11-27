@@ -1,6 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/service_order_repository.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
 
@@ -14,7 +14,7 @@ void ShekinahWindow::configure_operator() {
     });
     operator_page_->set_service_order_move_handler(
         [this](domain::ServiceOrderItemId item_id, std::int64_t target_ordinal) {
-            if (repository() && repository()->move_in_order(item_id, target_ordinal)) {
+            if (service_orders() && service_orders()->move_in_order(item_id, target_ordinal)) {
                 refresh_service_order();
             }
         });

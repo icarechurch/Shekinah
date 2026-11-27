@@ -1,13 +1,13 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/asset_repository.hpp"
 
 #include <filesystem>
 
 namespace shekinah::ui {
 
 QString ShekinahWindow::asset_name_for_cue(const domain::CueId& cue) const {
-    if (!repository()) {
+    if (!assets()) {
         return {};
     }
     const auto selected = presentation_.selected_item();
@@ -18,7 +18,7 @@ QString ShekinahWindow::asset_name_for_cue(const domain::CueId& cue) const {
     if (!background || !background->has_value()) {
         return {};
     }
-    const auto asset = repository()->load_asset(background->value().asset);
+    const auto asset = assets()->load_asset(background->value().asset);
     if (!asset) {
         return {};
     }

@@ -1,6 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/service_order_repository.hpp"
 #include "shekinah/ui/operator_page.hpp"
 
 #include <utility>
@@ -34,17 +34,17 @@ void ShekinahWindow::configure_operator_feature_handlers() {
             apply_asset_to_song(std::move(content), std::move(asset));
         });
     operator_page_->set_service_order_content_drop_handler([this](domain::ContentRef content) {
-        if (!repository()) {
+        if (!service_orders()) {
             return;
         }
-        const auto appended = repository()->append_to_order(
+        const auto appended = service_orders()->append_to_order(
             domain::ServiceOrderId{"default-service"}, std::move(content));
         if (appended) {
             refresh_service_order();
         }
     });
     operator_page_->set_service_order_remove_handler([this](domain::ServiceOrderItemId item) {
-        if (repository() && repository()->remove_from_order(item)) {
+        if (service_orders() && service_orders()->remove_from_order(item)) {
             refresh_service_order();
         }
     });
