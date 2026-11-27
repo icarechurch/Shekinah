@@ -22,7 +22,8 @@ add_library(shekinah_ui STATIC
     app/main_window_live_media.cpp
     app/main_window_live_details.cpp
     app/main_window_program_status.cpp
-    app/main_window_live_output.cpp
+    app/live_output_coordinator.cpp
+    app/live_output_coordinator.hpp
     app/main_window_service_order_refresh.cpp
     app/service_order_view_coordinator.cpp
     app/service_order_view_coordinator.hpp

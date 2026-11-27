@@ -43,6 +43,7 @@ namespace shekinah::ui {
 namespace main_window_internal {
 struct LiveMediaSnapshot;
 class LiveMediaCoordinator;
+class LiveOutputCoordinator;
 }
 
 struct LiveSlideDetails;
@@ -88,6 +89,7 @@ private:
     std::unique_ptr<ContentPersistenceCoordinator> content_persistence_coordinator_;
     std::unique_ptr<CuePresentationCoordinator> cue_presentation_coordinator_;
     std::unique_ptr<main_window_internal::LiveMediaCoordinator> live_media_coordinator_;
+    std::unique_ptr<main_window_internal::LiveOutputCoordinator> live_output_coordinator_;
     std::unique_ptr<LibraryCatalogCoordinator> library_catalog_coordinator_;
     std::unique_ptr<ServiceOrderCoordinator> service_order_coordinator_;
     std::unique_ptr<ServiceOrderViewCoordinator> service_order_view_coordinator_;
@@ -133,9 +135,6 @@ private:
     void refresh_cues();
     void update_program_status();
     void present_live_media();
-    void present_live_media_output(const main_window_internal::LiveMediaSnapshot& snapshot,
-                                   QString preview_text,
-                                   LiveSlideDetails details);
     QString asset_name_for_cue(const domain::CueId& cue) const;
     void remove_asset_from_song(const domain::CueId& cue);
     void apply_asset_to_song(domain::ContentRef content, domain::AssetId asset);

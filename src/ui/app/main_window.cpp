@@ -10,6 +10,7 @@
 #include "cue_presentation_coordinator.hpp"
 #include "library_catalog_coordinator.hpp"
 #include "main_window_live_media.hpp"
+#include "live_output_coordinator.hpp"
 #include "service_order_coordinator.hpp"
 #include "service_order_view_coordinator.hpp"
 #include "window_resource_pools.hpp"
@@ -43,6 +44,8 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     resource_timer_->start();
 
     operator_page_ = new OperatorPage{this};
+    live_output_coordinator_ =
+        std::make_unique<main_window_internal::LiveOutputCoordinator>(*operator_page_);
     setCentralWidget(operator_page_);
     configure_operator();
     library_dock_ = new LibraryDockWidget{this};

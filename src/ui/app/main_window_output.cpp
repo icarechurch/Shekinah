@@ -3,11 +3,14 @@
 #include "shekinah/media/audience_output.hpp"
 #include "shekinah/ui/support/app_icon.hpp"
 
+#include "live_output_coordinator.hpp"
+
 namespace shekinah::ui {
 
 media::AudienceOutput* ShekinahWindow::audience_output() {
     if (!audience_output_) {
         audience_output_ = std::make_unique<media::AudienceOutput>();
+        live_output_coordinator_->set_audience_output(audience_output_.get());
         audience_output_->setWindowIcon(app_icon());
         audience_output_->present(presentation_.program());
         present_live_media();
