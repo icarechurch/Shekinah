@@ -20,16 +20,6 @@ void OperatorPage::set_active_presentation_title(const QString& title) {
     }
 }
 
-void OperatorPage::set_cue_asset_drop_handler(
-    std::function<void(domain::CueId, domain::AssetId)> handler) {
-    cue_grid_->set_asset_drop_handler(std::move(handler));
-}
-
-void OperatorPage::set_cue_asset_insert_handler(
-    std::function<void(std::size_t, domain::AssetId)> handler) {
-    cue_grid_->set_asset_insert_handler(std::move(handler));
-}
-
 void OperatorPage::set_authoring_handlers(std::function<void()> new_song,
                                           std::function<void()> import_song,
                                           std::function<void()> import_sermon,
