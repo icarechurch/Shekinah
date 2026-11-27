@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <functional>
 class QLabel;
+class QHBoxLayout;
 class QLineEdit;
 class QListWidget;
 class QProgressBar;
@@ -59,6 +60,8 @@ public:
 private:
     void build_header(QVBoxLayout* layout);
     void build_monitor(QVBoxLayout* layout);
+    void build_monitor_preview(QWidget* monitor_row, QHBoxLayout* monitor_layout);
+    void build_monitor_actions(QWidget* monitor_row, QHBoxLayout* monitor_layout);
     void build_screen_selector(QVBoxLayout* layout);
     void build_status_strip(QVBoxLayout* layout);
     void build_global_controls(QVBoxLayout* layout);
