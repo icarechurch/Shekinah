@@ -34,6 +34,7 @@ add_library(shekinah_ui STATIC
     support/include/shekinah/ui/support/app_icon.hpp
     support/flow_layout.cpp
     support/include/shekinah/ui/support/theme.hpp
+    support/include/shekinah/ui/support/theme_types.hpp
     support/theme.cpp
     support/theme_dialog_stylesheet.cpp
     support/theme_palette.cpp

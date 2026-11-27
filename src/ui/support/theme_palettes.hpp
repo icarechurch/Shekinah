@@ -1,6 +1,6 @@
 #pragma once
 
-#include "shekinah/ui/support/theme.hpp"
+#include "shekinah/ui/support/theme_types.hpp"
 
 namespace shekinah::ui::theme_internal {
 
