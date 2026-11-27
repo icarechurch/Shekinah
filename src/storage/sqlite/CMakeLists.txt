@@ -2,7 +2,7 @@ add_library(shekinah_storage STATIC
     asset_importer.cpp
     asset_importer_file.cpp
     asset_repository.cpp
-    content_repository.cpp
+    content_repository_archive.cpp
     project_store.cpp
     project_store_schema.hpp
     project_store_transactions.cpp
