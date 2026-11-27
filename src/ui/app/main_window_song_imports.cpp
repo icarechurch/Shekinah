@@ -1,18 +1,12 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_authoring.hpp"
-#include "shekinah/application/song_text_importer.hpp"
-#include "content_persistence_coordinator.hpp"
-#include "shekinah/storage/song_repository.hpp"
+#include "song_import_coordinator.hpp"
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/reflow_editor_dialog.hpp"
 
 #include <QDialog>
 #include <QFileDialog>
-
-#include <fstream>
-#include <iterator>
-#include <string>
 
 namespace shekinah::ui {
 
@@ -25,18 +19,12 @@ void ShekinahWindow::import_song_text() {
     if (path.isEmpty()) {
         return;
     }
-    std::ifstream input(path.toStdString(), std::ios::binary);
-    if (!input) {
+    const auto prepared = song_import_coordinator_->prepare_file(
+        domain::SongId{allocate_song_id()}, path.toStdString());
+    if (!prepared) {
         return;
     }
-    const std::string text{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
-    const auto parsed = application::SongTextImporter::parse(text);
-    if (!parsed) {
-        return;
-    }
-    auto imported = parsed.value();
-    imported.id = domain::SongId{allocate_song_id()};
-    application::normalize_song_cue_ids(imported);
+    const auto imported = prepared.value();
 
     auto* editor = new ReflowEditorDialog{this};
     editor->setAttribute(Qt::WA_DeleteOnClose);
@@ -48,9 +36,7 @@ void ShekinahWindow::import_song_text() {
         if (!draft || !songs()) {
             return;
         }
-        auto song = *draft;
-        application::normalize_song_cue_ids(song);
-        const auto saved = content_persistence_coordinator_->save_song(song);
+        const auto saved = song_import_coordinator_->save_imported(*draft);
         if (saved) {
             library_dock_->add_song(*saved);
         }

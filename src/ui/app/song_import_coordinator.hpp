@@ -4,6 +4,7 @@
 #include "shekinah/domain/result.hpp"
 
 #include <filesystem>
+#include <string_view>
 
 namespace shekinah::storage {
 class ProjectSession;
@@ -16,6 +17,12 @@ class SongImportCoordinator final {
 public:
     SongImportCoordinator(storage::ProjectSession& session,
                           ContentPersistenceCoordinator& persistence) noexcept;
+
+    [[nodiscard]] domain::Result<domain::Song> prepare_file(
+        domain::SongId id, const std::filesystem::path& source) const;
+    [[nodiscard]] domain::Result<domain::Song> prepare_text(
+        domain::SongId id, std::string_view text) const;
+    [[nodiscard]] domain::Result<domain::Song> save_imported(domain::Song song) const;
 
     [[nodiscard]] domain::Result<domain::Song> import_file(
         domain::SongId id, const std::filesystem::path& source) const;
