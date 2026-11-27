@@ -48,6 +48,7 @@ struct LiveSlideDetails;
 
 class LibraryDockWidget;
 class OperatorPage;
+class WindowResourcePools;
 
 class ShekinahWindow final : public QMainWindow {
 public:
@@ -76,7 +77,7 @@ private:
     LibraryDockWidget* library_dock_{nullptr};
     storage::ProjectSession session_;
     std::unique_ptr<media::AudienceOutput> audience_output_;
-    std::unique_ptr<application::ResourcePools> resource_pools_;
+    std::unique_ptr<WindowResourcePools> resource_pools_;
     std::unique_ptr<application::ResourceGovernor> resource_governor_;
     QTimer* resource_timer_{nullptr};
     QActionGroup* theme_actions_{nullptr};

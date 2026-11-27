@@ -6,37 +6,11 @@
 #include "shekinah/ui/library_dock_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/support/app_icon.hpp"
+#include "window_resource_pools.hpp"
 
 #include <QTimer>
 
-#include <functional>
-#include <utility>
-
 namespace shekinah::ui {
-namespace {
-
-class WindowResourcePools final : public application::ResourcePools {
-public:
-    explicit WindowResourcePools(std::function<void()> purge_callback = {})
-        : purge_callback_(std::move(purge_callback)) {}
-
-    void set_purge_callback(std::function<void()> purge_callback) {
-        purge_callback_ = std::move(purge_callback);
-    }
-
-    void purge_non_live_caches() override {
-        if (purge_callback_) {
-            purge_callback_();
-        }
-    }
-    void cancel_queued_work() override {}
-    void release_non_active_media() override {}
-
-private:
-    std::function<void()> purge_callback_;
-};
-
-}  // namespace
 
 ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     setObjectName(QStringLiteral("shekinah-window"));
@@ -57,7 +31,7 @@ ShekinahWindow::ShekinahWindow(QWidget* parent) : QMainWindow(parent) {
     setCentralWidget(operator_page_);
     configure_operator();
     library_dock_ = new LibraryDockWidget{this};
-    static_cast<WindowResourcePools*>(resource_pools_.get())->set_purge_callback([this] {
+    resource_pools_->set_purge_callback([this] {
         if (library_dock_ != nullptr) {
             library_dock_->purge_non_live_caches();
         }

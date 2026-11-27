@@ -1,5 +1,7 @@
 add_library(shekinah_ui STATIC
     app/main_window.cpp
+    app/window_resource_pools.cpp
+    app/window_resource_pools.hpp
     app/main_window_output.cpp
     app/main_window_memory.cpp
     app/main_window_projects.cpp
