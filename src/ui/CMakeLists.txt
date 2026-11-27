@@ -22,6 +22,7 @@ add_library(shekinah_ui STATIC
     features/edit_song/reflow_text_edit.cpp
     features/edit_song/reflow_text_edit_markers.cpp
     features/edit_sermon/sermon_editor_dialog.cpp
+    features/edit_sermon/sermon_editor_dialog_files.cpp
     features/inspect_slide/inspector_dialog.cpp
     pages/operator/operator_page.cpp
     pages/operator/operator_page_bindings.cpp
