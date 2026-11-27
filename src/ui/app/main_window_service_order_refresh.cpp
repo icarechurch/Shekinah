@@ -1,7 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "main_window_service_order_views.hpp"
-#include "shekinah/storage/content_repository.hpp"
+#include "shekinah/storage/service_order_repository.hpp"
 #include "shekinah/ui/cue_grid_widget.hpp"
 #include "shekinah/ui/operator_page.hpp"
 #include "shekinah/ui/program_status_widget.hpp"
@@ -21,7 +21,7 @@ void ShekinahWindow::refresh_service_order() {
         return;
     }
 
-    const auto loaded = repository()->load_order(domain::ServiceOrderId{"default-service"});
+    const auto loaded = service_orders()->load_order(domain::ServiceOrderId{"default-service"});
     if (!loaded) {
         operator_page_->set_service_order({});
         operator_page_->cue_grid()->set_cues({});
@@ -32,7 +32,7 @@ void ShekinahWindow::refresh_service_order() {
 
     const auto program = presentation_.program();
     auto views = main_window_internal::make_service_order_views(
-        *repository(), *repository(), presentation_, *loaded, program);
+        *songs(), *sermons(), presentation_, *loaded, program);
     presentation_.set_service_order(*loaded);
     operator_page_->set_service_order(std::move(views));
     if (!loaded->empty()) {

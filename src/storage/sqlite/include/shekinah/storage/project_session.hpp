@@ -9,6 +9,11 @@ namespace shekinah::storage {
 
 class ProjectStore;
 class SqliteContentRepository;
+class AssetRepository;
+class ContentArchiveRepository;
+class SermonRepository;
+class ServiceOrderRepository;
+class SongRepository;
 
 class ProjectSession final {
 public:
@@ -30,6 +35,16 @@ public:
     [[nodiscard]] const SqliteContentRepository* repository() const noexcept {
         return repository_.get();
     }
+    [[nodiscard]] SongRepository* songs() noexcept;
+    [[nodiscard]] const SongRepository* songs() const noexcept;
+    [[nodiscard]] SermonRepository* sermons() noexcept;
+    [[nodiscard]] const SermonRepository* sermons() const noexcept;
+    [[nodiscard]] AssetRepository* assets() noexcept;
+    [[nodiscard]] const AssetRepository* assets() const noexcept;
+    [[nodiscard]] ServiceOrderRepository* service_orders() noexcept;
+    [[nodiscard]] const ServiceOrderRepository* service_orders() const noexcept;
+    [[nodiscard]] ContentArchiveRepository* content_archive() noexcept;
+    [[nodiscard]] const ContentArchiveRepository* content_archive() const noexcept;
 
 private:
     std::filesystem::path root_;

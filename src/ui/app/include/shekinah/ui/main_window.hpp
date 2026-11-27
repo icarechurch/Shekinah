@@ -28,6 +28,14 @@ class AudienceOutput;
 class QActionGroup;
 class QTimer;
 
+namespace shekinah::storage {
+class AssetRepository;
+class ContentArchiveRepository;
+class SermonRepository;
+class ServiceOrderRepository;
+class SongRepository;
+}
+
 namespace shekinah::ui {
 
 namespace main_window_internal {
@@ -90,6 +98,20 @@ private:
     }
     [[nodiscard]] const storage::SqliteContentRepository* repository() const noexcept {
         return session_.repository();
+    }
+    [[nodiscard]] storage::SongRepository* songs() noexcept { return session_.songs(); }
+    [[nodiscard]] const storage::SongRepository* songs() const noexcept { return session_.songs(); }
+    [[nodiscard]] storage::SermonRepository* sermons() noexcept { return session_.sermons(); }
+    [[nodiscard]] const storage::SermonRepository* sermons() const noexcept {
+        return session_.sermons();
+    }
+    [[nodiscard]] storage::AssetRepository* assets() noexcept { return session_.assets(); }
+    [[nodiscard]] const storage::AssetRepository* assets() const noexcept { return session_.assets(); }
+    [[nodiscard]] storage::ServiceOrderRepository* service_orders() noexcept {
+        return session_.service_orders();
+    }
+    [[nodiscard]] const storage::ServiceOrderRepository* service_orders() const noexcept {
+        return session_.service_orders();
     }
     void configure_operator();
     void configure_operator_output_handlers();

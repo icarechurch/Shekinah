@@ -30,4 +30,44 @@ void ProjectSession::close() noexcept {
     root_.clear();
 }
 
+SongRepository* ProjectSession::songs() noexcept {
+    return repository_.get();
+}
+
+const SongRepository* ProjectSession::songs() const noexcept {
+    return repository_.get();
+}
+
+SermonRepository* ProjectSession::sermons() noexcept {
+    return repository_.get();
+}
+
+const SermonRepository* ProjectSession::sermons() const noexcept {
+    return repository_.get();
+}
+
+AssetRepository* ProjectSession::assets() noexcept {
+    return repository_.get();
+}
+
+const AssetRepository* ProjectSession::assets() const noexcept {
+    return repository_.get();
+}
+
+ServiceOrderRepository* ProjectSession::service_orders() noexcept {
+    return repository_.get();
+}
+
+const ServiceOrderRepository* ProjectSession::service_orders() const noexcept {
+    return repository_.get();
+}
+
+ContentArchiveRepository* ProjectSession::content_archive() noexcept {
+    return repository_.get();
+}
+
+const ContentArchiveRepository* ProjectSession::content_archive() const noexcept {
+    return repository_.get();
+}
+
 }  // namespace shekinah::storage
