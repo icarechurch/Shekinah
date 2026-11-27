@@ -76,6 +76,7 @@ add_library(shekinah_ui STATIC
     widgets/library_dock/library_dock_thumbnails.cpp
     widgets/program_status/program_status_icons.cpp
     widgets/program_status/program_status_icons.hpp
+    widgets/program_status/include/shekinah/ui/program_status_types.hpp
     widgets/program_status/program_status_chrome.cpp
     widgets/program_status/program_status_preview.cpp
     widgets/program_status/program_status_preview.hpp

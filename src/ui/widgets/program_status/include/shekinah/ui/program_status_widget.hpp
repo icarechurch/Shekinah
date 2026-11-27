@@ -1,14 +1,12 @@
 #pragma once
 
-#include "shekinah/domain/model.hpp"
+#include "shekinah/ui/program_status_types.hpp"
 
 #include <QString>
 #include <QWidget>
 
 #include <cstddef>
 #include <functional>
-#include <vector>
-
 class QLabel;
 class QLineEdit;
 class QListWidget;
@@ -19,27 +17,6 @@ class QStackedWidget;
 class QVBoxLayout;
 
 namespace shekinah::ui {
-
-struct LiveSlideDetails {
-    QString item_title;
-    QString section;
-    QString slide_text;
-    QString asset_name;
-    QString next_section;
-    QString next_summary;
-    int slide_index{0};
-    int total_slides{0};
-    bool has_background{false};
-    bool is_video{false};
-    domain::FitMode fit_mode{domain::FitMode::cover};
-};
-
-struct QuickCueItem {
-    domain::CueId id;
-    int number{0};
-    QString section;
-    QString summary;
-};
 
 class ProgramStatusWidget final : public QWidget {
 public:
