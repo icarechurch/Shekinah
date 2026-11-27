@@ -96,6 +96,9 @@ private:
                                                    const QColor& icon_color,
                                                    std::function<void()> handler);
     void setup_content(QWidget* container);
+    void setup_asset_list();
+    void setup_content_lists();
+    void setup_content_empty_overlay();
     void setup_interactions();
     void apply_theme();
     void set_tab(LibraryTab tab, int index);
