@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/slide_insertion.hpp"
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 
 namespace shekinah::ui {
@@ -17,11 +18,10 @@ std::optional<int> ShekinahWindow::insert_asset_into_sermon(
     if (!inserted) {
         return std::nullopt;
     }
-    const auto saved = sermons()->save_deck(*sermon);
+    const auto saved = content_persistence_coordinator_->save_sermon(*sermon);
     if (!saved) {
         return std::nullopt;
     }
-    presentation_.register_sermon(*saved);
     return static_cast<int>(saved->slides.size());
 }
 

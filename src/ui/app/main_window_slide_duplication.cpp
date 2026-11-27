@@ -1,5 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 #include "shekinah/storage/song_repository.hpp"
 
@@ -32,9 +33,8 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
         auto duplicate = *position;
         duplicate.id = domain::CueId{song->id.value + "-copy-" + std::to_string(song->slides.size())};
         song->slides.insert(position + 1, std::move(duplicate));
-        const auto saved = songs()->save_song(*song);
+        const auto saved = content_persistence_coordinator_->save_song(*song);
         if (saved) {
-            presentation_.register_song(*saved);
             refresh_cues();
         }
         return;
@@ -54,9 +54,8 @@ void ShekinahWindow::duplicate_slide(const domain::CueId& cue) {
     auto duplicate = *position;
     duplicate.id = domain::CueId{sermon->id.value + "-copy-" + std::to_string(sermon->slides.size())};
     sermon->slides.insert(position + 1, std::move(duplicate));
-    const auto saved = sermons()->save_deck(*sermon);
+    const auto saved = content_persistence_coordinator_->save_sermon(*sermon);
     if (saved) {
-        presentation_.register_sermon(*saved);
         refresh_cues();
     }
 }

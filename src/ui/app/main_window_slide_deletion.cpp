@@ -1,5 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/sermon_repository.hpp"
 #include "shekinah/storage/song_repository.hpp"
 
@@ -28,9 +29,8 @@ void ShekinahWindow::delete_slide(const domain::CueId& cue) {
             return;
         }
         song->slides.erase(position);
-        const auto saved = songs()->save_song(*song);
+        const auto saved = content_persistence_coordinator_->save_song(*song);
         if (saved) {
-            presentation_.register_song(*saved);
             if (presentation_.program().live_cue.has_value() &&
                 presentation_.program().live_cue->cue == cue) {
                 presentation_.clear();
@@ -53,9 +53,8 @@ void ShekinahWindow::delete_slide(const domain::CueId& cue) {
         return;
     }
     sermon->slides.erase(position);
-    const auto saved = sermons()->save_deck(*sermon);
+    const auto saved = content_persistence_coordinator_->save_sermon(*sermon);
     if (saved) {
-        presentation_.register_sermon(*saved);
         if (presentation_.program().live_cue.has_value() &&
             presentation_.program().live_cue->cue == cue) {
             presentation_.clear();
