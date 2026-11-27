@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/slide_insertion.hpp"
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/operator_page.hpp"
 
@@ -19,11 +20,10 @@ std::optional<int> ShekinahWindow::insert_asset_into_song(
     if (!inserted) {
         return std::nullopt;
     }
-    const auto saved = songs()->save_song(*song);
+    const auto saved = content_persistence_coordinator_->save_song(*song);
     if (!saved) {
         return std::nullopt;
     }
-    presentation_.register_song(*saved);
     return static_cast<int>(saved->slides.size());
 }
 

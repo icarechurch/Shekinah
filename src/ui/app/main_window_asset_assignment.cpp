@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_backgrounds.hpp"
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/asset_repository.hpp"
 #include "shekinah/storage/song_repository.hpp"
 
@@ -20,11 +21,10 @@ void ShekinahWindow::apply_asset_to_song(domain::ContentRef content, domain::Ass
     }
     application::set_default_background(
         *song, domain::BackgroundRef{asset_record->id, domain::FitMode::cover});
-    const auto saved = songs()->save_song(*song);
+    const auto saved = content_persistence_coordinator_->save_song(*song);
     if (!saved) {
         return;
     }
-    presentation_.register_song(*saved);
     refresh_cues();
     update_program_status();
 }
@@ -50,11 +50,10 @@ void ShekinahWindow::apply_asset_to_slide(domain::CueId cue, domain::AssetId ass
     if (!changed) {
         return;
     }
-    const auto saved = songs()->save_song(*song);
+    const auto saved = content_persistence_coordinator_->save_song(*song);
     if (!saved) {
         return;
     }
-    presentation_.register_song(*saved);
     refresh_cues();
     update_program_status();
 }

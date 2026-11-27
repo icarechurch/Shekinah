@@ -1,6 +1,7 @@
 #include "shekinah/ui/main_window.hpp"
 
 #include "shekinah/application/song_backgrounds.hpp"
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/song_repository.hpp"
 
 namespace shekinah::ui {
@@ -22,11 +23,10 @@ void ShekinahWindow::remove_asset_from_song(const domain::CueId& cue) {
         return;
     }
     application::remove_asset_from_song(*song, background->value().asset);
-    const auto saved = songs()->save_song(*song);
+    const auto saved = content_persistence_coordinator_->save_song(*song);
     if (!saved) {
         return;
     }
-    presentation_.register_song(*saved);
     refresh_cues();
     update_program_status();
 }

@@ -1,5 +1,6 @@
 #include "shekinah/ui/main_window.hpp"
 
+#include "content_persistence_coordinator.hpp"
 #include "shekinah/storage/asset_repository.hpp"
 #include "shekinah/storage/song_repository.hpp"
 #include "shekinah/ui/operator_page.hpp"
@@ -34,11 +35,10 @@ domain::Status ShekinahWindow::set_slide_background(
         return domain::Status::fail({domain::ErrorCode::not_found, "Song cue was not found"});
     }
     slide->background = domain::BackgroundRef{asset_record->id, domain::FitMode::cover};
-    const auto saved = songs()->save_song(*song);
+    const auto saved = content_persistence_coordinator_->save_song(*song);
     if (!saved) {
         return domain::Status::fail(saved.error());
     }
-    presentation_.register_song(*saved);
     if (presentation_.program().live_cue.has_value() &&
         presentation_.program().live_cue->cue == cue) {
         update_program_status();
